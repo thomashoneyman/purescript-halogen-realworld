@@ -5,4 +5,7 @@ node_modules
 
 # Generated files
 .psci
+.pulp-cache
+.purs-repl
+.package-lock
 output
