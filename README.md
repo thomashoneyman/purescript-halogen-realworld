@@ -2,7 +2,7 @@
 
 A PureScript + Halogen codebase containing real world examples (CRUD, auth, design patterns, routing, pagination, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
-- [Read the guide](https://github.com/thomashoneyman/purescript-halogen-realworld/guide) to learn about the design of this app and how to build your own Halogen applications.
+- [Read the guide](guide) to learn about the design of this app and how to build your own Halogen applications.
 - Check out the [RealWorld](https://github.com/gothinkster/realworld) project for more information on how to use this with various backends and compare it to other frameworks.
 
 > Note: This project is a work-in-progress! Please feel free to open issues, critique the guide, offer advice, or even implement part of the application.
