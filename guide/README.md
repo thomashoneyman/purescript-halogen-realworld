@@ -1,6 +1,8 @@
 # The RealWorld Halogen Guide
 
-Modern web applications are often tremendously difficult create *and maintain*. Functional languages like PureScript offer powerful features to manage complexity and reliably design, build, and refactor even large apps. This repository has an example of a real world Halogen application, and this guide walks through how to design and build an application like Conduit in a language like PureScript. 
+PureScript is a powerful, strongly-typed, pure functional language. Most PureScript users compile to JavaScript and develop web applications, though [other backends exist](https://github.com/pure-c/pure-c) and it's been used to build [command line applications](https://github.com/feramhq/transity), [web servers](https://github.com/cprussin/purescript-httpure), and more.
+
+Modern web applications can be complex to build and maintain. Functional languages like PureScript offer powerful features to manage complexity and reliably design, build, and refactor apps of any size. This guide walks through how to design and build a real world Halogen application in PureScript, and this repository holds the source code for that application.
 
 ## Table of Contents
 
