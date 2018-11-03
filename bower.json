@@ -14,7 +14,9 @@
     "purescript-variant": "^5.1.0",
     "purescript-nonempty": "^5.0.0",
     "purescript-aff": "^5.0.2",
-    "purescript-halogen": "^4.0.0"
+    "purescript-halogen": "^4.0.0",
+    "purescript-routing": "^8.0.0",
+    "purescript-formatters": "^4.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0"
