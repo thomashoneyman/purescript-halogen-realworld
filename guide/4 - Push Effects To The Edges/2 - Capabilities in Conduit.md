@@ -17,7 +17,7 @@ We'd like to represent each of these as capabilities. How should we approach thi
 
 We should design our type classes to describe the information we want to work with, not the mechanism we use to retrieve or process it. For example, we don't want to represent the capability to hit an API — we want to represent being able to read and write information about users, articles, and comments. 
 
-Ideally we don't even care whether it comes over HTTP, GraphQL, local storage, whatever. That way when our backend team decides suddenly to move to GraphQL we don't have to change our pure code and can simply adjust the underlying implementation.
+Ideally we don't care whether it comes from a REST API, GraphQL, local storage, or even a test mock. That way when our backend team decides suddenly to move to GraphQL we don't have to change our pure code and can simply adjust the underlying implementation.
 
 The same is true of our other capabilities. We want to represent being able to retrieve and store user credentials, but not necessarily that it will require local storage. We want to represent the ability to navigate and log messages, but not that we'll be using push state or hashes or the console or an external logging service.
 
