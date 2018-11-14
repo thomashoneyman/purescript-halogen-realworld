@@ -1,6 +1,6 @@
 module Data.Profile
   ( Avatar -- No constructors exported
-  , parse
+  , parseAvatar
   , Profile(..)
   ) where
 
@@ -46,6 +46,6 @@ instance showAvatar :: Show Avatar where
 -- a non-empty string, but as we grow the app we might put more stringent 
 -- requirements in place, like requiring a valid URL.
 
-parse :: String -> Maybe Avatar
-parse "" = Nothing
-parse str = Just (Avatar str)
+parseAvatar :: String -> Maybe Avatar
+parseAvatar "" = Nothing
+parseAvatar str = Just (Avatar str)
