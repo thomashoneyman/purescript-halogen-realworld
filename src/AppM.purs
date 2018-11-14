@@ -72,3 +72,7 @@ instance logMessagesAppM :: LogMessages AppM where
     liftEffect $ case env.logLevel, Log.logType l of
       Prod, Debug -> pure unit
       _, _ -> Console.log $ Log.message l
+
+-- The root of our application is watching for hash changes, so to route from 
+-- location to location we just need to set the hash. Logging out is more
+-- involved; we need to invalidate the session.

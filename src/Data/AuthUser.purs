@@ -1,5 +1,6 @@
 module Data.AuthUser
   ( AuthUser -- constructors not exported
+  , username
   ) where
 
 import Prelude
