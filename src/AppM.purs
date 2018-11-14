@@ -5,7 +5,6 @@ import Prelude
 import Capability.LogMessages (class LogMessages)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, asks, ask)
-import Data.JSDate as JSDate
 import Data.Log (LogType(..))
 import Data.Log as Log
 import Data.Newtype (class Newtype)
@@ -15,7 +14,6 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Now as Now
 import Test.Unit.Console as Console
 import Type.Equality (class TypeEquals, from)
-import Web.HTML.Event.EventTypes (offline)
 
 -- Our global environment will store read-only information available
 -- to any function with the right MonadAsk constraint.
