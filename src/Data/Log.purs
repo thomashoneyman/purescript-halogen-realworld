@@ -58,18 +58,12 @@ message (Log _ msg) = msg
 logType :: Log -> LogType
 logType (Log lt _) = lt
 
-
 -- We want the core implementation of our logging function to be pure. When we 
 -- write our instance later on we'll re-use this function, but it can be tested 
 -- independently in other contexts like the `Writer` monad or by writing to a 
 -- golden test suite.
 
-mkLog
-  :: ∀ m
-   . Now m
-  => LogType      -- | What kind of log is this?
-  -> String       -- | What is the input string?
-  -> m Log
+mkLog :: ∀ m. Now m => LogType -> String -> m Log
 mkLog lt str = do
 
   -- Will format "2018-10-25 11:25:29 AM"
