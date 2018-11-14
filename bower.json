@@ -16,9 +16,13 @@
     "purescript-aff": "^5.0.2",
     "purescript-halogen": "^4.0.0",
     "purescript-routing": "^8.0.0",
-    "purescript-formatters": "^4.0.0"
+    "purescript-formatters": "^4.0.0",
+    "purescript-routing-duplex": "^0.1.0",
+    "purescript-now": "^4.0.0"
   },
   "devDependencies": {
-    "purescript-psci-support": "^4.0.0"
+    "purescript-psci-support": "^4.0.0",
+    "purescript-quickcheck": "^5.0.0",
+    "purescript-test-unit": "^14.0.0"
   }
 }
