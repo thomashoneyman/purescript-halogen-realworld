@@ -1,10 +1,13 @@
+-- | A custom application monad that provides concrete implementations for our
+-- | abstract capabilities.
+
 module AppM where
 
 import Prelude
 
 import Capability.LogMessages (class LogMessages)
 import Capability.Now (class Now)
-import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, asks, ask)
+import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Log (LogType(..))
 import Data.Log as Log
 import Data.Newtype (class Newtype)
@@ -15,8 +18,8 @@ import Effect.Now as Now
 import Test.Unit.Console as Console
 import Type.Equality (class TypeEquals, from)
 
--- Our global environment will store read-only information available
--- to any function with the right MonadAsk constraint.
+-- Our global environment will store read-only information available to any function 
+-- with the right MonadAsk constraint.
 
 type Env = { logLevel :: LogLevel }
 
@@ -25,14 +28,21 @@ data LogLevel = Dev | Prod
 derive instance eqLogLevel :: Eq LogLevel
 derive instance ordLogLevel :: Ord LogLevel
 
--- Our application monad will be the base of a `ReaderT` transformer.
--- We gain the functionality of `ReaderT` in addition to any other
--- instances we write.
---
--- We can derive all the instances we need to make this new type
--- a monad and allow the use of `Effect` and `Aff`.
+-- Our application monad will be the base of a `ReaderT` transformer. We gain the 
+-- functionality of `ReaderT` in addition to any other instances we write. Our
+-- instances will provide the implementations for our capabilities.
 
 newtype AppM a = AppM (ReaderT Env Aff a)
+
+-- We'll write the instances below, but first, we'll write a function that will 
+-- recover `Aff` from our custom type. Halogen applications must run in `Aff`, 
+-- so this is a necessary step. See its use in `Main.purs` for more.
+
+runAppM :: Env -> AppM ~> Aff
+runAppM env (AppM m) = runReaderT m env
+
+-- We can  derive all the instances we need to make this new type a monad and allow 
+-- the use of `Effect` and `Aff`.
 
 derive instance newtypeAppM :: Newtype (AppM a) _
 

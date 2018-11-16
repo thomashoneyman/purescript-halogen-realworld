@@ -18,7 +18,8 @@
     "purescript-routing": "^8.0.0",
     "purescript-formatters": "^4.0.0",
     "purescript-routing-duplex": "^0.1.0",
-    "purescript-now": "^4.0.0"
+    "purescript-now": "^4.0.0",
+    "purescript-behaviors": "^7.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
