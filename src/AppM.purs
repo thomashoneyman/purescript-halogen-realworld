@@ -5,18 +5,24 @@ module AppM where
 
 import Prelude
 
+import Capability.Authenticate (class Authenticate)
 import Capability.LogMessages (class LogMessages)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
+import Data.Either (Either(..), note)
 import Data.Log (LogType(..))
 import Data.Log as Log
 import Data.Newtype (class Newtype)
+import Data.Request (authUserKey)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Now as Now
 import Test.Unit.Console as Console
 import Type.Equality (class TypeEquals, from)
+import Web.HTML (window)
+import Web.HTML.Window (localStorage)
+import Web.Storage.Storage (getItem)
 
 -- Our global environment will store read-only information available to any function 
 -- with the right MonadAsk constraint.
@@ -83,6 +89,16 @@ instance logMessagesAppM :: LogMessages AppM where
       Prod, Debug -> pure unit
       _, _ -> Console.log $ Log.message l
 
+-- We'll use local storage to load, save, and destroy credentials.
+instance authenticateAppM :: Authenticate AppM where
+  readCredentials = do
+    x <- liftEffect do 
+      tok <- getItem authUserKey =<< localStorage =<< window
+      pure $ note "Failed to retrieve token" tok
+    pure (Left "")
+  writeCredentials = const (pure unit)
+  deleteCredentials = pure unit  
+  
 -- The root of our application is watching for hash changes, so to route from 
 -- location to location we just need to set the hash. Logging out is more
 -- involved; we need to invalidate the session.

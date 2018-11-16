@@ -16,10 +16,10 @@ import Halogen (HalogenM)
 
 class Monad m <= Authenticate m where
   readCredentials :: m (Either String AuthUser)
-  writeCredentials :: m (Either String Unit)
-  deleteCredentials :: m (Either String Unit)
+  writeCredentials :: AuthUser -> m Unit
+  deleteCredentials :: m Unit
 
 instance authenticateHalogenM :: Authenticate m => Authenticate (HalogenM s f g p o m) where
   readCredentials = lift readCredentials
-  writeCredentials = lift writeCredentials
+  writeCredentials = lift <<< writeCredentials
   deleteCredentials = lift deleteCredentials
