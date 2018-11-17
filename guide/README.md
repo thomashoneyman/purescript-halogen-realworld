@@ -12,17 +12,12 @@ This guide will walk you through how to design and build a real world Halogen ap
 
 # Table of Contents
 
-[1 - Introduction](./1-Introduction-a55c0060-30e3-4ccf-a497-c79853a9b2fa.md)
-
-[2 - What Are We Building?](./2-What-Are-We-Building-85794f1f-dd7d-4457-a826-5a6060595a2d.md)
-
-[3 - Design Data & Pure Functions](./3-Design-Data-Pure-Functions-8a8f2b26-147f-444a-92be-01e5747a7054.md)
-
-[4 - Push Effects To The Edges](./4-Push-Effects-To-The-Edges-3ea95b58-b79d-4709-bb98-daf92a419fa0.md)
-
-[5 - Using Halogen Components](./5-Using-Halogen-Components-a0f2e400-0175-414a-a72d-2c9a009a46af.md)
-
-[6 - A Tour Of The Implementation [TODO]](./6-A-Tour-Of-The-Implementation-TODO-9b646382-a3c9-4488-afcb-751a476fde1b.md)
+1. [Introduction](guide/1%20-%20ntroduction.md)
+2. [What Are We Building?](guide/2%20-%20What%20Are%20We%20Building%3F.md)
+3. [Design Data & Pure Functions](guide/3%20-%20Design%20Data%20%26%20Pure%20Functions.md)
+   4 [Push Effects To The Edges](guide/4%20-%20Push%20Effects%20To%20The%20Edges.md)
+4. [Using Halogen Components](guide/5%20-%20Using%20Halogen%20Components.md)
+5. [A Tour Of The Implementation](guide/6%20-%20A%20Tour%20Of%20The%20Implementation.md)
 
 **Prerequisites**
 
