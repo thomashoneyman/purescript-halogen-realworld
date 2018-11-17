@@ -8,4 +8,5 @@ node_modules
 .pulp-cache
 .purs-repl
 .package-lock
+.psc-ide-port
 output
