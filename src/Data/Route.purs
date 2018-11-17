@@ -55,7 +55,7 @@ routeCodec = root $ sum
   , "EditArticle": "editor" / slug
   , "ViewArticle": "article" / slug
   , "Profile": "profile" / uname 
-  , "Favorites": "profile" / uname   -- TODO: Add suffix; as-is will never match
+  , "Favorites": "profile" / uname / "favorites"
   }
 
 -- We can define smaller codecs for pieces of our data type

@@ -15,11 +15,11 @@ import Halogen (HalogenM)
 -- HalogenM to make this class convenient to use in Halogen components.
 
 class Monad m <= Authenticate m where
-  readCredentials :: m (Either String AuthUser)
-  writeCredentials :: AuthUser -> m Unit
-  deleteCredentials :: m Unit
+  loadAuthUser :: m (Either String AuthUser)
+  saveAuthUser :: AuthUser -> m Unit
+  deleteAuthUser :: m Unit
 
 instance authenticateHalogenM :: Authenticate m => Authenticate (HalogenM s f g p o m) where
-  readCredentials = lift readCredentials
-  writeCredentials = lift <<< writeCredentials
-  deleteCredentials = lift deleteCredentials
+  loadAuthUser = lift loadAuthUser
+  saveAuthUser = lift <<< saveAuthUser
+  deleteAuthUser = lift deleteAuthUser

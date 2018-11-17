@@ -4,17 +4,24 @@
 -- | be created via functions exposed here. They can be re-used as the implementation
 -- | of our authentication capability for AppM.
 
-module Data.Request
+module Data.AuthUser
   ( AuthUser -- constructors not exported
   , username
   , authUserKey
+  , readAuthUserFromLocalStorage
+  , writeAuthUserToLocalStorage
+  , deleteAuthUserFromLocalStorage
   ) where
 
 import Prelude
 
-import Data.Argonaut (Json, decodeJson, jsonEmptyObject, (.?), (:=), (~>))
-import Data.Either (Either)
+import Data.Argonaut (Json, decodeJson, jsonEmptyObject, jsonParser, stringify, (.?), (:=), (~>))
+import Data.Either (Either, note)
 import Data.Username (Username)
+import Effect (Effect)
+import Web.HTML (window)
+import Web.HTML.Window (localStorage)
+import Web.Storage.Storage (getItem, removeItem, setItem)
 
 -- An `AuthUser` represents the currently-authenticated user. We will use this 
 -- type throughout the application for auth purposes. We at least need their 
@@ -41,8 +48,9 @@ username (AuthUser u _) = u
 
 type Token = String
 
--- We need to be able to retrieve an AuthUser. This won't perform any effects to 
--- do so, but it'll provide the necessary parsing.
+-- We need to be able to serialize and de-serialize AuthUsers from JSON. We won't
+-- export these functions, but they'll provide necessary parsing for our request
+-- functions.
 
 -- Do not export.
 decodeAuthUser :: Json -> Either String AuthUser
@@ -60,3 +68,22 @@ encodeAuthUser (AuthUser uname tok) =
     ~> jsonEmptyObject
 
 authUserKey = "authUser" :: String
+
+-- These functions can be exported; they construct or use an auth user and its
+-- information but don't allow the end user to see anything internal, like the
+-- specific token of a given user.
+
+readAuthUserFromLocalStorage :: Effect (Either String AuthUser)
+readAuthUserFromLocalStorage = do
+  tok <- getItem authUserKey =<< localStorage =<< window
+  pure $ decodeAuthUser =<< jsonParser =<< note "Failed to retrieve token" tok
+
+writeAuthUserToLocalStorage :: AuthUser -> Effect Unit
+writeAuthUserToLocalStorage au = do
+  setItem authUserKey (stringify $ encodeAuthUser au)
+    =<< localStorage
+    =<< window
+
+deleteAuthUserFromLocalStorage :: Effect Unit
+deleteAuthUserFromLocalStorage = do
+  removeItem authUserKey =<< localStorage =<< window

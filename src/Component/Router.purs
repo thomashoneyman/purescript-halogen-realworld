@@ -3,6 +3,7 @@ module Component.Router where
 import Prelude
 
 import AppM (Env)
+import Capability.Authenticate (class Authenticate)
 import Capability.LogMessages (class LogMessages)
 import Capability.Now (class Now)
 import Control.Monad.Reader (class MonadAsk)
@@ -26,8 +27,8 @@ component
   => MonadAsk Env m
   => Now m
   => LogMessages m
+  => Authenticate m
 --   => Navigate m
---   => Authenticate m
   => H.Component HH.HTML Query Unit Void m
 component =
   H.parentComponent
