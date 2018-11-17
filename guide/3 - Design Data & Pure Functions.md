@@ -14,9 +14,9 @@ If you're familiar with type-driven design and best practices for ensuring types
 
 ## Table of Contents
 
-1. Principles For Designing Data
-2. Entities & Values
-3. Processes & Lifecycles]
+1. [Principles For Designing Data](#principles-for-designing-data)
+2. [Entities & Values](#entities--values)
+3. [Processes & Lifecycles](#processes--lifecycles)
 
 # 1. Principles For Designing Data
 

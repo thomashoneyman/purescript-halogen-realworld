@@ -10,9 +10,9 @@ In this section we'll review a common architecture for Halogen applications and 
 
 ## Table of Contents
 
-1. Principles for Designing Capabilities]
-2. Capabilities in Conduit
-3. Designing & Implementing A Logging Capability
+1. [Principles for Designing Capabilities](#principles-for-designing-capabilities)
+2. [Capabilities in Conduit](#capabilities-in-conduit)
+3. [Designing & Implementing A Logging Capability](#designing--implementing-a-logging-capability)
 
 # 1. Principles for Designing Capabilities
 
