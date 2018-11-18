@@ -10,6 +10,8 @@ This guide will walk you through how to design and build a real world Halogen ap
 
 PureScript is a strongly-typed, pure functional language. Most PureScript users compile to JavaScript and develop single-page web apps, though [other](https://github.com/andyarvanitis/purescript-native) [backends](https://github.com/pure-c/pure-c) [exist](https://github.com/paulyoung/pureswift) and it's been used to build [command line applications](https://github.com/feramhq/transity), [web servers](https://github.com/cprussin/purescript-httpure), and more. PureScript offers powerful features to manage complexity and help you reliably design, build, and refactor apps of any size.
 
+## Table of Contents
+
 1. [Introduction](1%20-%20ntroduction.md)
 2. [What Are We Building?](2%20-%20What%20Are%20We%20Building%3F.md)
 3. [Design Data & Pure Functions](3%20-%20Design%20Data%20%26%20Pure%20Functions.md)
