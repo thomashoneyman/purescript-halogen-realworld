@@ -6,11 +6,11 @@ module Data.Profile
 
 import Prelude
 
-import Data.Argonaut (class DecodeJson, class EncodeJson)
+import Data.Argonaut.Decode (class DecodeJson)
+import Data.Argonaut.Encode (class EncodeJson)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
-import Data.Newtype (class Newtype)
 import Data.Username (Username)
 
 -- Our Profile entity will represent information necessary to render any user 

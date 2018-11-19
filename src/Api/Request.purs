@@ -21,7 +21,10 @@ import Affjax.RequestBody as RB
 import Affjax.RequestHeader as RH
 import Affjax.ResponseFormat as RF
 import Api.Endpoint (Endpoint, endpointCodec)
-import Data.Argonaut (class DecodeJson, Json, decodeJson, encodeJson, jsonParser, stringify)
+import Data.Argonaut.Core (Json, stringify)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Encode (encodeJson)
+import Data.Argonaut.Parser (jsonParser)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..), note)
 import Data.HTTP.Method (Method(..))

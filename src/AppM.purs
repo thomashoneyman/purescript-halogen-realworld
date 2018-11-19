@@ -16,7 +16,8 @@ import Capability.ManageResource (class ManageResource)
 import Capability.Navigate (class Navigate, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Argonaut (class DecodeJson, Json, decodeJson, encodeJson)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Encode (encodeJson)
 import Data.Bifunctor (bimap, lmap)
 import Data.Char.Unicode.Internal (gencatZS)
 import Data.Either (Either(..))
@@ -126,7 +127,7 @@ instance navigateAppM :: Navigate AppM where
 
 instance manageResourceAppM :: ManageResource AppM where
   register body = runRequestAuth (post NoAuth (encodeJson body) Users)
-  getProfile = runRequest'  <<< get NoAuth <<< Profiles
+  getProfile = runRequest' <<< get NoAuth <<< Profiles
   getTags = runRequest' (get NoAuth Tags)
   getComments = runRequest' <<< get NoAuth <<< Comments
   getArticle = runRequest' <<< get NoAuth <<< Article

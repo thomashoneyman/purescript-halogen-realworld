@@ -2,7 +2,8 @@ module Data.Comment where
 
 import Prelude
 
-import Data.Argonaut (class DecodeJson, class EncodeJson)
+import Data.Argonaut.Decode (class DecodeJson)
+import Data.Argonaut.Encode (class EncodeJson)
 import Data.Author (Author)
 import Data.DateTime (DateTime)
 import Data.Generic.Rep (class Generic)
