@@ -52,15 +52,16 @@ routeCodec = root $ sum
   , "Register": "register" / noArgs
   , "Settings": "settings" / noArgs
   , "Editor": "editor" / noArgs
-  , "EditArticle": "editor" / slug
-  , "ViewArticle": "article" / slug
-  , "Profile": "profile" / uname 
-  , "Favorites": "profile" / uname / "favorites"
+  , "EditArticle": "editor" / slug segment
+  , "ViewArticle": "article" / slug segment
+  , "Profile": "profile" / uname segment 
+  , "Favorites": "profile" / uname segment / "favorites"
   }
 
--- We can define smaller codecs for pieces of our data type
-slug :: RouteDuplex' Slug
-slug = as Slug.toString (Slug.parse >>> note "Bad slug") segment
+-- We can define our own combinators
 
-uname :: RouteDuplex' Username
-uname = as Username.toString (Username.parse >>> note "Bad username") segment  
+slug :: RouteDuplex' String -> RouteDuplex' Slug
+slug = as Slug.toString (Slug.parse >>> note "Bad slug")
+
+uname :: RouteDuplex' String -> RouteDuplex' Username
+uname = as Username.toString (Username.parse >>> note "Bad username")

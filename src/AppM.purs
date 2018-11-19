@@ -5,25 +5,41 @@ module AppM where
 
 import Prelude
 
-import Capability.Authenticate (class Authenticate)
+import Affjax (Request, request)
+import Affjax as RF
+import Api.Endpoint (Endpoint(..))
+import Api.Request (AuthType(..), get, post, runRequest, runRequest', runRequestAuth)
+import Api.Request as Request
+import Capability.Authenticate (class Authenticate, deleteAuth)
 import Capability.LogMessages (class LogMessages)
+import Capability.ManageResource (class ManageResource)
+import Capability.Navigate (class Navigate, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.AuthUser (deleteAuthUserFromLocalStorage, readAuthUserFromLocalStorage, writeAuthUserToLocalStorage)
+import Data.Argonaut (class DecodeJson, Json, decodeJson, encodeJson)
+import Data.Bifunctor (bimap, lmap)
+import Data.Char.Unicode.Internal (gencatZS)
+import Data.Either (Either(..))
 import Data.Log (LogType(..))
 import Data.Log as Log
 import Data.Newtype (class Newtype)
+import Data.Route (Route(..), routeCodec)
 import Effect.Aff (Aff)
-import Effect.Aff.Class (class MonadAff)
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Now as Now
+import Routing.Duplex (print)
+import Routing.Hash (setHash)
 import Test.Unit.Console as Console
 import Type.Equality (class TypeEquals, from)
 
 -- Our global environment will store read-only information available to any function 
 -- with the right MonadAsk constraint.
 
-type Env = { logLevel :: LogLevel }
+type Env = 
+  { logLevel :: LogLevel 
+  , apiRoot :: String
+  }
 
 data LogLevel = Dev | Prod
 
@@ -89,10 +105,29 @@ instance logMessagesAppM :: LogMessages AppM where
 -- we'll hardcode a particular user we have test data about in our system.
 
 instance authenticateAppM :: Authenticate AppM where
-  loadAuthUser = liftEffect readAuthUserFromLocalStorage
-  saveAuthUser = liftEffect <<< writeAuthUserToLocalStorage
-  deleteAuthUser = liftEffect deleteAuthUserFromLocalStorage
+  authenticate = const (pure (Left "not implemented"))
+  readAuth = liftEffect Request.readAuthTokenFromLocalStorage
+  writeAuth = liftEffect <<< Request.writeAuthTokenToLocalStorage
+  deleteAuth = liftEffect Request.deleteAuthTokenFromLocalStorage
   
 -- The root of our application is watching for hash changes, so to route from 
 -- location to location we just need to set the hash. Logging out is more
 -- involved; we need to invalidate the session.
+
+instance navigateAppM :: Navigate AppM where
+  navigate = liftEffect <<< setHash <<< print routeCodec 
+  logout = do
+    liftEffect Request.deleteAuthTokenFromLocalStorage 
+    navigate Home
+
+-- We have two resource classes -- one to  to manage resources that require no 
+-- authentication, and another to manage resources that do require auth. We separate
+-- these because we don't want to unnecessarily depend on an authentication class.
+
+instance manageResourceAppM :: ManageResource AppM where
+  register body = runRequestAuth (post NoAuth (encodeJson body) Users)
+  getProfile = runRequest'  <<< get NoAuth <<< Profiles
+  getTags = runRequest' (get NoAuth Tags)
+  getComments = runRequest' <<< get NoAuth <<< Comments
+  getArticle = runRequest' <<< get NoAuth <<< Article
+  getArticles = runRequest' <<< get NoAuth <<< Articles 

@@ -2,7 +2,7 @@ module Data.Author where
 
 import Prelude
 
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (class Newtype)
 import Data.Profile (Profile)
 import Data.Username (Username)
 
@@ -19,7 +19,7 @@ data Author
 -- profile, for example, so we'll provide some helpers.
 
 username :: Author -> Username
-username = _.username <<< unwrap <<< profile
+username = _.username <<< profile
 
 profile :: Author -> Profile
 profile (Following (FollowedAuthor p)) = p

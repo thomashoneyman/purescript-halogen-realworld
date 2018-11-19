@@ -16,16 +16,16 @@ log :: forall m. LogMessages m => LogType -> String -> m Unit
 log t = logMessage <=< mkLog t
 
 -- | Log a message for debugging purposes  
-debug :: forall m. LogMessages m => String -> m Unit
-debug = log Debug 
+logDebug :: forall m. LogMessages m => String -> m Unit
+logDebug = log Debug 
 
 -- | Log a message as a warning
-warn :: forall m. LogMessages m => String -> m Unit
-warn = log Warn 
+logWarn :: forall m. LogMessages m => String -> m Unit
+logWarn = log Warn 
 
 -- | Log a message as an error
-error :: forall m. LogMessages m => String -> m Unit
-error = log Error 
+logError :: forall m. LogMessages m => String -> m Unit
+logError = log Error 
 
 -- We will require the `log` type class member to use the `LogMessage` newtype, 
 -- which is not exported from this module and can only be constructed using our 

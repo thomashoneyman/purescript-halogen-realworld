@@ -1,6 +1,11 @@
 {
   "name": "purescript-halogen-realworld",
-  "ignore": ["**/.*", "node_modules", "bower_components", "output"],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
   "dependencies": {
     "purescript-prelude": "^4.1.0",
     "purescript-console": "^4.1.0",
@@ -14,7 +19,10 @@
     "purescript-formatters": "^4.0.0",
     "purescript-routing-duplex": "https://github.com/natefaubion/purescript-routing-duplex.git#master",
     "purescript-now": "^4.0.0",
-    "purescript-behaviors": "^7.0.0"
+    "purescript-behaviors": "^7.0.0",
+    "purescript-halogen-formless": "^0.4.0",
+    "purescript-affjax": "^7.0.0",
+    "purescript-http-methods": "^4.0.2"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",

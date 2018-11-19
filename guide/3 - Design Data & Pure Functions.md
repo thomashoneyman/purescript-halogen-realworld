@@ -86,6 +86,12 @@ It isn't always easy to decide whether data deserves a new, custom type, or whet
 
 If an existing type carries a similar meaning and values of that type are used the way your values will be used, then re-use that type. If not, create your own.
 
+**Pick Your Battles**
+
+Even though I err on the side of type safety, there is a cost to constraining all data in your program with a perfect type. Most often that cost is reflected in the time spent thinking deeply about what types best represent the values and transformations you need to support, but there is also the time cost of re-implementing functions that would work on a more primitive type like `String` but don't work on your custom type.
+
+It's not always necessary to represent your data with the perfect type. If you only use the data within a single module or don't export functions operating on it, or the data is used only in trivial cases when you know it will already be valid, or it otherwise doesn't seem worth the effort to make something completely type safe, then you may be right. It's not always necessary. However, if you have that slight twinge of doubt, err on the side of writing a custom data type to represent the problem's domain.
+
 ## Make Illegal States Unrepresentable
 
 One of the delightful properties of a strongly-typed language is that it lets us make guarantees about our code. We'd like to enforce at compile-time that any values in our business logic are valid and consistent. We'll design types that make it impossible to even construct or use a value that is not allowed by the business logic or specification.

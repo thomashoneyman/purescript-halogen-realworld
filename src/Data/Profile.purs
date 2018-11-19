@@ -18,14 +18,11 @@ import Data.Username (Username)
 -- use a newtype rather than a type synonym over a record so that we can write 
 -- JSON instances for the type.
 
-newtype Profile = Profile
+type Profile =
   { username :: Username
   , bio :: Maybe String
   , avatar :: Maybe Avatar
   }
-
-derive instance newtypeProfile :: Newtype Profile _
-derive instance eqProfile :: Eq Profile
 
 -- We'll represent avatars using the smart constructor pattern. Avatars are not 
 -- required, but if there is one associated with a user then it cannot be empty. 

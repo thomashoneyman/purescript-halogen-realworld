@@ -20,8 +20,11 @@ main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
 
-  let environment :: Env 
-      environment = { logLevel: Dev }
+  let environment :: Env
+      environment = 
+        { logLevel: Dev 
+        , apiRoot: "https://conduit.productionready.io/api"
+        }
 
       router :: H.Component HH.HTML Router.Query Unit Void Aff
       router = H.hoist (runAppM environment) Router.component
