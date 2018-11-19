@@ -7,24 +7,29 @@ import Prelude
 
 import Affjax (Request, request)
 import Affjax as RF
-import Api.Endpoint (Endpoint(..))
-import Api.Request (AuthType(..), get, post, runRequest, runRequest', runRequestAuth)
+import Api.Endpoint (Endpoint(..), noArticleParams)
+import Api.Request (AuthToken, AuthType(..), delete, get, post, put, runRequest, runRequest', runRequestAuth)
 import Api.Request as Request
-import Capability.Authenticate (class Authenticate, deleteAuth)
-import Capability.LogMessages (class LogMessages)
-import Capability.ManageResource (class ManageResource)
-import Capability.Navigate (class Navigate, navigate)
+import Capability.Authenticate (class Authenticate, deleteAuth, readAuth)
+import Capability.LogMessages (class LogMessages, logError)
+import Capability.ManageResource (class ManageAuthResource, class ManageResource)
+import Capability.Navigate (class Navigate, logout, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
+import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Bifunctor (bimap, lmap)
+import Data.Bitraversable (bitraverse, bitraverse_, ltraverse)
 import Data.Char.Unicode.Internal (gencatZS)
 import Data.Either (Either(..))
 import Data.Log (LogType(..))
 import Data.Log as Log
+import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
+import Data.Profile (Profile)
 import Data.Route (Route(..), routeCodec)
+import Data.Traversable (for, for_)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -126,9 +131,59 @@ instance navigateAppM :: Navigate AppM where
 -- these because we don't want to unnecessarily depend on an authentication class.
 
 instance manageResourceAppM :: ManageResource AppM where
-  register body = runRequestAuth (post NoAuth (encodeJson body) Users)
+  register body = runRequestAuth (post NoAuth (Just $ encodeJson body) Users)
   getProfile = runRequest' <<< get NoAuth <<< Profiles
   getTags = runRequest' (get NoAuth Tags)
   getComments = runRequest' <<< get NoAuth <<< Comments
   getArticle = runRequest' <<< get NoAuth <<< Article
   getArticles = runRequest' <<< get NoAuth <<< Articles 
+
+instance manageAuthResourceAppM :: ManageAuthResource AppM where
+  getUser = withAuth \t -> get (Auth t) Users
+  updateUser p = withAuth' \t -> post (Auth t) (Just $ encodeJson p) Users
+  followUser u = withAuth \t -> post (Auth t) Nothing (Follow u)
+  unfollowUser u = withAuth \t -> delete (Auth t) (Follow u)
+  createArticle a = withAuth \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
+  updateArticle s a = withAuth \t -> put (Auth t) (encodeJson a) (Article s)
+  deleteArticle s = withAuth' \t -> delete (Auth t) (Article s)
+  createComment s c = withAuth \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
+  deleteComment s cid = withAuth' \t -> delete (Auth t) (Comment s cid)
+  favoriteArticle s = withAuth \t -> post (Auth t) Nothing (Favorite s)
+  unfavoriteArticle s = withAuth \t -> delete (Auth t) (Favorite s)
+  getFeed p = withAuth \t -> get (Auth t) (Feed p)
+
+-- A helper function that leverages several of our capabilities together to help
+-- run requests that require authentication.
+
+withAuth 
+  :: forall m a
+   . MonadAff m 
+  => DecodeJson a
+  => LogMessages m 
+  => Navigate m 
+  => Authenticate m 
+  => (AuthToken -> Request Json)
+  -> m (Either String a)
+withAuth req = do
+  eitherToken <- readAuth
+  res <- map join $ for eitherToken (liftAff <<< runRequest' <<< req)
+  void $ ltraverse (\e -> logError e *> logout) res
+  pure res
+
+-- A helper function that leverages several of our capabilities together to help
+-- run requests that require authentication.
+
+withAuth' 
+  :: forall m
+   . MonadAff m 
+  => LogMessages m 
+  => Navigate m 
+  => Authenticate m 
+  => (AuthToken -> Request Json)
+  -> m Unit
+withAuth' req = do
+  eitherToken <- readAuth
+  bitraverse_ 
+    (\e -> logError e *> logout)
+    (liftAff <<< runRequest pure <<< req)
+    eitherToken

@@ -36,8 +36,8 @@ class Monad m <= ManageResource m where
 -- in our application monad will simply perform the request and parse the response.
 
 class Authenticate m <= ManageAuthResource m where
-  getUser :: m (Either String AuthToken)
-  updateUser :: Profile -> m (Either String AuthToken)
+  getUser :: m (Either String Profile)
+  updateUser :: Profile -> m Unit
   followUser :: Username -> m (Either String Author)
   unfollowUser :: Username -> m (Either String Author)
   createArticle :: Article -> m (Either String Article)

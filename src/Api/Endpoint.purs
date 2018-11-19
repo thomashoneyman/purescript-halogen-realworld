@@ -9,7 +9,7 @@ import Data.Comment (CommentId)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Iso.Newtype (_Newtype)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Route (slug, uname)
 import Data.Username (Username)
 import Routing.Duplex (RouteDuplex', int, optional, prefix, root, segment, string)
@@ -33,6 +33,15 @@ type ArticleParams =
   , favorited :: Maybe Username
   , offset :: Maybe Int
   , limit :: Maybe Int
+  }
+
+noArticleParams :: ArticleParams
+noArticleParams =
+  { tag: Nothing 
+  , author: Nothing
+  , favorited: Nothing 
+  , offset: Nothing
+  , limit: Nothing
   }
 
 -- For larger applications, we might want to devise a more sophisticated strategy for

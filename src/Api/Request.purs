@@ -100,8 +100,8 @@ derive instance ordAuthType :: Ord AuthType
 get :: AuthType -> Endpoint -> AX.Request Json
 get auth = mkRequest GET auth Nothing
 
-post :: AuthType -> Json -> Endpoint -> AX.Request Json
-post auth body = mkRequest POST auth (Just body)
+post :: AuthType -> Maybe Json -> Endpoint -> AX.Request Json
+post auth = mkRequest POST auth
 
 put :: AuthType -> Json -> Endpoint -> AX.Request Json
 put auth body = mkRequest PUT auth (Just body)
