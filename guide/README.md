@@ -12,7 +12,7 @@ PureScript is a strongly-typed, pure functional language. Most PureScript users 
 
 ## Table of Contents
 
-1. [Introduction](1%20-%20ntroduction.md)
+1. [Introduction](1%20-%20Introduction.md)
 2. [What Are We Building?](2%20-%20What%20Are%20We%20Building%3F.md)
 3. [Design Data & Pure Functions](3%20-%20Design%20Data%20%26%20Pure%20Functions.md)
 4. [Push Effects To The Edges](4%20-%20Push%20Effects%20To%20The%20Edges.md)
