@@ -2,7 +2,11 @@ module Data.Author where
 
 import Prelude
 
-import Data.Newtype (class Newtype, unwrap)
+import Data.Argonaut.Core (Json)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Either (Either)
+import Data.Newtype (class Newtype)
 import Data.Profile (Profile)
 import Data.Username (Username)
 
@@ -14,12 +18,28 @@ data Author
   | NotFollowing UnfollowedAuthor
   | You Profile
 
+-- We'll write a manual decoder instead of a decode instance so that we can test
+-- if the current user is the same as the one received in the object.
+
+decodeAuthor :: Username -> Json -> Either String Author
+decodeAuthor u json = do
+  prof <- decodeJson json
+  if prof.username == u
+    then pure $ You prof
+    else do
+      following <- (_ .? "following") =<< decodeJson json
+      if following
+        then pure $ Following $ FollowedAuthor prof
+        else pure $ NotFollowing $ UnfollowedAuthor prof
+  
+
+
 -- We've written a safe but slightly annoying type. We don't want to have to 
 -- deeply pattern match every time we want to pull out an author's username or 
 -- profile, for example, so we'll provide some helpers.
 
 username :: Author -> Username
-username = _.username <<< unwrap <<< profile
+username = _.username <<< profile
 
 profile :: Author -> Profile
 profile (Following (FollowedAuthor p)) = p
@@ -35,6 +55,9 @@ newtype FollowedAuthor = FollowedAuthor Profile
 derive instance newtypeFollowedAuthor :: Newtype FollowedAuthor _
 derive instance eqFollowedAuthor :: Eq FollowedAuthor
 
+derive newtype instance decodeJsonFollowedAuthor :: DecodeJson FollowedAuthor
+derive newtype instance encodeJsonFollowedAuthor :: EncodeJson FollowedAuthor
+
 -- And another to restrict the domain of functions that are meant only to 
 -- operate on *unfollowed* profiles.
 
@@ -42,3 +65,6 @@ newtype UnfollowedAuthor = UnfollowedAuthor Profile
 
 derive instance newtypeUnfollowedAuthor :: Newtype UnfollowedAuthor _
 derive instance eqUnfollowedAuthor :: Eq UnfollowedAuthor
+
+derive newtype instance decodeJsonUnfollowedAuthor :: DecodeJson UnfollowedAuthor
+derive newtype instance encodeJsonUnfollowedAuthor :: EncodeJson UnfollowedAuthor

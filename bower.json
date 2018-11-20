@@ -5,7 +5,6 @@
     "purescript-prelude": "^4.1.0",
     "purescript-console": "^4.1.0",
     "purescript-effect": "^2.0.0",
-    "purescript-slug": "^0.1.0",
     "purescript-variant": "^5.1.0",
     "purescript-nonempty": "^5.0.0",
     "purescript-aff": "^5.0.2",
@@ -14,7 +13,12 @@
     "purescript-formatters": "^4.0.0",
     "purescript-routing-duplex": "https://github.com/natefaubion/purescript-routing-duplex.git#master",
     "purescript-now": "^4.0.0",
-    "purescript-behaviors": "^7.0.0"
+    "purescript-behaviors": "^7.0.0",
+    "purescript-halogen-formless": "^0.4.0",
+    "purescript-affjax": "^7.0.0",
+    "purescript-argonaut-core": "^4.0.1",
+    "purescript-argonaut-codecs": "^5.0.0",
+    "purescript-slug": "^0.2.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
