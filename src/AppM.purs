@@ -33,10 +33,10 @@ import Data.Username (Username)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console as Console
 import Effect.Now as Now
 import Routing.Duplex (print)
 import Routing.Hash (setHash)
-import Test.Unit.Console as Console
 import Type.Equality (class TypeEquals, from)
 
 -- Our global environment will store read-only information available to any function 
@@ -127,13 +127,13 @@ instance navigateAppM :: Navigate AppM where
     liftEffect Request.deleteAuthTokenFromLocalStorage 
     navigate Home
 
--- We have two resource classes -- one to  to manage resources that require no 
--- authentication, and another to manage resources that do require auth. We separate
--- these because we don't want to unnecessarily depend on an authentication class.
+-- Our first resource class describes resources that do not require any authentication.
 
 instance manageResourceAppM :: ManageResource AppM where
-  register body = runRequestAuth (post NoAuth (Just $ encodeJson body) Users)
-  getTags = runRequest' $ get NoAuth Tags
+  register body = 
+    runRequestAuth (post NoAuth (Just $ encodeJson body) Users)
+  getTags = 
+    runRequest' $ get NoAuth Tags
   getProfile u = do
     { currentUser } <- ask
     runRequest (decodeAuthor currentUser) $ get NoAuth $ Profiles u
@@ -146,6 +146,8 @@ instance manageResourceAppM :: ManageResource AppM where
   getArticles params = do
     { currentUser } <- ask
     runRequest (decodeArticles currentUser) (get NoAuth $ Articles params)
+
+-- Our second resource class describes resources that do require authentication.
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
   getUser = 
