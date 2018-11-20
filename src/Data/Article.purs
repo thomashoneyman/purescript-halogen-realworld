@@ -8,11 +8,29 @@ import Data.Author (Author, decodeAuthor)
 import Data.DateTime (DateTime)
 import Data.Either (Either)
 import Data.Formatter.DateTime (unformatDateTime)
+import Data.Maybe (Maybe)
 import Data.Traversable (traverse)
 import Data.Username (Username)
 import Slug (Slug)
 
--- Next, we'll define our larger comment data type
+-- A partial article when we are creating it in the editor
+
+type CreateArticle =
+  { title :: String
+  , description :: String
+  , body :: String
+  , tagList :: Maybe (Array String)
+  }
+
+-- A partial article when we are creating it in the editor
+
+type UpdateArticle =
+  { title :: Maybe String
+  , description :: Maybe String
+  , body :: Maybe String
+  }
+
+-- Next, we'll define our larger article data type that we receive from the server.
 
 type Article =
   { slug :: Slug 
@@ -47,15 +65,4 @@ decodeArticle u json = do
   favoritesCount <- obj .? "favoritesCount"
   createdAt <- unformatDateTime "X" =<< obj .? "createdAt"
   author <- decodeAuthor u =<< obj .? "author"
-
-  pure 
-    { slug
-    , title
-    , body
-    , description
-    , tagList 
-    , createdAt
-    , favorited
-    , favoritesCount
-    , author
-    }
+  pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }

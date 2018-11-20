@@ -6,11 +6,11 @@ module Capability.ManageResource where
 import Prelude
 
 import Api.Endpoint (ArticleParams, Pagination)
-import Capability.Authenticate (class Authenticate)
-import Data.Article (Article)
 import Api.Request (AuthToken)
+import Capability.Authenticate (class Authenticate)
+import Data.Article (Article, CreateArticle, UpdateArticle)
 import Data.Author (Author)
-import Data.Comment (Comment, CommentId)
+import Data.Comment (Comment, CommentId, CreateComment)
 import Data.Either (Either)
 import Data.Email (Email)
 import Data.Profile (Profile)
@@ -40,11 +40,12 @@ class Authenticate m <= ManageAuthResource m where
   updateUser :: Profile -> m Unit
   followUser :: Username -> m (Either String Author)
   unfollowUser :: Username -> m (Either String Author)
-  createArticle :: Article -> m (Either String Article)
-  updateArticle :: Slug -> Article -> m (Either String Article)
+  createArticle :: CreateArticle -> m (Either String Article)
+  updateArticle :: Slug -> UpdateArticle -> m (Either String Article)
   deleteArticle :: Slug -> m Unit
-  createComment :: Slug -> Comment -> m (Either String Comment)
+  createComment :: Slug -> CreateComment -> m (Either String Comment)
   deleteComment :: Slug -> CommentId -> m Unit
   favoriteArticle :: Slug -> m (Either String Article)
   unfavoriteArticle :: Slug -> m (Either String Article)
   getFeed :: Pagination -> m (Either String (Array Article))
+

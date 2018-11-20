@@ -5,33 +5,30 @@ module AppM where
 
 import Prelude
 
-import Affjax (Request, request)
+import Affjax (Request)
 import Api.Endpoint (Endpoint(..), noArticleParams)
 import Api.Request (AuthToken, AuthType(..), delete, get, post, put, runRequest, runRequest', runRequestAuth)
 import Api.Request as Request
-import Capability.Authenticate (class Authenticate, deleteAuth, readAuth)
+import Capability.Authenticate (class Authenticate, readAuth)
 import Capability.LogMessages (class LogMessages, logError)
 import Capability.ManageResource (class ManageAuthResource, class ManageResource)
 import Capability.Navigate (class Navigate, logout, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Article (decodeArticle, decodeArticles)
 import Data.Author (decodeAuthor)
-import Data.Bifunctor (bimap, lmap)
-import Data.Bitraversable (bitraverse, bitraverse_, ltraverse)
-import Data.Char.Unicode.Internal (gencatZS)
-import Data.Comment (decodeComments)
+import Data.Bitraversable (bitraverse_, ltraverse)
+import Data.Comment (decodeComment, decodeComments)
 import Data.Either (Either(..))
 import Data.Log (LogType(..))
 import Data.Log as Log
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Data.Profile (Profile)
 import Data.Route (Route(..), routeCodec)
-import Data.Traversable (for, for_)
+import Data.Traversable (for)
 import Data.Username (Username)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -151,34 +148,48 @@ instance manageResourceAppM :: ManageResource AppM where
     runRequest (decodeArticles currentUser) (get NoAuth $ Articles params)
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
-  getUser = withAuth decodeJson \t -> get (Auth t) Users
-  updateUser p = withAuth_ \t -> post (Auth t) (Just $ encodeJson p) Users
-  followUser u = withAuth decodeJson \t -> post (Auth t) Nothing (Follow u)
-  unfollowUser u = withAuth decodeJson \t -> delete (Auth t) (Follow u)
-  createArticle a = withAuth decodeJson \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
-  updateArticle s a = withAuth decodeJson \t -> put (Auth t) (encodeJson a) (Article s)
-  deleteArticle s = withAuth_ \t -> delete (Auth t) (Article s)
-  createComment s c = withAuth decodeJson \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
-  deleteComment s cid = withAuth_ \t -> delete (Auth t) (Comment s cid)
-  favoriteArticle s = withAuth decodeJson \t -> post (Auth t) Nothing (Favorite s)
-  unfavoriteArticle s = withAuth decodeJson \t -> delete (Auth t) (Favorite s)
-  getFeed p = withAuth decodeJson \t -> get (Auth t) (Feed p)
+  getUser = 
+    withAuth (const decodeJson) \t -> get (Auth t) Users
+  updateUser p = 
+    withAuth_ \t -> post (Auth t) (Just $ encodeJson p) Users
+  followUser u = 
+    withAuth decodeAuthor \t -> post (Auth t) Nothing (Follow u)
+  unfollowUser u = 
+    withAuth decodeAuthor \t -> delete (Auth t) (Follow u)
+  createArticle a = 
+    withAuth decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
+  updateArticle s a = 
+    withAuth decodeArticle \t -> put (Auth t) (encodeJson a) (Article s)
+  deleteArticle s = 
+    withAuth_ \t -> delete (Auth t) (Article s)
+  createComment s c = 
+    withAuth decodeComment \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
+  deleteComment s cid = 
+    withAuth_ \t -> delete (Auth t) (Comment s cid)
+  favoriteArticle s = 
+    withAuth decodeArticle \t -> post (Auth t) Nothing (Favorite s)
+  unfavoriteArticle s = 
+    withAuth decodeArticle \t -> delete (Auth t) (Favorite s)
+  getFeed p = 
+    withAuth decodeArticles \t -> get (Auth t) (Feed p)
 
 -- A helper function that leverages several of our capabilities together to help
 -- run requests that require authentication.
 
 withAuth 
-  :: forall m a
+  :: forall m a r
    . MonadAff m 
   => LogMessages m 
   => Navigate m 
   => Authenticate m 
-  => (Json -> Either String a)
+  => MonadAsk { currentUser :: Username | r } m
+  => (Username -> Json -> Either String a)
   -> (AuthToken -> Request Json)
   -> m (Either String a)
 withAuth decode req = do
+  { currentUser } <- ask
   eitherToken <- readAuth
-  res <- map join $ for eitherToken (liftAff <<< runRequest decode <<< req)
+  res <- map join $ for eitherToken (liftAff <<< runRequest (decode currentUser) <<< req)
   void $ ltraverse (\e -> logError e *> logout) res
   pure res
 
@@ -191,8 +202,8 @@ withAuth_
   => LogMessages m 
   => Navigate m 
   => Authenticate m 
-  => (AuthToken -> Request Json)
-  -> m Unit
+  => (AuthToken -> Request Json) 
+  -> m Unit 
 withAuth_ req = do
   eitherToken <- readAuth
   bitraverse_ 

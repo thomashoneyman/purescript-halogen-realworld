@@ -31,6 +31,10 @@ derive newtype instance decodeJsonCommentId :: DecodeJson CommentId
 instance showCommentId :: Show CommentId where
   show = genericShow
 
+-- Next, our small comment update type
+
+type CreateComment = { body :: String }
+
 -- Next, we'll define our larger comment data type
 
 type Comment =
