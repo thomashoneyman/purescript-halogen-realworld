@@ -6,25 +6,18 @@ module Capability.ManageResource where
 import Prelude
 
 import Api.Endpoint (ArticleParams, Pagination)
-import Api.Request (AuthToken)
+import Api.Request (RegisterFields)
 import Capability.Authenticate (class Authenticate)
 import Data.Article (Article, CreateArticle, UpdateArticle)
 import Data.Author (Author)
 import Data.Comment (Comment, CommentId, CreateComment)
 import Data.Either (Either)
-import Data.Email (Email)
 import Data.Profile (Profile)
 import Data.Username (Username)
 import Slug (Slug)
 
-type Registration =
-  { username :: Username 
-  , email :: Email
-  , password :: String 
-  }
-
 class Monad m <= ManageResource m where
-  register :: Registration -> m (Either String AuthToken)
+  register :: RegisterFields -> m (Either String Profile)
   getProfile :: Username -> m (Either String Author)
   getTags :: m (Either String (Array String))
   getComments :: Slug -> m (Either String (Array Comment))

@@ -24,7 +24,6 @@ main = HA.runHalogenAff do
       environment = 
         { logLevel: Dev 
         , rootUrl: "https://conduit.productionready.io/"
-        , currentUser: Nothing
         }
 
       router :: H.Component HH.HTML Router.Query Unit Void Aff
