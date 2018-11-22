@@ -13,11 +13,10 @@ A PureScript + Halogen codebase containing real world examples (CRUD, auth, desi
 
 This repository contains the full implementation of a social blogging application (a Medium.com clone) called Conduit. It also contains a thorough guide to design and build real-world applications in PureScript with the Halogen library.
 
-[Preface](guide)
+[You can read the guide here](guide), which includes chapters describing:
 
-1. [Introduction](guide/1%20-%20Introduction.md)
-2. [What Are We Building?](guide/2%20-%20What%20Are%20We%20Building%3F.md)
-3. [Design Data & Pure Functions](guide/3%20-%20Design%20Data%20%26%20Pure%20Functions.md)
-4. [Push Effects To The Edges](guide/4%20-%20Push%20Effects%20To%20The%20Edges.md)
-5. [Using Halogen Components](guide/5%20-%20Using%20Halogen%20Components.md)
-6. [A Tour Of The Implementation](guide/6%20-%20A%20Tour%20Of%20The%20Implementation.md)
+- The requirements for the application we're building
+- How to design data and pure functions
+- How to push effects to the edges of the application with the ReaderT / Three Layer pattern
+- How to use Halogen components effectively
+- A tour of the final implementation
