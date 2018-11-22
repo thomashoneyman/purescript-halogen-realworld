@@ -16,7 +16,7 @@ import Capability.Navigate (class Navigate, logout, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode (decodeJson, (.?))
 import Data.Argonaut.Encode (encodeJson)
 import Data.Article (decodeArticle, decodeArticles)
 import Data.Author (decodeAuthor)
@@ -133,8 +133,9 @@ instance manageResourceAppM :: ManageResource AppM where
     liftAff (Request.register body) >>= case _ of
       Left err -> logError err *> pure (Left err)
       Right (Tuple au prof) -> writeAuth au *> pure (Right prof) 
-  getTags = 
-    runRequest decodeJson $ get NoAuth Tags
+  getTags = do
+    let tagDecoder = (_ .? "tags") <=< decodeJson
+    runRequest tagDecoder $ get NoAuth Tags
   getProfile u = 
     withUser decodeAuthor $ get NoAuth $ Profiles u
   getComments u = 

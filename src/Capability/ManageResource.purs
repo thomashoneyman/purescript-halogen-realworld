@@ -14,6 +14,7 @@ import Data.Comment (Comment, CommentId, CreateComment)
 import Data.Either (Either)
 import Data.Profile (Profile)
 import Data.Username (Username)
+import Halogen (HalogenM, lift)
 import Slug (Slug)
 
 class Monad m <= ManageResource m where
@@ -23,6 +24,15 @@ class Monad m <= ManageResource m where
   getComments :: Slug -> m (Either String (Array Comment))
   getArticle :: Slug -> m (Either String Article)
   getArticles :: ArticleParams -> m (Either String (Array Article))
+
+instance manageResourcesHalogenM :: ManageResource m => ManageResource (HalogenM s f g p o m) where
+  register = lift <<< register
+  getProfile = lift <<< getProfile
+  getTags = lift getTags
+  getComments = lift <<< getComments
+  getArticle = lift <<< getArticle
+  getArticles = lift <<< getArticles
+
 
 -- Our `Authenticate` class will take care of authenticating our requests. Our `Request`
 -- data types will handle constructing those requests. And our concrete implementation
@@ -42,3 +52,17 @@ class Authenticate m <= ManageAuthResource m where
   unfavoriteArticle :: Slug -> m (Either String Article)
   getFeed :: Pagination -> m (Either String (Array Article))
 
+
+instance manageAuthResourceHalogenM :: ManageAuthResource m => ManageAuthResource (HalogenM s f g p o m) where
+  getUser = lift getUser
+  updateUser = lift <<< updateUser
+  followUser = lift <<< followUser
+  unfollowUser = lift <<< unfollowUser
+  createArticle = lift <<< createArticle
+  updateArticle s = lift <<< updateArticle s
+  deleteArticle = lift <<< deleteArticle
+  createComment s = lift <<< createComment s
+  deleteComment s = lift <<< deleteComment s
+  favoriteArticle = lift <<< favoriteArticle
+  unfavoriteArticle = lift <<< unfavoriteArticle
+  getFeed = lift <<< getFeed

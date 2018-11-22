@@ -132,7 +132,7 @@ delete auth = mkRequest DELETE auth Nothing
 mkRequest :: Method -> AuthType -> Maybe Json -> Endpoint -> AX.Request Json
 mkRequest method auth body endpoint =
   { method: Left method 
-  , url: print endpointCodec endpoint 
+  , url: "https://conduit.productionready.io/" <> print endpointCodec endpoint  -- TODO: FIXME
   , headers: case auth of
       NoAuth -> []
       Auth (AuthUser _ t) -> [ RH.RequestHeader "Authorization" $ "Token " <> t ]
