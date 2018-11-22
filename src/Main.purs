@@ -2,6 +2,7 @@ module Main where
 
 import Prelude
 
+import Api.Request (URL(..))
 import AppM (Env, LogLevel(..), runAppM)
 import Component.Router as Router
 import Data.Maybe (Maybe(..))
@@ -23,7 +24,7 @@ main = HA.runHalogenAff do
   let environment :: Env
       environment = 
         { logLevel: Dev 
-        , rootUrl: "https://conduit.productionready.io/"
+        , rootUrl: URL "https://conduit.productionready.io/"
         }
 
       router :: H.Component HH.HTML Router.Query Unit Void Aff

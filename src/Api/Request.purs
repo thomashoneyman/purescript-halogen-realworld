@@ -10,6 +10,7 @@ module Api.Request
   , put
   , delete
   , AuthType(..)
+  , URL(..)
   , runRequest
   , RegisterFields
   , LoginFields
@@ -33,6 +34,7 @@ import Data.Either (Either(..), note)
 import Data.Email (Email)
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
+import Data.Newtype (class Newtype, unwrap)
 import Data.Profile (Profile)
 import Data.Tuple (Tuple(..))
 import Data.Username (Username)
@@ -110,29 +112,35 @@ data AuthType = NoAuth | Auth AuthUser
 derive instance eqAuthType :: Eq AuthType
 derive instance ordAuthType :: Ord AuthType
 
+-- We build a URL newtype to have a meaningful type to pass around in parameters
+-- a more powerful type that does validation could be an improvement.
+newtype URL = URL String
+
+derive instance newTypeURL :: Newtype URL _
+
 -- We need to be able to make requests. Here, we'll assume that we've been provided
 -- with an `AuthUser`. In practice, the only way to get an `AuthUser` is via our
 -- `Authenticate` capability, so we'll leverage that to actually perform requests.
 -- These data types create the request data type, but do not actually perform effects.
 
-get :: AuthType -> Endpoint -> AX.Request Json
+get :: AuthType -> URL -> Endpoint -> AX.Request Json
 get auth = mkRequest GET auth Nothing
 
-post :: AuthType -> Maybe Json -> Endpoint -> AX.Request Json
+post :: AuthType -> Maybe Json -> URL -> Endpoint -> AX.Request Json
 post auth = mkRequest POST auth
 
-put :: AuthType -> Json -> Endpoint -> AX.Request Json
+put :: AuthType -> Json -> URL -> Endpoint -> AX.Request Json
 put auth body = mkRequest PUT auth (Just body)
 
-delete :: AuthType -> Endpoint -> AX.Request Json
+delete :: AuthType -> URL -> Endpoint -> AX.Request Json
 delete auth = mkRequest DELETE auth Nothing
 
 -- The underlying helper to construct a request 
 
-mkRequest :: Method -> AuthType -> Maybe Json -> Endpoint -> AX.Request Json
-mkRequest method auth body endpoint =
+mkRequest :: Method -> AuthType -> Maybe Json -> URL -> Endpoint -> AX.Request Json
+mkRequest method auth body baseUrl endpoint =
   { method: Left method 
-  , url: "https://conduit.productionready.io/" <> print endpointCodec endpoint  -- TODO: FIXME
+  , url: unwrap baseUrl <> print endpointCodec endpoint  -- TODO: FIXME
   , headers: case auth of
       NoAuth -> []
       Auth (AuthUser _ t) -> [ RH.RequestHeader "Authorization" $ "Token " <> t ]
@@ -167,11 +175,11 @@ type LoginFields =
 
 -- For auth tokens specifically, because the decoder is not exposed
 
-login :: forall m. MonadAff m => LoginFields -> m (Either String (Tuple AuthUser Profile))
-login body = runRequest decodeUser $ post NoAuth (Just $ encodeJson body) Login
+login :: forall m. MonadAff m => URL -> LoginFields -> m (Either String (Tuple AuthUser Profile))
+login baseUrl body = runRequest decodeUser $ post NoAuth (Just $ encodeJson body) baseUrl Login
 
-register :: forall m. MonadAff m => RegisterFields -> m (Either String (Tuple AuthUser Profile))
-register body = runRequest decodeUser $ post NoAuth (Just $ encodeJson body) Users
+register :: forall m. MonadAff m => URL -> RegisterFields -> m (Either String (Tuple AuthUser Profile))
+register baseUrl body = runRequest decodeUser $ post NoAuth (Just $ encodeJson body) baseUrl Users
 
 -- For decoding a user response from the server into an AuthUser + Profile
 
