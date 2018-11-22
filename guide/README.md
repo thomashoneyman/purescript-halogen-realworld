@@ -8,7 +8,6 @@ The most popular single-page app framework in PureScript is the component-based 
 
 This guide will walk you through how to design and build a real world Halogen application in PureScript. I'll describe the design principles I use as a professional PureScript developer to write industrial apps, and we'll put them to work to build Conduit, a social blogging app similar to Medium. This repo also contains the highly-commented source code for the app so you can see exactly how these principles translate to code.
 
-PureScript is a strongly-typed, pure functional language. Most PureScript users compile to JavaScript and develop single-page web apps, though [other](https://github.com/andyarvanitis/purescript-native) [backends](https://github.com/pure-c/pure-c) [exist](https://github.com/paulyoung/pureswift) and it's been used to build [command line applications](https://github.com/feramhq/transity), [web servers](https://github.com/cprussin/purescript-httpure), and more. PureScript offers powerful features to manage complexity and help you reliably design, build, and refactor apps of any size.
 
 ## Table of Contents
 
