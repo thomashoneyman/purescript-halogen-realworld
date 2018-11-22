@@ -5,6 +5,7 @@ import Prelude
 import AppM (Env)
 import Capability.Authenticate (class Authenticate)
 import Capability.LogMessages (class LogMessages)
+import Capability.ManageResource (class ManageAuthResource, class ManageResource)
 import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader (class MonadAsk)
@@ -30,6 +31,8 @@ component
   => LogMessages m
   => Authenticate m
   => Navigate m
+  => ManageResource m
+  => ManageAuthResource m
   => H.Component HH.HTML Query Unit Void m
 component =
   H.parentComponent

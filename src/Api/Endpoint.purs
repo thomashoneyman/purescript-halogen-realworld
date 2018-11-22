@@ -72,7 +72,7 @@ instance showEndpoint :: Show Endpoint where
 -- route cases.
 
 endpointCodec :: RouteDuplex' Endpoint
-endpointCodec = prefix "api" $ root $ sum
+endpointCodec = root $ prefix "api" $ sum
   { "Login": "users" / "login" / noArgs 
   , "User": "user" / noArgs
   , "Users": "users" / noArgs
