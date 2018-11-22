@@ -5,6 +5,7 @@ import Prelude
 import AppM (Env)
 import Capability.Authenticate (class Authenticate)
 import Capability.LogMessages (class LogMessages)
+import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
@@ -28,7 +29,7 @@ component
   => Now m
   => LogMessages m
   => Authenticate m
---   => Navigate m
+  => Navigate m
   => H.Component HH.HTML Query Unit Void m
 component =
   H.parentComponent
@@ -54,4 +55,8 @@ component =
   
   eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
   eval = case _ of
-    Navigate route a -> a <$ H.modify_ _ { route = route }
+    Navigate dest a -> do
+      { route } <- H.get 
+      when (route /= dest) do
+        H.modify_ _ { route = dest }
+      pure a
