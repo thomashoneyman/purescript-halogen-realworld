@@ -5,22 +5,20 @@ module AppM where
 
 import Prelude
 
-import Affjax (Request)
 import Api.Endpoint (Endpoint(..), noArticleParams)
-import Api.Request (AuthType(..), AuthUser, URL, delete, get, post, put, runRequest, username)
+import Api.Request (AuthType(..), BaseURL, delete, get, post, put, runRequest)
 import Api.Request as Request
-import Capability.Authenticate (class Authenticate, deleteAuth, readAuth, writeAuth)
+import Api.Utils (withAuthUser, withAuthUser_, withUser)
+import Capability.Authenticate (class Authenticate, writeAuth)
 import Capability.LogMessages (class LogMessages, logError)
 import Capability.ManageResource (class ManageAuthResource, class ManageResource)
-import Capability.Navigate (class Navigate, logout, navigate)
+import Capability.Navigate (class Navigate, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.?))
 import Data.Argonaut.Encode (encodeJson)
 import Data.Article (decodeArticle, decodeArticles)
 import Data.Author (decodeAuthor)
-import Data.Bitraversable (bitraverse_, ltraverse)
 import Data.Comment (decodeComment, decodeComments)
 import Data.Either (Either(..))
 import Data.Log (LogType(..))
@@ -29,7 +27,6 @@ import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Data.Route as Route
 import Data.Tuple (Tuple(..))
-import Data.Username (Username)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -44,7 +41,7 @@ import Type.Equality (class TypeEquals, from)
 
 type Env = 
   { logLevel :: LogLevel 
-  , rootUrl :: URL
+  , rootUrl :: BaseURL
   }
 
 data LogLevel = Dev | Prod
@@ -111,7 +108,7 @@ instance logMessagesAppM :: LogMessages AppM where
 -- we'll hardcode a particular user we have test data about in our system.
 
 instance authenticateAppM :: Authenticate AppM where
-  authenticate fields = ask >>= \env -> Request.login env.rootUrl fields
+  authenticate fields = ask >>= Request.login fields <<< _.rootUrl
   readAuth = liftEffect Request.readAuthUserFromLocalStorage
   writeAuth = liftEffect <<< Request.writeAuthUserToLocalStorage
   deleteAuth = liftEffect Request.deleteAuthUserFromLocalStorage
@@ -131,102 +128,46 @@ instance navigateAppM :: Navigate AppM where
 instance manageResourceAppM :: ManageResource AppM where
   register body = do
     { rootUrl } <- ask
-    liftAff (Request.register rootUrl body) >>= case _ of
+    liftAff (Request.register body rootUrl) >>= case _ of
       Left err -> logError err *> pure (Left err)
       Right (Tuple au prof) -> writeAuth au *> pure (Right prof) 
   getTags = do
     let tagDecoder = (_ .? "tags") <=< decodeJson
     { rootUrl } <- ask
-    runRequest tagDecoder $ get NoAuth rootUrl Tags
+    runRequest tagDecoder $ get NoAuth Tags rootUrl
   getProfile u = 
-    withUser decodeAuthor $ \url -> get NoAuth url $ Profiles u
+    withUser decodeAuthor $ get NoAuth $ Profiles u
   getComments u = 
-    withUser decodeComments $ \url -> get NoAuth url $ Comments u
+    withUser decodeComments $ get NoAuth $ Comments u
   getArticle slug = 
-    withUser decodeArticle $ \url -> get NoAuth url $ Article slug
+    withUser decodeArticle $ get NoAuth $ Article slug
   getArticles params = 
-    withUser decodeArticles $ \url -> get NoAuth url $ Articles params
+    withUser decodeArticles $ get NoAuth $ Articles params
 
 -- Our second resource class describes resources that do require authentication.
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
   getUser = 
-    withAuthUser (const decodeJson) \t url -> get (Auth t) url Users
+    withAuthUser (const decodeJson) \t -> get (Auth t) Users
   updateUser p = 
-    withAuthUser_ \t url -> post (Auth t) (Just $ encodeJson p) url Users
+    withAuthUser_ \t -> post (Auth t) (Just $ encodeJson p) Users
   followUser u = 
-    withAuthUser decodeAuthor \t url -> post (Auth t) Nothing url (Follow u)
+    withAuthUser decodeAuthor \t -> post (Auth t) Nothing (Follow u)
   unfollowUser u = 
-    withAuthUser decodeAuthor \t url -> delete (Auth t) url (Follow u)
+    withAuthUser decodeAuthor \t -> delete (Auth t) (Follow u)
   createArticle a = 
-    withAuthUser decodeArticle \t url -> post (Auth t) (Just $ encodeJson a) url (Articles noArticleParams)
+    withAuthUser decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
   updateArticle s a = 
-    withAuthUser decodeArticle \t url -> put (Auth t) (encodeJson a) url (Article s)
+    withAuthUser decodeArticle \t -> put (Auth t) (encodeJson a) (Article s)
   deleteArticle s = 
-    withAuthUser_ \t url -> delete (Auth t) url (Article s)
+    withAuthUser_ \t -> delete (Auth t) (Article s)
   createComment s c = 
-    withAuthUser decodeComment \t url -> post (Auth t) (Just $ encodeJson c) url (Comments s)
+    withAuthUser decodeComment \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
   deleteComment s cid = 
-    withAuthUser_ \t url -> delete (Auth t) url (Comment s cid)
+    withAuthUser_ \t -> delete (Auth t) (Comment s cid)
   favoriteArticle s = 
-    withAuthUser decodeArticle \t url -> post (Auth t) Nothing url (Favorite s)
+    withAuthUser decodeArticle \t -> post (Auth t) Nothing (Favorite s)
   unfavoriteArticle s = 
-    withAuthUser decodeArticle \t url -> delete (Auth t) url (Favorite s)
+    withAuthUser decodeArticle \t -> delete (Auth t) (Favorite s)
   getFeed p = 
-    withAuthUser decodeArticles \t url -> get (Auth t) url (Feed p)
-
--- A helper function that leverages several of our capabilities together to help
--- run requests that require authentication.
-
-withUser
-  :: forall m a
-   . MonadAff m 
-  => LogMessages m 
-  => Navigate m 
-  => MonadAsk Env m
-  => Authenticate m
-  => (Username -> Json -> Either String a)
-  -> (URL -> Request Json)
-  -> m (Either String a)
-withUser decode req =
-  readAuth >>= case _ of
-    Left err -> logError err *> pure (Left err)
-    Right au -> do
-      { rootUrl } <- ask
-      runRequest (decode (username au)) $ req rootUrl
-
-withAuthUser 
-  :: forall m a 
-   . MonadAff m 
-  => LogMessages m
-  => Navigate m 
-  => MonadAsk Env m
-  => Authenticate m 
-  => (Username -> Json -> Either String a)
-  -> (AuthUser -> URL -> Request Json)
-  -> m (Either String a)
-withAuthUser decode req =
-  readAuth >>= case _ of
-    Left err -> logError err *> deleteAuth *> navigate Route.Login *> pure (Left err) 
-    Right au -> do
-      { rootUrl } <- ask
-      res <- runRequest (decode (username au)) (req au rootUrl)
-      void $ ltraverse (\e -> logError e *> logout) res
-      pure res
-
--- A helper function that leverages several of our capabilities together to help
--- run requests that require authentication.
-
-withAuthUser_ 
-  :: forall m
-   . MonadAff m 
-  => LogMessages m 
-  => Navigate m 
-  => MonadAsk Env m
-  => Authenticate m 
-  => (AuthUser -> URL -> Request Json) 
-  -> m Unit 
-withAuthUser_ req =
-  readAuth >>= bitraverse_ (\e -> logError e *> logout) (\au -> do
-                                                            { rootUrl } <- ask
-                                                            runRequest pure $ req au rootUrl)
+    withAuthUser decodeArticles \t -> get (Auth t) (Feed p)
