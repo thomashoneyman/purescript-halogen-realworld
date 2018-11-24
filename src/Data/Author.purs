@@ -3,7 +3,7 @@ module Data.Author where
 import Prelude
 
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (Either)
 import Data.Newtype (class Newtype)
@@ -27,7 +27,7 @@ decodeAuthor u json = do
   if prof.username == u
     then pure $ You prof
     else do
-      following <- (_ .? "following") =<< decodeJson json
+      following <- (_ .: "following") =<< decodeJson json
       if following
         then pure $ Following $ FollowedAuthor prof
         else pure $ NotFollowing $ UnfollowedAuthor prof

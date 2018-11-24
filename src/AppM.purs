@@ -15,7 +15,7 @@ import Capability.ManageResource (class ManageAuthResource, class ManageResource
 import Capability.Navigate (class Navigate, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Argonaut.Decode (decodeJson, (.?))
+import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
 import Data.Article (decodeArticle, decodeArticles)
 import Data.Author (decodeAuthor)
@@ -41,7 +41,7 @@ import Type.Equality (class TypeEquals, from)
 
 type Env = 
   { logLevel :: LogLevel 
-  , rootUrl :: BaseURL
+  , baseUrl :: BaseURL
   }
 
 data LogLevel = Dev | Prod
@@ -108,7 +108,7 @@ instance logMessagesAppM :: LogMessages AppM where
 -- we'll hardcode a particular user we have test data about in our system.
 
 instance authenticateAppM :: Authenticate AppM where
-  authenticate fields = ask >>= Request.login fields <<< _.rootUrl
+  authenticate fields = ask >>= Request.login fields <<< _.baseUrl
   readAuth = liftEffect Request.readAuthUserFromLocalStorage
   writeAuth = liftEffect <<< Request.writeAuthUserToLocalStorage
   deleteAuth = liftEffect Request.deleteAuthUserFromLocalStorage
@@ -127,14 +127,14 @@ instance navigateAppM :: Navigate AppM where
 
 instance manageResourceAppM :: ManageResource AppM where
   register body = do
-    { rootUrl } <- ask
-    liftAff (Request.register body rootUrl) >>= case _ of
+    { baseUrl } <- ask
+    liftAff (Request.register body baseUrl) >>= case _ of
       Left err -> logError err *> pure (Left err)
       Right (Tuple au prof) -> writeAuth au *> pure (Right prof) 
   getTags = do
-    let tagDecoder = (_ .? "tags") <=< decodeJson
-    { rootUrl } <- ask
-    runRequest tagDecoder $ get NoAuth Tags rootUrl
+    let tagDecoder = (_ .: "tags") <=< decodeJson
+    { baseUrl } <- ask
+    runRequest tagDecoder $ get NoAuth Tags baseUrl
   getProfile u = 
     withUser decodeAuthor $ get NoAuth $ Profiles u
   getComments u = 

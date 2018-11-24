@@ -26,7 +26,7 @@ import Affjax.RequestHeader as RH
 import Affjax.ResponseFormat as RF
 import Api.Endpoint (Endpoint(..), endpointCodec)
 import Data.Argonaut.Core (Json, stringify)
-import Data.Argonaut.Decode (decodeJson, (.?))
+import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Bifunctor (lmap)
@@ -76,8 +76,8 @@ username (AuthUser uname _) = uname
 decodeAuthUser :: Json -> Either String AuthUser
 decodeAuthUser json = do 
   obj <- decodeJson json
-  uname <- obj .? "username"
-  tok <- obj .? "token"
+  uname <- obj .: "username"
+  tok <- obj .: "token"
   pure $ AuthUser uname tok
 
 -- Do not export.

@@ -1,8 +1,8 @@
 module Api.Utils
-       (withUser
-       , withAuthUser
-       , withAuthUser_
-       ) where
+  ( withUser
+  , withAuthUser
+  , withAuthUser_
+  ) where
 
 import Prelude
 
@@ -12,7 +12,7 @@ import Capability.Authenticate (class Authenticate, deleteAuth, readAuth)
 import Capability.LogMessages (class LogMessages, logError)
 import Capability.Navigate (class Navigate, logout, navigate)
 import Control.Monad.Reader (class MonadAsk, ask)
-import Data.Argonaut (Json)
+import Data.Argonaut.Core (Json)
 import Data.Bifoldable (bitraverse_)
 import Data.Bitraversable (ltraverse)
 import Data.Either (Either(..))
@@ -28,7 +28,7 @@ withUser
    . MonadAff m 
   => LogMessages m 
   => Navigate m 
-  => MonadAsk { rootUrl :: BaseURL | e } m
+  => MonadAsk { baseUrl :: BaseURL | e } m
   => Authenticate m
   => (Username -> Json -> Either String a)
   -> (BaseURL -> Request Json)
@@ -37,15 +37,15 @@ withUser decode req =
   readAuth >>= case _ of
     Left err -> logError err *> pure (Left err)
     Right au -> do
-      { rootUrl } <- ask
-      runRequest (decode (username au)) $ req rootUrl
+      { baseUrl } <- ask
+      runRequest (decode (username au)) $ req baseUrl
 
 withAuthUser 
   :: forall m a e
    . MonadAff m 
   => LogMessages m
   => Navigate m 
-  => MonadAsk { rootUrl :: BaseURL | e } m
+  => MonadAsk { baseUrl :: BaseURL | e } m
   => Authenticate m 
   => (Username -> Json -> Either String a)
   -> (AuthUser -> BaseURL -> Request Json)
@@ -54,8 +54,8 @@ withAuthUser decode req =
   readAuth >>= case _ of
     Left err -> logError err *> deleteAuth *> navigate Route.Login *> pure (Left err) 
     Right au -> do
-      { rootUrl } <- ask
-      res <- runRequest (decode (username au)) (req au rootUrl)
+      { baseUrl } <- ask
+      res <- runRequest (decode (username au)) (req au baseUrl)
       void $ ltraverse (\e -> logError e *> logout) res
       pure res
 
@@ -64,11 +64,11 @@ withAuthUser_
    . MonadAff m 
   => LogMessages m 
   => Navigate m 
-  => MonadAsk { rootUrl :: BaseURL | e } m
+  => MonadAsk { baseUrl :: BaseURL | e } m
   => Authenticate m 
   => (AuthUser -> BaseURL -> Request Json) 
   -> m Unit 
 withAuthUser_ req =
   readAuth >>= bitraverse_
     (\e -> logError e *> logout)
-    (\au -> ask >>= runRequest pure <<< req au <<< _.rootUrl)
+    (\au -> ask >>= runRequest pure <<< req au <<< _.baseUrl)

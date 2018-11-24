@@ -3,7 +3,7 @@ module Data.Article where
 import Prelude
 
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson, (.?))
+import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Author (Author, decodeAuthor)
 import Data.DateTime (DateTime)
 import Data.Either (Either)
@@ -56,13 +56,13 @@ decodeArticles u json = do
 decodeArticle :: Username -> Json -> Either String Article
 decodeArticle u json = do
   obj <- decodeJson json
-  slug <- obj .? "slug"
-  title <- obj .? "title"
-  body <- obj .? "body"
-  description <- obj .? "description"
-  tagList <- obj .? "tagList"
-  favorited <- obj .? "favorited"
-  favoritesCount <- obj .? "favoritesCount"
-  createdAt <- unformatDateTime "X" =<< obj .? "createdAt"
-  author <- decodeAuthor u =<< obj .? "author"
+  slug <- obj .: "slug"
+  title <- obj .: "title"
+  body <- obj .: "body"
+  description <- obj .: "description"
+  tagList <- obj .: "tagList"
+  favorited <- obj .: "favorited"
+  favoritesCount <- obj .: "favoritesCount"
+  createdAt <- unformatDateTime "X" =<< obj .: "createdAt"
+  author <- decodeAuthor u =<< obj .: "author"
   pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }
