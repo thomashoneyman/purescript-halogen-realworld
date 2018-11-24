@@ -4,7 +4,9 @@ import Prelude
 
 import AppM (Env)
 import Capability.Authenticate (class Authenticate)
-import Capability.LogMessages (class LogMessages)
+import Capability.LogMessages (class LogMessages, logDebug)
+import Capability.ManageResource (class ManageAuthResource, class ManageResource, getTags)
+import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
@@ -13,6 +15,7 @@ import Data.Route (Route(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 
 type State =
   { route :: Route 
@@ -20,6 +23,7 @@ type State =
 
 data Query a
   = Navigate Route a
+  | Click a
 
 component
   :: forall m
@@ -28,7 +32,9 @@ component
   => Now m
   => LogMessages m
   => Authenticate m
---   => Navigate m
+  => Navigate m
+  => ManageResource m
+  => ManageAuthResource m
   => H.Component HH.HTML Query Unit Void m
 component =
   H.parentComponent
@@ -42,7 +48,7 @@ component =
 
   render :: State -> H.ParentHTML Query (Const Void) Void m
   render { route } = case route of
-    Home -> HH.div_ []
+    Home -> HH.div [ HE.onClick $ HE.input_ Click ] [ HH.text "click" ]
     Login -> HH.div_ []
     Register -> HH.div_ []
     Settings -> HH.div_ []
@@ -54,4 +60,13 @@ component =
   
   eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
   eval = case _ of
-    Navigate route a -> a <$ H.modify_ _ { route = route }
+    Click a -> do
+      res <- getTags
+      logDebug $ show res
+      pure a
+
+    Navigate dest a -> do
+      { route } <- H.get 
+      when (route /= dest) do
+        H.modify_ _ { route = dest }
+      pure a

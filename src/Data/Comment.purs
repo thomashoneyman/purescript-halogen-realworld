@@ -3,7 +3,7 @@ module Data.Comment where
 import Prelude
 
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Author (Author, decodeAuthor)
 import Data.DateTime (DateTime)
@@ -56,8 +56,8 @@ decodeComments u json = do
 decodeComment :: Username -> Json -> Either String Comment
 decodeComment u json = do
   obj <- decodeJson json
-  author <- decodeAuthor u =<< obj .? "author"
-  body <- obj .? "body"
-  id <- obj .? "id"
-  createdAt <- unformatDateTime "X" =<< obj .? "createdAt"
+  author <- decodeAuthor u =<< obj .: "author"
+  body <- obj .: "body"
+  id <- obj .: "id"
+  createdAt <- unformatDateTime "X" =<< obj .: "createdAt"
   pure { id, createdAt, body, author }

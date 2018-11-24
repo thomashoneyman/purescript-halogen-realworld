@@ -5,38 +5,35 @@ module AppM where
 
 import Prelude
 
-import Affjax (Request)
 import Api.Endpoint (Endpoint(..), noArticleParams)
-import Api.Request (AuthToken, AuthType(..), delete, get, post, put, runRequest, runRequest', runRequestAuth)
+import Api.Request (AuthType(..), BaseURL, delete, get, post, put, runRequest)
 import Api.Request as Request
-import Capability.Authenticate (class Authenticate, readAuth)
+import Api.Utils (withAuthUser, withAuthUser_, withUser)
+import Capability.Authenticate (class Authenticate, writeAuth)
 import Capability.LogMessages (class LogMessages, logError)
 import Capability.ManageResource (class ManageAuthResource, class ManageResource)
-import Capability.Navigate (class Navigate, logout, navigate)
+import Capability.Navigate (class Navigate, navigate)
 import Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
 import Data.Article (decodeArticle, decodeArticles)
 import Data.Author (decodeAuthor)
-import Data.Bitraversable (bitraverse_, ltraverse)
 import Data.Comment (decodeComment, decodeComments)
 import Data.Either (Either(..))
 import Data.Log (LogType(..))
 import Data.Log as Log
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Data.Route (Route(..), routeCodec)
-import Data.Traversable (for)
-import Data.Username (Username)
+import Data.Route as Route
+import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console as Console
 import Effect.Now as Now
 import Routing.Duplex (print)
 import Routing.Hash (setHash)
-import Test.Unit.Console as Console
 import Type.Equality (class TypeEquals, from)
 
 -- Our global environment will store read-only information available to any function 
@@ -44,8 +41,7 @@ import Type.Equality (class TypeEquals, from)
 
 type Env = 
   { logLevel :: LogLevel 
-  , apiRoot :: String
-  , currentUser :: Username
+  , baseUrl :: BaseURL
   }
 
 data LogLevel = Dev | Prod
@@ -104,7 +100,7 @@ instance nowAppM :: Now AppM where
 instance logMessagesAppM :: LogMessages AppM where
   logMessage l = do 
     env <- ask
-    liftEffect $ case env.logLevel, Log.logType l of
+    liftEffect case env.logLevel, Log.logType l of
       Prod, Debug -> pure unit
       _, _ -> Console.log $ Log.message l
 
@@ -112,101 +108,66 @@ instance logMessagesAppM :: LogMessages AppM where
 -- we'll hardcode a particular user we have test data about in our system.
 
 instance authenticateAppM :: Authenticate AppM where
-  authenticate = const (pure (Left "not implemented"))
-  readAuth = liftEffect Request.readAuthTokenFromLocalStorage
-  writeAuth = liftEffect <<< Request.writeAuthTokenToLocalStorage
-  deleteAuth = liftEffect Request.deleteAuthTokenFromLocalStorage
+  authenticate fields = ask >>= Request.login fields <<< _.baseUrl
+  readAuth = liftEffect Request.readAuthUserFromLocalStorage
+  writeAuth = liftEffect <<< Request.writeAuthUserToLocalStorage
+  deleteAuth = liftEffect Request.deleteAuthUserFromLocalStorage
   
 -- The root of our application is watching for hash changes, so to route from 
 -- location to location we just need to set the hash. Logging out is more
 -- involved; we need to invalidate the session.
 
 instance navigateAppM :: Navigate AppM where
-  navigate = liftEffect <<< setHash <<< print routeCodec 
+  navigate = liftEffect <<< setHash <<< print Route.routeCodec 
   logout = do
-    liftEffect Request.deleteAuthTokenFromLocalStorage 
-    navigate Home
+    liftEffect Request.deleteAuthUserFromLocalStorage 
+    navigate Route.Home
 
--- We have two resource classes -- one to  to manage resources that require no 
--- authentication, and another to manage resources that do require auth. We separate
--- these because we don't want to unnecessarily depend on an authentication class.
+-- Our first resource class describes resources that do not require any authentication.
 
 instance manageResourceAppM :: ManageResource AppM where
-  register body = runRequestAuth (post NoAuth (Just $ encodeJson body) Users)
-  getTags = runRequest' $ get NoAuth Tags
-  getProfile u = do
-    { currentUser } <- ask
-    runRequest (decodeAuthor currentUser) $ get NoAuth $ Profiles u
-  getComments u = do
-    { currentUser } <- ask 
-    runRequest (decodeComments currentUser) $ get NoAuth $ Comments u
-  getArticle slug = do
-    { currentUser } <- ask
-    runRequest (decodeArticle currentUser) (get NoAuth $ Article slug)
-  getArticles params = do
-    { currentUser } <- ask
-    runRequest (decodeArticles currentUser) (get NoAuth $ Articles params)
+  register body = do
+    { baseUrl } <- ask
+    liftAff (Request.register body baseUrl) >>= case _ of
+      Left err -> logError err *> pure (Left err)
+      Right (Tuple au prof) -> writeAuth au *> pure (Right prof) 
+  getTags = do
+    let tagDecoder = (_ .: "tags") <=< decodeJson
+    { baseUrl } <- ask
+    runRequest tagDecoder $ get NoAuth Tags baseUrl
+  getProfile u = 
+    withUser decodeAuthor $ get NoAuth $ Profiles u
+  getComments u = 
+    withUser decodeComments $ get NoAuth $ Comments u
+  getArticle slug = 
+    withUser decodeArticle $ get NoAuth $ Article slug
+  getArticles params = 
+    withUser decodeArticles $ get NoAuth $ Articles params
+
+-- Our second resource class describes resources that do require authentication.
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
   getUser = 
-    withAuth (const decodeJson) \t -> get (Auth t) Users
+    withAuthUser (const decodeJson) \t -> get (Auth t) Users
   updateUser p = 
-    withAuth_ \t -> post (Auth t) (Just $ encodeJson p) Users
+    withAuthUser_ \t -> post (Auth t) (Just $ encodeJson p) Users
   followUser u = 
-    withAuth decodeAuthor \t -> post (Auth t) Nothing (Follow u)
+    withAuthUser decodeAuthor \t -> post (Auth t) Nothing (Follow u)
   unfollowUser u = 
-    withAuth decodeAuthor \t -> delete (Auth t) (Follow u)
+    withAuthUser decodeAuthor \t -> delete (Auth t) (Follow u)
   createArticle a = 
-    withAuth decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
+    withAuthUser decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
   updateArticle s a = 
-    withAuth decodeArticle \t -> put (Auth t) (encodeJson a) (Article s)
+    withAuthUser decodeArticle \t -> put (Auth t) (encodeJson a) (Article s)
   deleteArticle s = 
-    withAuth_ \t -> delete (Auth t) (Article s)
+    withAuthUser_ \t -> delete (Auth t) (Article s)
   createComment s c = 
-    withAuth decodeComment \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
+    withAuthUser decodeComment \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
   deleteComment s cid = 
-    withAuth_ \t -> delete (Auth t) (Comment s cid)
+    withAuthUser_ \t -> delete (Auth t) (Comment s cid)
   favoriteArticle s = 
-    withAuth decodeArticle \t -> post (Auth t) Nothing (Favorite s)
+    withAuthUser decodeArticle \t -> post (Auth t) Nothing (Favorite s)
   unfavoriteArticle s = 
-    withAuth decodeArticle \t -> delete (Auth t) (Favorite s)
+    withAuthUser decodeArticle \t -> delete (Auth t) (Favorite s)
   getFeed p = 
-    withAuth decodeArticles \t -> get (Auth t) (Feed p)
-
--- A helper function that leverages several of our capabilities together to help
--- run requests that require authentication.
-
-withAuth 
-  :: forall m a r
-   . MonadAff m 
-  => LogMessages m 
-  => Navigate m 
-  => Authenticate m 
-  => MonadAsk { currentUser :: Username | r } m
-  => (Username -> Json -> Either String a)
-  -> (AuthToken -> Request Json)
-  -> m (Either String a)
-withAuth decode req = do
-  { currentUser } <- ask
-  eitherToken <- readAuth
-  res <- map join $ for eitherToken (liftAff <<< runRequest (decode currentUser) <<< req)
-  void $ ltraverse (\e -> logError e *> logout) res
-  pure res
-
--- A helper function that leverages several of our capabilities together to help
--- run requests that require authentication.
-
-withAuth_ 
-  :: forall m
-   . MonadAff m 
-  => LogMessages m 
-  => Navigate m 
-  => Authenticate m 
-  => (AuthToken -> Request Json) 
-  -> m Unit 
-withAuth_ req = do
-  eitherToken <- readAuth
-  bitraverse_ 
-    (\e -> logError e *> logout)
-    (liftAff <<< runRequest pure <<< req)
-    eitherToken
+    withAuthUser decodeArticles \t -> get (Auth t) (Feed p)

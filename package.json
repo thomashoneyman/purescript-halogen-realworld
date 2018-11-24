@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "An exemplary real-world application demonstrating PureScript and the Halogen framework",
   "scripts": {
-    "postinstall": "bower install"
+    "postinstall": "bower install",
+    "build": "pulp build --to dist/app.js"
   },
   "repository": {
     "type": "git",
