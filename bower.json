@@ -9,6 +9,8 @@
     "purescript-nonempty": "^5.0.0",
     "purescript-aff": "^5.0.2",
     "purescript-halogen": "^4.0.0",
+    "purescript-halogen-bootstrap4": "^0.1.2",
+    "purescript-remotedata": "^4.0.0",
     "purescript-routing": "^8.0.0",
     "purescript-formatters": "^4.0.0",
     "purescript-routing-duplex": "https://github.com/natefaubion/purescript-routing-duplex.git#master",

@@ -8,14 +8,13 @@ import Capability.LogMessages (class LogMessages, logDebug)
 import Capability.ManageResource (class ManageAuthResource, class ManageResource, getTags)
 import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
+import Component.Page.Home as Home
 import Control.Monad.Reader (class MonadAsk)
-import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Route (Route(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
 
 type State =
   { route :: Route 
@@ -46,9 +45,9 @@ component =
 
   where 
 
-  render :: State -> H.ParentHTML Query (Const Void) Void m
+  render :: State -> H.ParentHTML Query Home.Query Unit m
   render { route } = case route of
-    Home -> HH.div [ HE.onClick $ HE.input_ Click ] [ HH.text "click" ]
+    Home -> HH.slot unit Home.component unit (const Nothing)
     Login -> HH.div_ []
     Register -> HH.div_ []
     Settings -> HH.div_ []
@@ -58,7 +57,7 @@ component =
     Profile _ -> HH.div_ []
     Favorites _ -> HH.div_ []
   
-  eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
+  eval :: Query ~> H.ParentDSL State Query Home.Query Unit Void m
   eval = case _ of
     Click a -> do
       res <- getTags
