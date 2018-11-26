@@ -2,7 +2,7 @@ module Component.HTML.ArticleList where
 
 import Prelude
 
-import Component.Classes as CC
+import Component.HTML.Utils (css)
 import Data.Article (Article)
 import Data.Author (profile, username)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
@@ -12,7 +12,6 @@ import Data.Profile (avatarToString)
 import Data.Username (toString)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import Halogen.Themes.Bootstrap4 as HB
 import Network.RemoteData (RemoteData(..))
 
 articleList :: forall p i. RemoteData String (Array Article) -> HH.HTML p i
@@ -25,9 +24,9 @@ articleList = case _ of
 article :: forall p i. Article -> HH.HTML p i
 article a =
   HH.div
-  [ HP.class_ CC.articlePreview ]
+  [ css "article-preview" ]
   [ HH.div
-    [ HP.class_ CC.articleMeta ]
+    [ css "article-meta" ]
     [ HH.a_
       [ HH.img
         [ HP.src $ a.author # profile # _.avatar # maybe "" avatarToString
@@ -35,31 +34,39 @@ article a =
         ]
       ]
     , HH.div
-      [ HP.class_ CC.info ]
-      [ HH.a [ HP.class_ CC.author ] [ HH.text $ toString $ username a.author ]
-      , HH.span [ HP.class_ CC.date ] [ HH.text $ format dateFormatter $ a.createdAt ]
+      [ css "info" ]
+      [ HH.a
+        [ css "author" ]
+        [ HH.text $ toString $ username a.author ]
+      , HH.span
+        [ css "date" ]
+        [ HH.text $ format dateFormatter $ a.createdAt ]
       ]
     , HH.div
-      [ HP.class_ $ HH.ClassName "pull-xs-right" ]
+      [ css "pull-xs-right" ]
       [ HH.button
-        [ HP.classes [ HB.btn, HB.btnSm, HB.btnOutlinePrimary ] ]
-        [ HH.i [ HP.class_ $ HH.ClassName "ion-heart" ] []
+        [ css "btn btn-sm btn-outline-primary" ]
+        [ HH.i [ css "ion-heart" ] []
         , HH.text $ "\160" <> show a.favoritesCount 
         ]
       ]
     ]
   , HH.a
-    [ HP.class_ CC.previewLink ]
+    [ css "preview-link" ]
     [ HH.h1_ [ HH.text a.title ]
     , HH.p_ [ HH.text a.description ]
     , HH.span_ [ HH.text "Read more..." ]
     , HH.ul
-      [ HP.class_ CC.tagList ]
-      $ a.tagList <#> \tag -> HH.li
-                              [ HP.classes [ CC.tagDefault, CC.tagPill, CC.tagOutline ] ]
-                              [ HH.text tag ]
+      [ css "tag-list" ]
+      $ a.tagList <#> renderTag
     ]
   ]
+
+renderTag :: forall p i. String -> HH.HTML p i
+renderTag tag =
+  HH.li
+  [ css "tag-default tag-pill tag-outline" ]
+  [ HH.text tag ]
 
          
 dateFormatter :: List FormatterCommand

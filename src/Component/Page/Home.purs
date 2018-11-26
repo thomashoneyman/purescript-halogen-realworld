@@ -8,10 +8,10 @@ import Capability.LogMessages (class LogMessages)
 import Capability.ManageResource (class ManageResource, getArticles, getTags)
 import Capability.Navigate (class Navigate, navigate)
 import Capability.Now (class Now)
-import Component.Classes as CC
 import Component.HTML.ArticleList (articleList)
 import Component.HTML.Footer (footer)
 import Component.HTML.Header (header)
+import Component.HTML.Utils (css)
 import Control.Monad.Reader (class MonadAsk)
 import Data.Article (Article)
 import Data.Const (Const)
@@ -23,7 +23,6 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Halogen.Themes.Bootstrap4 as HB
 import Network.RemoteData (RemoteData(..))
 import Web.Event.Event (Event, preventDefault)
 import Web.UIEvent.MouseEvent.EventTypes (click)
@@ -99,17 +98,17 @@ component =
     HH.div_
     [ header Home Navigate
     , HH.div
-      [ HP.class_ CC.homePage ]
+      [ css "home-page" ]
       [ banner
       , HH.div
-        [ HP.classes [ HB.container, CC.page ] ]
+        [ css "container page" ]
         [ HH.div
-          [ HP.class_ HB.row ]
+          [ css "row" ]
           [ mainView state
           , HH.div
-            [ HP.class_ HB.colMd3 ]
+            [ css "col-md-3" ]
             [ HH.div
-              [ HP.class_ CC.sidebar ]
+              [ css "sidebar" ]
               [ HH.p_ [ HH.text "Popular Tags" ]
               , renderTags tags
               ]
@@ -123,11 +122,11 @@ component =
   banner :: forall p i. HH.HTML p i
   banner =
     HH.div
-    [ HP.class_ CC.banner ]
+    [ css "banner" ]
     [ HH.div
-      [ HP.class_ HB.container ]
+      [ css "container" ]
       [ HH.h1
-        [ HP.class_ CC.logoFont ]
+        [ css "logo-font" ]
         [ HH.text "conduit" ]
       , HH.p_ [ HH.text "A place to share your knowledge." ]
       ]
@@ -136,11 +135,11 @@ component =
   mainView :: forall p. State -> H.HTML p Query
   mainView state =
     HH.div
-    [ HP.class_ HB.colMd9 ]
+    [ css "col-md-9" ]
     [ HH.div
-      [ HP.class_ CC.feedToggle ]
+      [ css "feed-toggle" ]
       [ HH.ul
-        [ HP.classes [ HB.nav, HB.navPills, CC.outlineActive ] ]
+        [ css "nav nav-pills outline-active" ]
         [ yourFeedTab state.tab
         , globalFeedTab state.tab
         , tagFilterTab state.tab
@@ -151,39 +150,40 @@ component =
 
   yourFeedTab :: forall p i. Tab -> HH.HTML p i
   yourFeedTab tab =
-    let modifiers = case tab of
-          FeedTab -> [ HB. active ]
-          _ -> []
-    in
-     HH.li
-     [ HP.class_ HB.navItem ]
-     [ HH.a
-       [ HP.classes $ [ HB.navLink ] <> modifiers ]
-       [ HH.text "Your Feed" ]
-     ]
+    HH.li
+    [ css "nav-item" ]
+    [ HH.a
+      [ css $ "nav-link" <> modifiers ]
+      [ HH.text "Your Feed" ]
+    ]
+    where
+      modifiers = case tab of
+        FeedTab -> " active"
+        _ -> ""
   
   globalFeedTab :: forall p. Tab -> H.HTML p Query
   globalFeedTab tab =
-    let modifiers = case tab of
-          GlobalTab -> [ HB. active ]
-          _ -> []
-    in
-     HH.li
-     [ HP.class_ HB.navItem ]
-     [ HH.a
-       [ HP.classes $ [ HB.navLink ] <> modifiers
-       , HE.handler click $ HE.input $ ShowTab GlobalTab
-       ]
-       [ HH.text "Global Feed" ]
-     ]
+    HH.li
+    [ css "nav-item" ]
+    [ HH.a
+      [ css $ "nav-link" <> modifiers
+      , HE.handler click $ HE.input $ ShowTab GlobalTab
+      ]
+      [ HH.text "Global Feed" ]
+    ]
+    where
+      modifiers = case tab of
+        GlobalTab -> " active"
+        _ -> ""
+
 
   tagFilterTab :: forall p i. Tab -> HH.HTML p i
   tagFilterTab = case _ of
     TagTab tag ->
       HH.li
-      [ HP.class_ HB.navItem ]
+      [ css "nav-item" ]
       [ HH.a
-        [ HP.classes $ [ HB.navLink, HB.active ] ]
+        [ css "navLink active" ]
         [ HH.i [ HP.class_ $ H.ClassName "ion-pound" ] []
         , HH.text $ "\160" <> tag
         ]
@@ -199,10 +199,13 @@ component =
     Failure err ->  HH.div_ [ HH.text $ "Failed loading tags: " <> err ]
     Success tags ->
       HH.div
-      [ HP.class_ CC.tagList ]
-      $ tags <#> (\tag ->
-                   HH.a
-                   [ HP.classes [ CC.tagDefault, CC.tagPill ]
-                   , HE.handler click $ HE.input $ ShowTab (TagTab tag)
-                   ]
-                   [ HH.text tag ])
+      [ css "tag-list" ]
+      $ tags <#> renderTag
+
+  renderTag :: forall p. String -> H.HTML p Query
+  renderTag tag =
+    HH.a
+    [ css "tag-default tag-pill"
+    , HE.handler click $ HE.input $ ShowTab (TagTab tag)
+    ]
+    [ HH.text tag ]
