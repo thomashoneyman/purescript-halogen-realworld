@@ -34,9 +34,11 @@ type State =
   }
 
 data Tab
-  = FeedTab
-  | GlobalTab
-  | TagTab String
+  = Feed
+  | Global
+  | Tag String
+
+derive instance eqTab :: Eq Tab
 
 data Query a
   = Init a
@@ -56,7 +58,7 @@ component
   => H.Component HH.HTML Query Unit Void m
 component =
   H.lifecycleParentComponent
-    { initialState: const { tags: NotAsked, articles: NotAsked, tab: GlobalTab } 
+    { initialState: const { tags: NotAsked, articles: NotAsked, tab: Global } 
     , render
     , eval
     , receiver: const Nothing
@@ -69,16 +71,17 @@ component =
   eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
   eval = case _ of
     Init a -> do
-      handle <- H.fork $ eval $ LoadTags a
-      eval $ LoadArticles noArticleParams a
+      void $ H.fork $ eval $ LoadTags a
+      void $ H.fork $ eval $ LoadArticles noArticleParams a
+      pure a
     LoadTags a -> do
       H.modify_ _ { tags = Loading}
-      tags <- H.lift getTags
+      tags <- getTags
       H.modify_ _ { tags = either Failure Success tags }
       pure a
     LoadArticles params a -> do
       H.modify_ _ { articles = Loading }
-      articles <- H.lift $ getArticles params
+      articles <- getArticles params
       H.modify_ _ { articles = either Failure Success articles }
       pure a      
     Navigate route a -> do
@@ -86,12 +89,14 @@ component =
       pure a
     ShowTab tab ev a -> do
       H.liftEffect $ preventDefault ev
-      H.modify_ _{ tab = tab }
-      case tab of 
-        FeedTab -> pure a -- TODO
-        GlobalTab -> eval $ LoadArticles noArticleParams a
-        TagTab tag -> eval $ LoadArticles noArticleParams{ tag = Just tag } a
-  
+      st <- H.get
+      when (tab /= st.tab) do
+          H.modify_ _{ tab = tab }
+          void case tab of 
+            Feed -> pure a -- TODO
+            Global -> eval $ LoadArticles noArticleParams a
+            Tag tag -> eval $ LoadArticles noArticleParams{ tag = Just tag } a
+      pure a
 
   render :: State -> H.ParentHTML Query (Const Void) Void m
   render state@{ tags, articles} =
@@ -158,7 +163,7 @@ component =
     ]
     where
       modifiers = case tab of
-        FeedTab -> " active"
+        Feed -> " active"
         _ -> ""
   
   globalFeedTab :: forall p. Tab -> H.HTML p Query
@@ -167,19 +172,19 @@ component =
     [ css "nav-item" ]
     [ HH.a
       [ css $ "nav-link" <> modifiers
-      , HE.handler click $ HE.input $ ShowTab GlobalTab
+      , HE.handler click $ HE.input $ ShowTab Global
       ]
       [ HH.text "Global Feed" ]
     ]
     where
       modifiers = case tab of
-        GlobalTab -> " active"
+        Global -> " active"
         _ -> ""
 
 
   tagFilterTab :: forall p i. Tab -> HH.HTML p i
   tagFilterTab = case _ of
-    TagTab tag ->
+    Tag tag ->
       HH.li
       [ css "nav-item" ]
       [ HH.a
@@ -206,6 +211,6 @@ component =
   renderTag tag =
     HH.a
     [ css "tag-default tag-pill"
-    , HE.handler click $ HE.input $ ShowTab (TagTab tag)
+    , HE.handler click $ HE.input $ ShowTab (Tag tag)
     ]
     [ HH.text tag ]
