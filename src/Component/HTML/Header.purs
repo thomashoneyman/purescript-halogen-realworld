@@ -2,13 +2,12 @@ module Component.HTML.Header where
 
 import Prelude
 
+import Component.HTML.Utils (css)
 import Data.Monoid (guard)
 import Data.Route (Route(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-import Halogen.HTML.Properties as HP
-import Component.HTML.Utils (css)
 
 -- Our header will be a pure render function, but we'll require a route as an 
 -- argument so we can judge whether a link should display active or not. We'll 
@@ -20,9 +19,9 @@ header route navigate =
     [ css "navbar navbar-light" ]
     [ HH.div
       [ css "container" ]
-      [ HH.a
+      [ HH.button
         [ css "navbar-brand" 
-        , HP.href "index.html"
+        , HE.onClick $ HE.input_ $ navigate Home
         ]
         [ HH.text "conduit" ]
     , HH.ul
@@ -40,9 +39,8 @@ header route navigate =
   navItem r = 
     HH.li
       [ css "nav-item" ]
-      [ HH.a
+      [ HH.button
         [ css $ "nav-link" <> guard (route == r) " active"
-        , HP.href ""
         , HE.onClick $ HE.input_ $ navigate r
         ]
         [ displayRoute r ]

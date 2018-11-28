@@ -1,6 +1,7 @@
 module Data.Profile
   ( Avatar -- No constructors exported
   , mkAvatar
+  , avatarToString
   , Profile(..)
   ) where
 
@@ -46,3 +47,6 @@ instance showAvatar :: Show Avatar where
 mkAvatar :: String -> Maybe Avatar
 mkAvatar "" = Nothing
 mkAvatar str = Just (Avatar str)
+
+avatarToString :: Avatar -> String
+avatarToString (Avatar str) = str
