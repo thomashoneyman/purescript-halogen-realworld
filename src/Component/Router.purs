@@ -4,8 +4,8 @@ import Prelude
 
 import AppM (Env)
 import Capability.Authenticate (class Authenticate)
-import Capability.LogMessages (class LogMessages, logDebug)
-import Capability.ManageResource (class ManageAuthResource, class ManageResource, getTags)
+import Capability.LogMessages (class LogMessages)
+import Capability.ManageResource (class ManageAuthResource, class ManageResource)
 import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
 import Component.Page.Home as Home
@@ -22,7 +22,6 @@ type State =
 
 data Query a
   = Navigate Route a
-  | Click a
 
 component
   :: forall m
@@ -59,11 +58,6 @@ component =
   
   eval :: Query ~> H.ParentDSL State Query Home.Query Unit Void m
   eval = case _ of
-    Click a -> do
-      res <- getTags
-      logDebug $ show res
-      pure a
-
     Navigate dest a -> do
       { route } <- H.get 
       when (route /= dest) do

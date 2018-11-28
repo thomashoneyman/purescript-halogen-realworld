@@ -24,7 +24,6 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
-import Web.Event.Event (Event, preventDefault)
 import Web.UIEvent.MouseEvent.EventTypes (click)
 
 type State =
@@ -44,7 +43,7 @@ data Query a
   = Init a
   | LoadTags a
   | Navigate Route a
-  | ShowTab Tab Event a
+  | ShowTab Tab a
   | LoadArticles ArticleParams a
 
 component
@@ -87,8 +86,7 @@ component =
     Navigate route a -> do
       navigate route
       pure a
-    ShowTab tab ev a -> do
-      H.liftEffect $ preventDefault ev
+    ShowTab tab a -> do
       st <- H.get
       when (tab /= st.tab) do
           H.modify_ _{ tab = tab }
@@ -172,7 +170,7 @@ component =
     [ css "nav-item" ]
     [ HH.a
       [ css $ "nav-link" <> modifiers
-      , HE.handler click $ HE.input $ ShowTab Global
+      , HE.handler click $ HE.input_ $ ShowTab Global
       ]
       [ HH.text "Global Feed" ]
     ]
@@ -211,6 +209,6 @@ component =
   renderTag tag =
     HH.a
     [ css "tag-default tag-pill"
-    , HE.handler click $ HE.input $ ShowTab (Tag tag)
+    , HE.handler click $ HE.input_ $ ShowTab (Tag tag)
     ]
     [ HH.text tag ]
