@@ -29,8 +29,8 @@ article a =
     [ css "article-meta" ]
     [ HH.a_
       [ HH.img
-        [ HP.src $ a.author # profile # _.avatar # maybe "" avatarToString
-        , HP.alt $ toString $ username $ a.author
+        [ HP.src $ maybe "" avatarToString (profile a.author).avatar
+        , HP.alt $ toString $ username a.author
         ]
       ]
     , HH.div
@@ -40,25 +40,30 @@ article a =
         [ HH.text $ toString $ username a.author ]
       , HH.span
         [ css "date" ]
-        [ HH.text $ format dateFormatter $ a.createdAt ]
+        [ HH.text $ format dateFormatter a.createdAt ]
       ]
     , HH.div
       [ css "pull-xs-right" ]
       [ HH.button
         [ css "btn btn-sm btn-outline-primary" ]
-        [ HH.i [ css "ion-heart" ] []
+        [ HH.i 
+          [ css "ion-heart" ] 
+          []
         , HH.text $ "\160" <> show a.favoritesCount 
         ]
       ]
     ]
   , HH.a
     [ css "preview-link" ]
-    [ HH.h1_ [ HH.text a.title ]
-    , HH.p_ [ HH.text a.description ]
-    , HH.span_ [ HH.text "Read more..." ]
+    [ HH.h1_ 
+        [ HH.text a.title ]
+    , HH.p_ 
+        [ HH.text a.description ]
+    , HH.span_ 
+        [ HH.text "Read more..." ]
     , HH.ul
-      [ css "tag-list" ]
-      $ a.tagList <#> renderTag
+        [ css "tag-list" ]
+        (a.tagList <#> renderTag)
     ]
   ]
 
@@ -68,7 +73,6 @@ renderTag tag =
   [ css "tag-default tag-pill tag-outline" ]
   [ HH.text tag ]
 
-         
 dateFormatter :: List FormatterCommand
 dateFormatter = fromFoldable
   [ DayOfWeekNameShort
