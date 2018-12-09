@@ -10,4 +10,3 @@ node_modules
 .package-lock
 .psc-ide-port
 output
-dist/*.js
