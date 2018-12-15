@@ -1,13 +1,18 @@
 {
   "name": "purescript-halogen-realworld",
-  "ignore": ["**/.*", "node_modules", "bower_components", "output"],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
   "dependencies": {
     "purescript-prelude": "^4.1.0",
     "purescript-console": "^4.2.0",
     "purescript-effect": "^2.0.0",
     "purescript-variant": "^5.2.0",
     "purescript-nonempty": "^5.0.0",
-    "purescript-aff": "^5.0.2",
+    "purescript-aff": "^5.1.0",
     "purescript-halogen": "^4.0.0",
     "purescript-remotedata": "^4.0.0",
     "purescript-routing": "^8.0.0",
@@ -24,6 +29,7 @@
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
     "purescript-quickcheck": "^5.0.0",
-    "purescript-test-unit": "^14.0.0"
+    "purescript-test-unit": "^14.0.0",
+    "purescript-debug": "^4.0.0"
   }
 }

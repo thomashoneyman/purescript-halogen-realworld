@@ -11,6 +11,7 @@ import Data.Either (Either)
 import Data.Formatter.DateTime (unformatDateTime)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype)
 import Data.Traversable (traverse)
 import Data.Username (Username)
@@ -48,12 +49,12 @@ type Comment =
 -- or datetime; we'll need additional information for decoding than the data type
 -- alone, though generic decoding for records is supported.
 
-decodeComments :: Username -> Json -> Either String (Array Comment)
+decodeComments :: Maybe Username -> Json -> Either String (Array Comment)
 decodeComments u json = do
   arr <- decodeJson json 
   traverse (decodeComment u) arr
 
-decodeComment :: Username -> Json -> Either String Comment
+decodeComment :: Maybe Username -> Json -> Either String Comment
 decodeComment u json = do
   obj <- decodeJson json
   author <- decodeAuthor u =<< obj .: "author"

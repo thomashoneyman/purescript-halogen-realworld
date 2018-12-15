@@ -11,6 +11,7 @@ import Data.Formatter.DateTime (unformatDateTime)
 import Data.Maybe (Maybe)
 import Data.Traversable (traverse)
 import Data.Username (Username)
+import Debug.Trace (traceM)
 import Slug (Slug)
 
 -- A partial article when we are creating it in the editor
@@ -48,12 +49,15 @@ type Article =
 -- or datetime; we'll need additional information for decoding than the data type
 -- alone, though generic decoding for records is supported.
 
-decodeArticles :: Username -> Json -> Either String (Array Article)
+decodeArticles :: Maybe Username -> Json -> Either String (Array Article)
 decodeArticles u json = do
-  arr <- decodeJson json 
+  obj <- decodeJson json 
+  traceM obj
+  arr <- obj .: "articles"
+  traceM arr
   traverse (decodeArticle u) arr
 
-decodeArticle :: Username -> Json -> Either String Article
+decodeArticle :: Maybe Username -> Json -> Either String Article
 decodeArticle u json = do
   obj <- decodeJson json
   slug <- obj .: "slug"
@@ -63,6 +67,6 @@ decodeArticle u json = do
   tagList <- obj .: "tagList"
   favorited <- obj .: "favorited"
   favoritesCount <- obj .: "favoritesCount"
-  createdAt <- unformatDateTime "X" =<< obj .: "createdAt"
+  createdAt <- unformatDateTime "YY" =<< obj .: "createdAt"
   author <- decodeAuthor u =<< obj .: "author"
   pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }

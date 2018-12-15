@@ -8,7 +8,9 @@ import Prelude
 
 import Capability.Now (class Now)
 import Control.Monad.Trans.Class (lift)
+import Data.Either (Either(..))
 import Data.Log (Log, LogType(..), mkLog)
+import Data.Maybe (Maybe(..))
 import Halogen (HalogenM)
 
 -- | Log a message to given a particular `LogType` 
@@ -26,6 +28,20 @@ logWarn = log Warn
 -- | Log a message as an error
 logError :: forall m. LogMessages m => String -> m Unit
 logError = log Error 
+
+-- | Hush a monadic action by logging the error
+logHush :: forall m a. LogMessages m => LogType -> m (Either String a) -> m (Maybe a)
+logHush lt act =
+  act >>= case _ of
+    Left e -> case lt of
+      Debug -> logDebug e *> pure Nothing
+      Warn -> logWarn e *> pure Nothing
+      Error -> logError e *> pure Nothing
+    Right v -> pure $ Just v
+   
+-- | Hush a monadic action by logging the error in debug mode
+debugHush :: forall m a. LogMessages m => m (Either String a) -> m (Maybe a)
+debugHush = logHush Debug
 
 -- We will require the `log` type class member to use the `LogMessage` newtype, 
 -- which is not exported from this module and can only be constructed using our 
