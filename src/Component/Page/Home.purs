@@ -3,20 +3,18 @@ module Component.Page.Home where
 import Prelude
 
 import Api.Endpoint (ArticleParams, noArticleParams)
-import AppM (Env)
-import Capability.LogMessages (class LogMessages)
+import Api.Request (AuthUser)
 import Capability.ManageResource (class ManageResource, getArticles, getTags)
 import Capability.Navigate (class Navigate, navigate)
-import Capability.Now (class Now)
 import Component.HTML.ArticleList (articleList)
 import Component.HTML.Footer (footer)
 import Component.HTML.Header (header)
-import Component.HTML.Utils (css)
-import Control.Monad.Reader (class MonadAsk)
+import Component.HTML.Utils (css, guardHtml)
+import Control.Parallel (parTraverse_)
 import Data.Article (Article)
 import Data.Const (Const)
 import Data.Either (either)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Route (Route(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
@@ -30,7 +28,11 @@ type State =
   { tags :: RemoteData String (Array String)
   , articles :: RemoteData String (Array Article)
   , tab :: Tab
+  , authUser :: Maybe AuthUser
   }
+
+type Input =
+  { authUser :: Maybe AuthUser }
 
 data Tab
   = Feed
@@ -40,7 +42,7 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 data Query a
-  = Init a
+  = Initialize a
   | LoadTags a
   | Navigate Route a
   | ShowTab Tab a
@@ -49,57 +51,68 @@ data Query a
 component
   :: forall m
    . MonadAff m
-  => MonadAsk Env m
-  => Now m
-  => LogMessages m
   => ManageResource m
   => Navigate m
-  => H.Component HH.HTML Query Unit Void m
+  => H.Component HH.HTML Query Input Void m
 component =
   H.lifecycleParentComponent
-    { initialState: const { tags: NotAsked, articles: NotAsked, tab: Global } 
+    { initialState
     , render
     , eval
     , receiver: const Nothing
-    , initializer: Just $ Init unit
+    , initializer: Just $ H.action Initialize
     , finalizer: Nothing
     }
 
   where 
 
+  initialState :: Input -> State
+  initialState { authUser } =
+    { tags: NotAsked
+    , articles: NotAsked
+    , tab: Global 
+    , authUser
+    }
+
   eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
   eval = case _ of
-    Init a -> do
-      void $ H.fork $ eval $ LoadTags a
-      void $ H.fork $ eval $ LoadArticles noArticleParams a
+    Initialize a -> do
+      parTraverse_ H.fork
+        [ eval $ LoadTags a
+        , eval $ LoadArticles noArticleParams a
+        ]
       pure a
+
     LoadTags a -> do
       H.modify_ _ { tags = Loading}
       tags <- getTags
       H.modify_ _ { tags = either Failure Success tags }
       pure a
+
     LoadArticles params a -> do
       H.modify_ _ { articles = Loading }
       articles <- getArticles params
       H.modify_ _ { articles = either Failure Success articles }
       pure a      
+
     Navigate route a -> do
       navigate route
       pure a
+
     ShowTab tab a -> do
       st <- H.get
       when (tab /= st.tab) do
-          H.modify_ _{ tab = tab }
-          void case tab of 
-            Feed -> pure a -- TODO
-            Global -> eval $ LoadArticles noArticleParams a
-            Tag tag -> eval $ LoadArticles noArticleParams{ tag = Just tag } a
+        H.modify_ _ { tab = tab }
+        void case tab of 
+          Feed -> pure a -- TODO
+          Global -> eval $ LoadArticles noArticleParams a
+          Tag tag -> eval $ LoadArticles (noArticleParams { tag = Just tag }) a
       pure a
 
   render :: State -> H.ParentHTML Query (Const Void) Void m
-  render state@{ tags, articles} =
+  render state@{ tags, articles, authUser } =
     HH.div_
-    [ header Home Navigate
+    [ header authUser Home Navigate
     , HH.div
       [ css "home-page" ]
       [ banner
@@ -143,9 +156,9 @@ component =
       [ css "feed-toggle" ]
       [ HH.ul
         [ css "nav nav-pills outline-active" ]
-        [ yourFeedTab state.tab
-        , globalFeedTab state.tab
-        , tagFilterTab state.tab
+        [ yourFeedTab state.tab # guardHtml (isJust state.authUser)
+        , globalFeedTab state.tab 
+        , tagFilterTab state.tab # guardHtml (isJust state.authUser)
         ]
       ]
     , articleList state.articles

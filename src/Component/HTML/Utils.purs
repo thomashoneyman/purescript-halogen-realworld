@@ -2,8 +2,13 @@ module Component.HTML.Utils where
 
 import Prelude
 
-import Halogen as HP
-import Halogen.HTML.Properties as HH
+import Halogen.HTML as HH
+import Halogen.HTML.Properties as HP
 
-css :: forall r p. String -> HH.IProp ( "class" :: String | r ) p
-css = HH.class_ <<< HP.ClassName
+css :: forall r i. String -> HH.IProp ( "class" :: String | r ) i
+css = HP.class_ <<< HH.ClassName
+
+-- There is no monoid instance for Halogen's HTML DSL, so this allows us to provide
+-- an empty node when a condition is false 
+guardHtml :: forall p i. Boolean -> HH.HTML p i -> HH.HTML p i
+guardHtml = if _ then _ else HH.text ""

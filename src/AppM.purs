@@ -139,7 +139,7 @@ instance manageResourceAppM :: ManageResource AppM where
     withUser decodeAuthor $ get NoAuth $ Profiles u
   getComments u = 
     withUser decodeComments $ get NoAuth $ Comments u
-  getArticle slug = 
+  getArticle slug =
     withUser decodeArticle $ get NoAuth $ Article slug
   getArticles params = 
     withUser decodeArticles $ get NoAuth $ Articles params

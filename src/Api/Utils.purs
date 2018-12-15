@@ -16,6 +16,7 @@ import Data.Argonaut.Core (Json)
 import Data.Bifoldable (bitraverse_)
 import Data.Bitraversable (ltraverse)
 import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 import Data.Route as Route
 import Data.Username (Username)
 import Effect.Aff.Class (class MonadAff)
@@ -30,15 +31,14 @@ withUser
   => Navigate m 
   => MonadAsk { baseUrl :: BaseURL | e } m
   => Authenticate m
-  => (Username -> Json -> Either String a)
+  => (Maybe Username -> Json -> Either String a)
   -> (BaseURL -> Request Json)
   -> m (Either String a)
-withUser decode req =
+withUser decode req = do
+  { baseUrl } <- ask
   readAuth >>= case _ of
-    Left err -> logError err *> pure (Left err)
-    Right au -> do
-      { baseUrl } <- ask
-      runRequest (decode (username au)) $ req baseUrl
+    Left _ -> runRequest (decode Nothing) $ req baseUrl
+    Right au -> runRequest (decode $ Just $ username au) $ req baseUrl
 
 withAuthUser 
   :: forall m a e
@@ -47,7 +47,7 @@ withAuthUser
   => Navigate m 
   => MonadAsk { baseUrl :: BaseURL | e } m
   => Authenticate m 
-  => (Username -> Json -> Either String a)
+  => (Maybe Username -> Json -> Either String a)
   -> (AuthUser -> BaseURL -> Request Json)
   -> m (Either String a)
 withAuthUser decode req =
@@ -55,7 +55,7 @@ withAuthUser decode req =
     Left err -> logError err *> deleteAuth *> navigate Route.Login *> pure (Left err) 
     Right au -> do
       { baseUrl } <- ask
-      res <- runRequest (decode (username au)) (req au baseUrl)
+      res <- runRequest (decode $ Just $ username au) (req au baseUrl)
       void $ ltraverse (\e -> logError e *> logout) res
       pure res
 

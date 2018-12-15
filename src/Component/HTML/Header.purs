@@ -2,7 +2,9 @@ module Component.HTML.Header where
 
 import Prelude
 
-import Component.HTML.Utils (css)
+import Api.Request (AuthUser)
+import Component.HTML.Utils (css, guardHtml)
+import Data.Maybe (Maybe, isNothing, isJust)
 import Data.Monoid (guard)
 import Data.Route (Route(..))
 import Halogen as H
@@ -13,8 +15,8 @@ import Halogen.HTML.Events as HE
 -- argument so we can judge whether a link should display active or not. We'll 
 -- also take a query so that we can trigger navigation actions from the HTML. 
 
-header :: forall i p. Route -> (Route -> H.Action p) -> HH.HTML i (p Unit)
-header route navigate =
+header :: forall i p. Maybe AuthUser -> Route -> (Route -> H.Action p) -> HH.HTML i (p Unit)
+header authUser route navigate =
   HH.nav
     [ css "navbar navbar-light" ]
     [ HH.div
@@ -24,13 +26,14 @@ header route navigate =
         , HE.onClick $ HE.input_ $ navigate Home
         ]
         [ HH.text "conduit" ]
-    , HH.ul
-      [ css "nav navbar-nav pull-xs-right" ]
-      [ navItem Home 
-      , navItem Editor
-      , navItem Settings
-      , navItem Register
-      ]
+      , HH.ul
+        [ css "nav navbar-nav pull-xs-right" ]
+        [ navItem Home 
+        , navItem Editor # guardHtml (isJust authUser)
+        , navItem Settings # guardHtml (isJust authUser)
+        , navItem Login # guardHtml (isNothing authUser)
+        , navItem Register # guardHtml (isNothing authUser)
+        ]
       ]
     ]
 

@@ -2,6 +2,7 @@ module Component.Page.Settings where
 
 import Prelude
 
+import Api.Request (AuthUser)
 import Component.HTML.Utils (css)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
@@ -13,25 +14,34 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
-data Query a =
-  HandleForm (F.Message' ContactForm) a
+data Query a
+  = HandleForm (F.Message' SettingsForm) a
 
-type ChildQuery m = F.Query' ContactForm m
+type State =
+  { authUser :: Maybe AuthUser }
+
+type Input =
+  { authUser :: Maybe AuthUser }
+
+type ChildQuery m = F.Query' SettingsForm m
 type ChildSlot = Unit
 
-component :: forall m. MonadAff m => H.Component HH.HTML Query Unit Void m
-component = H.parentComponent
-  { initialState: const unit
-  , render
-  , eval
-  , receiver: const Nothing
-  }
+component 
+  :: forall m
+   . MonadAff m 
+  => H.Component HH.HTML Query Input Void m
+component = 
+  H.parentComponent
+    { initialState: identity
+    , render
+    , eval
+    , receiver: const Nothing
+    }
   where
-
-  render :: Unit -> H.ParentHTML Query (ChildQuery m) ChildSlot m
-  render _ =
+  render :: State -> H.ParentHTML Query (ChildQuery m) ChildSlot m
+  render { authUser } =
     container
-        [ HH.h1
+      [ HH.h1
         [ css "text-xs-center"]
         [ HH.text "Your Settings" ]
         , HH.slot unit Formless.component 
@@ -40,7 +50,7 @@ component = H.parentComponent
             , render: renderFormless 
             } 
             (HE.input HandleForm)
-        ]
+      ]
     where
     container html =
       HH.div
@@ -56,36 +66,42 @@ component = H.parentComponent
             ]
         ]
 
-  eval :: Query ~> H.ParentDSL Unit Query (ChildQuery m) Unit Void m
-  eval (HandleForm (F.Submitted formOutputs) a) = pure a
-  eval (HandleForm _ a) = pure a
+  eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
+  eval = case _ of
+    HandleForm msg a -> case msg of
+      F.Submitted formOutputs -> pure a
+      _ -> pure a
 
 -----
 -- Form
 
-newtype ContactForm r f = ContactForm (r
+newtype SettingsForm r f = SettingsForm (r
   ( avatar :: f Void String String
   , name :: f Void String String
   , bio :: f Void String String
   , email :: f Void String String
   , password :: f Void String String
   ))
-derive instance newtypeContactForm :: Newtype (ContactForm r f) _
+derive instance newtypeSettingsForm :: Newtype (SettingsForm r f) _
 
-formProxy :: F.FormProxy ContactForm
+formProxy :: F.FormProxy SettingsForm
 formProxy = F.FormProxy
 
-prx :: F.SProxies ContactForm
+prx :: F.SProxies SettingsForm
 prx = F.mkSProxies formProxy
 
-initialInputs :: ContactForm Record F.InputField
+initialInputs :: SettingsForm Record F.InputField
 initialInputs = F.mkInputFields formProxy
 
-renderFormless :: forall m. MonadAff m => F.State ContactForm m -> F.HTML' ContactForm m
+renderFormless :: forall m. MonadAff m => F.State SettingsForm m -> F.HTML' SettingsForm m
 renderFormless fstate =
   HH.form_
     [ HH.fieldset_
       [ profilePicture
+      , name
+      , bio
+      , email
+      , password
       ]
     ]
   where
