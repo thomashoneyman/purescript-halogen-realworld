@@ -24,7 +24,8 @@
     "purescript-affjax": "^7.0.0",
     "purescript-argonaut-core": "^4.0.1",
     "purescript-argonaut-codecs": "^5.1.0",
-    "purescript-slug": "^0.2.0"
+    "purescript-slug": "^0.2.0",
+    "purescript-precise-datetime": "^5.1.1"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",

@@ -22,7 +22,7 @@ import Data.Username (Username)
 type Profile =
   { username :: Username
   , bio :: Maybe String
-  , avatar :: Maybe Avatar
+  , image :: Maybe Avatar
   }
 
 -- We'll represent avatars using the smart constructor pattern. Avatars are not 

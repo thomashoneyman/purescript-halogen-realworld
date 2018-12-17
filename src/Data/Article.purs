@@ -2,17 +2,19 @@ module Data.Article where
 
 import Prelude
 
+import Data.RFC3339String
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.:))
+import Data.Array (filter)
 import Data.Author (Author, decodeAuthor)
 import Data.DateTime (DateTime)
-import Data.Either (Either)
+import Data.Either (Either, isRight)
 import Data.Formatter.DateTime (unformatDateTime)
 import Data.Maybe (Maybe)
-import Data.Traversable (traverse)
+import Data.Traversable (sequence)
 import Data.Username (Username)
-import Debug.Trace (traceM)
 import Slug (Slug)
+import Unsafe.Coerce (unsafeCoerce)
 
 -- A partial article when we are creating it in the editor
 
@@ -52,10 +54,9 @@ type Article =
 decodeArticles :: Maybe Username -> Json -> Either String (Array Article)
 decodeArticles u json = do
   obj <- decodeJson json 
-  traceM obj
   arr <- obj .: "articles"
-  traceM arr
-  traverse (decodeArticle u) arr
+  -- TODO: for now, we'll drop out malformed articles
+  sequence $ filter isRight $ map (decodeArticle u) arr
 
 decodeArticle :: Maybe Username -> Json -> Either String Article
 decodeArticle u json = do
@@ -67,6 +68,6 @@ decodeArticle u json = do
   tagList <- obj .: "tagList"
   favorited <- obj .: "favorited"
   favoritesCount <- obj .: "favoritesCount"
-  createdAt <- unformatDateTime "YY" =<< obj .: "createdAt"
+  createdAt <- note "Unable to parse RFC339 string" $ fromRFC3339String RFC3339String =<< obj .: "createdAt" -- TODO: Fix
   author <- decodeAuthor u =<< obj .: "author"
   pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }

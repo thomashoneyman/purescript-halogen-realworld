@@ -29,7 +29,7 @@ article a =
     [ css "article-meta" ]
     [ HH.a_
       [ HH.img
-        [ HP.src $ maybe "" avatarToString (profile a.author).avatar
+        [ HP.src $ maybe "" avatarToString (profile a.author).image
         , HP.alt $ toString $ username a.author
         ]
       ]
