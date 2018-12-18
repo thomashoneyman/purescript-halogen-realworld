@@ -1,21 +1,21 @@
-module Component.Page.Home where
+module Conduit.Component.Page.Home where
 
 import Prelude
 
-import Api.Endpoint (ArticleParams, noArticleParams)
-import Api.Request (AuthUser)
-import Capability.ManageResource (class ManageResource, getArticles, getTags)
-import Capability.Navigate (class Navigate, navigate)
-import Component.HTML.ArticleList (articleList)
-import Component.HTML.Footer (footer)
-import Component.HTML.Header (header)
-import Component.HTML.Utils (css, guardHtml)
+import Conduit.Api.Endpoint (ArticleParams, noArticleParams)
+import Conduit.Api.Request (AuthUser)
+import Conduit.Capability.ManageResource (class ManageResource, getArticles, getTags)
+import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Component.HTML.ArticleList (articleList)
+import Conduit.Component.HTML.Footer (footer)
+import Conduit.Component.HTML.Header (header)
+import Conduit.Component.HTML.Utils (css, guardHtml)
 import Control.Parallel (parTraverse_)
-import Data.Article (Article)
+import Conduit.Data.Article (Article)
 import Data.Const (Const)
 import Data.Either (either)
 import Data.Maybe (Maybe(..), isJust)
-import Data.Route (Route(..))
+import Conduit.Data.Route (Route(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH

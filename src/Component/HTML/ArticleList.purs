@@ -1,15 +1,12 @@
-module Component.HTML.ArticleList where
+module Conduit.Component.HTML.ArticleList where
 
 import Prelude
 
-import Component.HTML.Utils (css)
-import Data.Article (Article)
-import Data.Author (profile, username)
-import Data.Formatter.DateTime (FormatterCommand(..), format)
-import Data.List (List, fromFoldable)
-import Data.Maybe (maybe)
-import Data.Profile (avatarToString)
-import Data.Username (toString)
+import Conduit.Component.HTML.Utils (css)
+import Conduit.Data.Article (Article)
+import Conduit.Data.Author (profile, username)
+import Conduit.Data.Profile (avatarToStringWithDefault)
+import Conduit.Data.Username (toString)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
@@ -29,7 +26,7 @@ article a =
     [ css "article-meta" ]
     [ HH.a_
       [ HH.img
-        [ HP.src $ maybe "" avatarToString (profile a.author).image
+        [ HP.src $ avatarToStringWithDefault (profile a.author).image
         , HP.alt $ toString $ username a.author
         ]
       ]
@@ -40,7 +37,7 @@ article a =
         [ HH.text $ toString $ username a.author ]
       , HH.span
         [ css "date" ]
-        [ HH.text $ format dateFormatter a.createdAt ]
+        [ HH.text "" ] -- TODO: $ format dateFormatter a.createdAt ]
       ]
     , HH.div
       [ css "pull-xs-right" ]
@@ -72,14 +69,3 @@ renderTag tag =
   HH.li
   [ css "tag-default tag-pill tag-outline" ]
   [ HH.text tag ]
-
-dateFormatter :: List FormatterCommand
-dateFormatter = fromFoldable
-  [ DayOfWeekNameShort
-  , Placeholder " "
-  , MonthShort
-  , Placeholder " "
-  , DayOfMonth
-  , Placeholder " "
-  , YearFull
-  ]

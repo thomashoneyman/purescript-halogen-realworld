@@ -1,4 +1,4 @@
-module Data.Email where
+module Conduit.Data.Email where
 
 import Prelude
 

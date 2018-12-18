@@ -1,4 +1,4 @@
-module Data.Author where
+module Conduit.Data.Author where
 
 import Prelude
 
@@ -8,8 +8,8 @@ import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Data.Profile (Profile)
-import Data.Username (Username)
+import Conduit.Data.Profile (Profile)
+import Conduit.Data.Username (Username)
 
 -- The Author type is used to represent a user profile with additional context 
 -- around whether you, the authenticated user, follow them.

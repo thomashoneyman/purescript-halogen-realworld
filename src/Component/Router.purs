@@ -1,22 +1,22 @@
-module Component.Router where
+module Conduit.Component.Router where
 
 import Prelude
 
-import Api.Request (AuthUser)
-import AppM (Env)
-import Capability.Authenticate (class Authenticate, readAuth)
-import Capability.LogMessages (class LogMessages, debugHush)
-import Capability.ManageResource (class ManageAuthResource, class ManageResource)
-import Capability.Navigate (class Navigate)
-import Capability.Now (class Now)
-import Component.Page.Home as Home
-import Component.Page.Settings as Settings
+import Conduit.Api.Request (AuthUser)
+import Conduit.AppM (Env)
+import Conduit.Capability.Authenticate (class Authenticate, readAuth)
+import Conduit.Capability.LogMessages (class LogMessages, debugHush)
+import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource)
+import Conduit.Capability.Navigate (class Navigate)
+import Conduit.Capability.Now (class Now)
+import Conduit.Component.Page.Home as Home
+import Conduit.Component.Page.Settings as Settings
 import Control.Monad.Reader (class MonadAsk)
 import Data.Either (hush)
 import Data.Either.Nested (Either2)
 import Data.Functor.Coproduct.Nested (Coproduct2)
 import Data.Maybe (Maybe(..))
-import Data.Route (Route(..))
+import Conduit.Data.Route (Route(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.Component.ChildPath as CP

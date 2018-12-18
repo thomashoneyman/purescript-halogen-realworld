@@ -2,12 +2,12 @@
 -- | application. Currently implemented with hashes, but could easily be swapped 
 -- | to another method (like pushState).
 
-module Capability.Navigate where
+module Conduit.Capability.Navigate where
 
 import Prelude
 
 import Control.Monad.Trans.Class (lift)
-import Data.Route (Route)
+import Conduit.Data.Route (Route)
 import Halogen (HalogenM)
 
 -- The ability to navigate around the application. Includes an instance for 

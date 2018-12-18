@@ -1,4 +1,4 @@
-module Component.HTML.Utils where
+module Conduit.Component.HTML.Utils where
 
 import Prelude
 

@@ -1,17 +1,17 @@
-module Api.Endpoint where
+module Conduit.Api.Endpoint where
 
 -- We'll use a smart constructor once again to provide a reasonable guarantee that
 -- the string being passed is a valid endpoint.
 
 import Prelude hiding ((/))
 
-import Data.Comment (CommentId)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Maybe (Maybe(..))
-import Data.Route (slug, uname)
-import Data.Username (Username)
+import Conduit.Data.Comment (CommentId)
+import Conduit.Data.Route (slug, uname)
+import Conduit.Data.Username (Username)
 import Routing.Duplex (RouteDuplex', int, optional, prefix, root, segment, string)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))

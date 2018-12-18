@@ -2,7 +2,7 @@
 -- | that conform to a particular format we require for our logging service to 
 -- | parse for information.
 
-module Data.Log 
+module Conduit.Data.Log 
   ( LogType(..)
   , message
   , logType
@@ -12,7 +12,7 @@ module Data.Log
 
 import Prelude
 
-import Capability.Now (class Now, nowDateTime)
+import Conduit.Capability.Now (class Now, nowDateTime)
 import Data.Either (either)
 import Data.Formatter.DateTime (formatDateTime)
 import Data.Generic.Rep (class Generic)

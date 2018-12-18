@@ -1,9 +1,9 @@
-module Component.Page.Settings where
+module Conduit.Component.Page.Settings where
 
 import Prelude
 
-import Api.Request (AuthUser)
-import Component.HTML.Utils (css)
+import Conduit.Api.Request (AuthUser)
+import Conduit.Component.HTML.Utils (css)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Effect.Aff.Class (class MonadAff)

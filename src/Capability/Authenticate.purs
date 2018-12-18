@@ -2,14 +2,14 @@
 -- | stored about a single user in the application. It is used for local storage 
 -- | now, but could be switched to another source later.
 
-module Capability.Authenticate where
+module Conduit.Capability.Authenticate where
 
 import Prelude
 
-import Api.Request (AuthUser, LoginFields)
+import Conduit.Api.Request (AuthUser, LoginFields)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either)
-import Data.Profile (Profile)
+import Conduit.Data.Profile (Profile)
 import Data.Tuple (Tuple)
 import Halogen (HalogenM)
 

@@ -1,31 +1,31 @@
 -- | A custom application monad that provides concrete implementations for our
 -- | abstract capabilities.
 
-module AppM where
+module Conduit.AppM where
 
 import Prelude
 
-import Api.Endpoint (Endpoint(..), noArticleParams)
-import Api.Request (AuthType(..), BaseURL, delete, get, post, put, runRequest)
-import Api.Request as Request
-import Api.Utils (withAuthUser, withAuthUser_, withUser)
-import Capability.Authenticate (class Authenticate, writeAuth)
-import Capability.LogMessages (class LogMessages, logError)
-import Capability.ManageResource (class ManageAuthResource, class ManageResource)
-import Capability.Navigate (class Navigate, navigate)
-import Capability.Now (class Now)
+import Conduit.Api.Endpoint (Endpoint(..), noArticleParams)
+import Conduit.Api.Request (AuthType(..), BaseURL, delete, get, post, put, runRequest)
+import Conduit.Api.Request as Request
+import Conduit.Api.Utils (withAuthUser, withAuthUser_, withUser)
+import Conduit.Capability.Authenticate (class Authenticate, writeAuth)
+import Conduit.Capability.LogMessages (class LogMessages, logError)
+import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource)
+import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Capability.Now (class Now)
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
-import Data.Article (decodeArticle, decodeArticles)
-import Data.Author (decodeAuthor)
-import Data.Comment (decodeComment, decodeComments)
+import Conduit.Data.Article (decodeArticle, decodeArticles)
+import Conduit.Data.Author (decodeAuthor)
+import Conduit.Data.Comment (decodeComment, decodeComments)
 import Data.Either (Either(..))
-import Data.Log (LogType(..))
-import Data.Log as Log
+import Conduit.Data.Log (LogType(..))
+import Conduit.Data.Log as Log
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Data.Route as Route
+import Conduit.Data.Route as Route
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)

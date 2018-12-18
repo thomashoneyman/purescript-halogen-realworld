@@ -1,20 +1,18 @@
-module Data.Article where
+module Conduit.Data.Article where
 
-import Prelude
+import Data.RFC3339String (RFC3339String(..))
+import Prelude (bind, map, pure, ($), (<<<), (=<<))
 
-import Data.RFC3339String
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Array (filter)
-import Data.Author (Author, decodeAuthor)
-import Data.DateTime (DateTime)
-import Data.Either (Either, isRight)
-import Data.Formatter.DateTime (unformatDateTime)
+import Conduit.Data.Author (Author, decodeAuthor)
+import Data.Either (Either, isRight, note)
 import Data.Maybe (Maybe)
+import Data.PreciseDateTime (PreciseDateTime, fromRFC3339String)
 import Data.Traversable (sequence)
-import Data.Username (Username)
+import Conduit.Data.Username (Username)
 import Slug (Slug)
-import Unsafe.Coerce (unsafeCoerce)
 
 -- A partial article when we are creating it in the editor
 
@@ -41,7 +39,7 @@ type Article =
   , description :: String
   , body :: String
   , tagList :: Array String
-  , createdAt :: DateTime
+  , createdAt :: PreciseDateTime
   , favorited :: Boolean
   , favoritesCount :: Int
   , author :: Author
@@ -55,7 +53,7 @@ decodeArticles :: Maybe Username -> Json -> Either String (Array Article)
 decodeArticles u json = do
   obj <- decodeJson json 
   arr <- obj .: "articles"
-  -- TODO: for now, we'll drop out malformed articles
+  -- for now, we'll drop out malformed articles
   sequence $ filter isRight $ map (decodeArticle u) arr
 
 decodeArticle :: Maybe Username -> Json -> Either String Article
@@ -68,6 +66,9 @@ decodeArticle u json = do
   tagList <- obj .: "tagList"
   favorited <- obj .: "favorited"
   favoritesCount <- obj .: "favoritesCount"
-  createdAt <- note "Unable to parse RFC339 string" $ fromRFC3339String RFC3339String =<< obj .: "createdAt" -- TODO: Fix
+  createdAt <- parseRFC3339String =<< obj .: "createdAt" 
   author <- decodeAuthor u =<< obj .: "author"
   pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }
+
+parseRFC3339String :: String -> Either String PreciseDateTime
+parseRFC3339String = note "Could not parse RFC339 string" <<< fromRFC3339String <<< RFC3339String

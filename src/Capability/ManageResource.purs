@@ -1,19 +1,19 @@
 -- | This module describes the capability to manage external resources in the
 -- | system, like users, comments, and articles.
 
-module Capability.ManageResource where
+module Conduit.Capability.ManageResource where
 
 import Prelude
 
-import Api.Endpoint (ArticleParams, Pagination)
-import Api.Request (RegisterFields)
-import Capability.Authenticate (class Authenticate)
-import Data.Article (Article, CreateArticle, UpdateArticle)
-import Data.Author (Author)
-import Data.Comment (Comment, CommentId, CreateComment)
+import Conduit.Api.Endpoint (ArticleParams, Pagination)
+import Conduit.Api.Request (RegisterFields)
+import Conduit.Capability.Authenticate (class Authenticate)
+import Conduit.Data.Article (Article, CreateArticle, UpdateArticle)
+import Conduit.Data.Author (Author)
+import Conduit.Data.Comment (Comment, CommentId, CreateComment)
 import Data.Either (Either)
-import Data.Profile (Profile)
-import Data.Username (Username)
+import Conduit.Data.Profile (Profile)
+import Conduit.Data.Username (Username)
 import Halogen (HalogenM, lift)
 import Slug (Slug)
 

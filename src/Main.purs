@@ -2,11 +2,11 @@ module Main where
 
 import Prelude
 
-import Api.Request (BaseURL(..))
-import AppM (Env, LogLevel(..), runAppM)
-import Component.Router as Router
+import Conduit.Api.Request (BaseURL(..))
+import Conduit.AppM (Env, LogLevel(..), runAppM)
+import Conduit.Component.Router as Router
 import Data.Maybe (Maybe(..))
-import Data.Route (routeCodec)
+import Conduit.Data.Route (routeCodec)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Halogen (liftEffect)

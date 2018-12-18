@@ -1,4 +1,4 @@
-module Api.Utils
+module Conduit.Api.Utils
   ( withUser
   , withAuthUser
   , withAuthUser_
@@ -7,18 +7,18 @@ module Api.Utils
 import Prelude
 
 import Affjax (Request)
-import Api.Request (AuthUser, BaseURL, runRequest, username)
-import Capability.Authenticate (class Authenticate, deleteAuth, readAuth)
-import Capability.LogMessages (class LogMessages, logError)
-import Capability.Navigate (class Navigate, logout, navigate)
+import Conduit.Api.Request (AuthUser, BaseURL, runRequest, username)
+import Conduit.Capability.Authenticate (class Authenticate, deleteAuth, readAuth)
+import Conduit.Capability.LogMessages (class LogMessages, logError)
+import Conduit.Capability.Navigate (class Navigate, logout, navigate)
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Argonaut.Core (Json)
 import Data.Bifoldable (bitraverse_)
 import Data.Bitraversable (ltraverse)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.Route as Route
-import Data.Username (Username)
+import Conduit.Data.Route as Route
+import Conduit.Data.Username (Username)
 import Effect.Aff.Class (class MonadAff)
 
 -- Helper functions that leverages several of our capabilities together to help

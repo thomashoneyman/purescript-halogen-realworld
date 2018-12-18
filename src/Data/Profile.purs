@@ -1,7 +1,8 @@
-module Data.Profile
+module Conduit.Data.Profile
   ( Avatar -- No constructors exported
   , mkAvatar
   , avatarToString
+  , avatarToStringWithDefault
   , Profile(..)
   ) where
 
@@ -12,7 +13,7 @@ import Data.Argonaut.Encode (class EncodeJson)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
-import Data.Username (Username)
+import Conduit.Data.Username (Username)
 
 -- Our Profile entity will represent information necessary to render any user 
 -- profile in the in the system, including the currently-authenticated one. We'll 
@@ -50,3 +51,8 @@ mkAvatar str = Just (Avatar str)
 
 avatarToString :: Avatar -> String
 avatarToString (Avatar str) = str
+
+avatarToStringWithDefault :: Maybe Avatar -> String
+avatarToStringWithDefault (Just av) = avatarToString av
+avatarToStringWithDefault Nothing =
+  "https://static.productionready.io/images/smiley-cyrus.jpg"

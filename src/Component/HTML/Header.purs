@@ -1,12 +1,12 @@
-module Component.HTML.Header where
+module Conduit.Component.HTML.Header where
 
 import Prelude
 
-import Api.Request (AuthUser)
-import Component.HTML.Utils (css, guardHtml)
+import Conduit.Api.Request (AuthUser)
+import Conduit.Component.HTML.Utils (css, guardHtml)
 import Data.Maybe (Maybe, isNothing, isJust)
 import Data.Monoid (guard)
-import Data.Route (Route(..))
+import Conduit.Data.Route (Route(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
