@@ -156,12 +156,14 @@ component =
       [ css "feed-toggle" ]
       [ HH.ul
         [ css "nav nav-pills outline-active" ]
-        [ yourFeedTab state.tab # guardHtml (isJust state.authUser)
+        [ whenElem (isJust state.authUser) \_ -> 
+            yourFeedTab state.tab
         , globalFeedTab state.tab 
-        , tagFilterTab state.tab # guardHtml (isJust state.authUser)
+        , whenElem (isJust state.authUser) \_ -> 
+            tagFilterTab state.tab
         ]
       ]
-    , articleList state.articles
+    , articleList Navigate state.articles
     ]
 
   yourFeedTab :: forall p i. Tab -> HH.HTML p i

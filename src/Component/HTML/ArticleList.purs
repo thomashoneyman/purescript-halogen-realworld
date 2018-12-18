@@ -5,39 +5,51 @@ import Prelude
 import Conduit.Component.HTML.Utils (css)
 import Conduit.Data.Article (Article)
 import Conduit.Data.Author (profile, username)
-import Conduit.Data.Profile (avatarToStringWithDefault)
-import Conduit.Data.Username (toString)
+import Conduit.Data.Avatar as Avatar
+import Conduit.Data.PreciseDateTime as PDT
+import Conduit.Data.Route (Route(..))
+import Conduit.Data.Username as Username
+import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
 
-articleList :: forall p i. RemoteData String (Array Article) -> HH.HTML p i
-articleList = case _ of
+articleList 
+  :: forall i p
+   . (Route -> H.Action p) 
+  -> RemoteData String (Array Article) 
+  -> HH.HTML i (p Unit)
+articleList navigate = case _ of
   NotAsked -> HH.text "Not loaded"
   Loading -> HH.text "Loading"
-  Failure err -> HH.text $ "Error loading articles: " <> err
-  Success articles -> HH.div_ $ articles <#> article
+  Failure err -> HH.text ("Error loading articles: " <> err)
+  Success articles -> HH.div_ (articlePreview navigate <$> articles)
 
-article :: forall p i. Article -> HH.HTML p i
-article a =
+-- Provided with a query representing navigation, build an article preview
+articlePreview :: forall i p. (Route -> H.Action p) -> Article -> HH.HTML i (p Unit)
+articlePreview navigate article =
   HH.div
   [ css "article-preview" ]
   [ HH.div
     [ css "article-meta" ]
-    [ HH.a_
+    [ HH.a
+      [ HE.onClick $ HE.input_ $ navigate (Profile uname) ]
       [ HH.img
-        [ HP.src $ avatarToStringWithDefault (profile a.author).image
-        , HP.alt $ toString $ username a.author
+        [ HP.src $ Avatar.toStringWithDefault avatar
+        , HP.alt $ Username.toString uname
         ]
       ]
     , HH.div
       [ css "info" ]
       [ HH.a
-        [ css "author" ]
-        [ HH.text $ toString $ username a.author ]
+        [ css "author" 
+        , HE.onClick $ HE.input_ $ navigate (Profile uname) 
+        ]
+        [ HH.text $ Username.toString uname ]
       , HH.span
         [ css "date" ]
-        [ HH.text "" ] -- TODO: $ format dateFormatter a.createdAt ]
+        [ HH.text $ PDT.toDisplay article.createdAt ]
       ]
     , HH.div
       [ css "pull-xs-right" ]
@@ -46,23 +58,26 @@ article a =
         [ HH.i 
           [ css "ion-heart" ] 
           []
-        , HH.text $ "\160" <> show a.favoritesCount 
+        , HH.text $ "\160" <> show article.favoritesCount 
         ]
       ]
     ]
   , HH.a
     [ css "preview-link" ]
     [ HH.h1_ 
-        [ HH.text a.title ]
+        [ HH.text article.title ]
     , HH.p_ 
-        [ HH.text a.description ]
+        [ HH.text article.description ]
     , HH.span_ 
         [ HH.text "Read more..." ]
     , HH.ul
         [ css "tag-list" ]
-        (a.tagList <#> renderTag)
+        (article.tagList <#> renderTag)
     ]
   ]
+  where
+    uname = username article.author
+    avatar = (profile article.author).image
 
 renderTag :: forall p i. String -> HH.HTML p i
 renderTag tag =

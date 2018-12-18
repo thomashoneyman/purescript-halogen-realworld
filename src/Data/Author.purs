@@ -36,8 +36,6 @@ decodeAuthor (Just u) json = do
         then pure $ Following $ FollowedAuthor prof
         else pure $ NotFollowing $ UnfollowedAuthor prof
   
-
-
 -- We've written a safe but slightly annoying type. We don't want to have to 
 -- deeply pattern match every time we want to pull out an author's username or 
 -- profile, for example, so we'll provide some helpers.
