@@ -108,7 +108,11 @@ instance logMessagesAppM :: LogMessages AppM where
 -- we'll hardcode a particular user we have test data about in our system.
 
 instance authenticateAppM :: Authenticate AppM where
-  authenticate fields = ask >>= Request.login fields <<< _.baseUrl
+  authenticate fields = do 
+    { baseUrl } <- ask
+    liftAff (Request.login fields baseUrl) >>= case _ of
+      Left err -> logError err *> pure (Left err)
+      Right (Tuple au prof) -> writeAuth au *> pure (Right prof)
   readAuth = liftEffect Request.readAuthUserFromLocalStorage
   writeAuth = liftEffect <<< Request.writeAuthUserToLocalStorage
   deleteAuth = liftEffect Request.deleteAuthUserFromLocalStorage

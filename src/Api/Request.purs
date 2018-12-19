@@ -176,15 +176,16 @@ type LoginFields =
 -- For auth tokens specifically, because the decoder is not exposed
 
 login :: forall m. MonadAff m => LoginFields -> BaseURL -> m (Either String (Tuple AuthUser Profile))
-login body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson body) Login
+login body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson { user: body }) Login
 
 register :: forall m. MonadAff m => RegisterFields -> BaseURL -> m (Either String (Tuple AuthUser Profile))
-register body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson body) Users
+register body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson { user: body }) Users
 
 -- For decoding a user response from the server into an AuthUser + Profile
 
 decodeUser :: Json -> Either String (Tuple AuthUser Profile)
 decodeUser json = do
-  au <- decodeAuthUser json
-  prof <- decodeJson json
+  json' <- (_ .: "user") =<< decodeJson json
+  au <- decodeAuthUser json'
+  prof <- decodeJson json'
   pure $ Tuple au prof

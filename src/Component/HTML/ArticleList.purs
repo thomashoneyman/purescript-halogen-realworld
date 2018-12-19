@@ -7,17 +7,20 @@ import Conduit.Data.Article (Article)
 import Conduit.Data.Author (profile, username)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.PreciseDateTime as PDT
-import Conduit.Data.Route (Route(..))
+import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Data.Username as Username
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
+import Routing.Duplex (print)
+import Web.Event.Internal.Types (Event)
+import Web.UIEvent.MouseEvent (toEvent)
 
 articleList 
   :: forall i p
-   . (Route -> H.Action p) 
+   . (Route -> Event -> H.Action p) 
   -> RemoteData String (Array Article) 
   -> HH.HTML i (p Unit)
 articleList navigate = case _ of
@@ -27,14 +30,16 @@ articleList navigate = case _ of
   Success articles -> HH.div_ (articlePreview navigate <$> articles)
 
 -- Provided with a query representing navigation, build an article preview
-articlePreview :: forall i p. (Route -> H.Action p) -> Article -> HH.HTML i (p Unit)
+articlePreview :: forall i p. (Route -> Event -> H.Action p) -> Article -> HH.HTML i (p Unit)
 articlePreview navigate article =
   HH.div
   [ css "article-preview" ]
   [ HH.div
     [ css "article-meta" ]
     [ HH.a
-      [ HE.onClick $ HE.input_ $ navigate (Profile uname) ]
+      [ HE.onClick $ HE.input $ navigate (Profile uname) <<< toEvent 
+      , HP.href $ "#" <> print routeCodec (Profile uname) 
+      ]
       [ HH.img
         [ HP.src $ Avatar.toStringWithDefault avatar
         , HP.alt $ Username.toString uname
@@ -44,7 +49,8 @@ articlePreview navigate article =
       [ css "info" ]
       [ HH.a
         [ css "author" 
-        , HE.onClick $ HE.input_ $ navigate (Profile uname) 
+        , HE.onClick $ HE.input $ navigate (Profile uname) <<< toEvent
+        , HP.href $ "#" <> print routeCodec (Profile uname)
         ]
         [ HH.text $ Username.toString uname ]
       , HH.span
@@ -63,7 +69,10 @@ articlePreview navigate article =
       ]
     ]
   , HH.a
-    [ css "preview-link" ]
+    [ css "preview-link" 
+    , HE.onClick $ HE.input $ navigate (ViewArticle article.slug) <<< toEvent
+    , HP.href $ "#" <> print routeCodec (ViewArticle article.slug)
+    ]
     [ HH.h1_ 
         [ HH.text article.title ]
     , HH.p_ 
@@ -79,7 +88,7 @@ articlePreview navigate article =
     uname = username article.author
     avatar = (profile article.author).image
 
-renderTag :: forall p i. String -> HH.HTML p i
+renderTag :: forall i p. String -> HH.HTML i p
 renderTag tag =
   HH.li
   [ css "tag-default tag-pill tag-outline" ]

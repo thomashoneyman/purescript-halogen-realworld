@@ -10,19 +10,21 @@ import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, whenElem)
-import Control.Parallel (parTraverse_)
 import Conduit.Data.Article (Article)
+import Conduit.Data.Route (Route(..))
+import Control.Parallel (parTraverse_)
 import Data.Const (Const)
 import Data.Either (either)
-import Data.Maybe (Maybe(..), isJust)
-import Conduit.Data.Route (Route(..))
+import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Monoid (guard)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
-import Web.UIEvent.MouseEvent.EventTypes (click)
+import Web.Event.Event (preventDefault)
+import Web.Event.Internal.Types (Event)
 
 type State =
   { tags :: RemoteData String (Array String)
@@ -41,10 +43,14 @@ data Tab
 
 derive instance eqTab :: Eq Tab
 
+tabIsTag :: Tab -> Boolean
+tabIsTag (Tag _) = true
+tabIsTag _ = false
+
 data Query a
   = Initialize a
   | LoadTags a
-  | Navigate Route a
+  | Navigate Route Event a
   | ShowTab Tab a
   | LoadArticles ArticleParams a
 
@@ -95,15 +101,16 @@ component =
       H.modify_ _ { articles = either Failure Success articles }
       pure a      
 
-    Navigate route a -> do
+    Navigate route ev a -> do
+      H.liftEffect $ preventDefault ev
       navigate route
       pure a
 
-    ShowTab tab a -> do
+    ShowTab thisTab a -> do
       st <- H.get
-      when (tab /= st.tab) do
-        H.modify_ _ { tab = tab }
-        void case tab of 
+      when (thisTab /= st.tab) do
+        H.modify_ _ { tab = thisTab }
+        void case thisTab of 
           Feed -> pure a -- TODO
           Global -> eval $ LoadArticles noArticleParams a
           Tag tag -> eval $ LoadArticles (noArticleParams { tag = Just tag }) a
@@ -112,10 +119,10 @@ component =
   render :: State -> H.ParentHTML Query (Const Void) Void m
   render state@{ tags, articles, authUser } =
     HH.div_
-    [ header authUser Home Navigate
+    [ header authUser Home
     , HH.div
       [ css "home-page" ]
-      [ banner
+      [ whenElem (isNothing authUser) \_ -> banner
       , HH.div
         [ css "container page" ]
         [ HH.div
@@ -125,7 +132,8 @@ component =
             [ css "col-md-3" ]
             [ HH.div
               [ css "sidebar" ]
-              [ HH.p_ [ HH.text "Popular Tags" ]
+              [ HH.p_ 
+                [ HH.text "Popular Tags" ]
               , renderTags tags
               ]
             ]
@@ -135,7 +143,23 @@ component =
     , footer
     ]
 
-  banner :: forall p i. HH.HTML p i
+  mainView :: forall i. State -> H.HTML i Query
+  mainView state =
+    HH.div
+    [ css "col-md-9" ]
+    [ HH.div
+      [ css "feed-toggle" ]
+      [ HH.ul
+        [ css "nav nav-pills outline-active" ]
+        [ whenElem (isJust state.authUser) \_ -> tab state Feed
+        , tab state Global
+        , whenElem (tabIsTag state.tab) \_ -> tab state state.tab
+        ]
+      ]
+    , articleList Navigate state.articles
+    ]
+  
+  banner :: forall i p. HH.HTML i p 
   banner =
     HH.div
     [ css "banner" ]
@@ -144,86 +168,56 @@ component =
       [ HH.h1
         [ css "logo-font" ]
         [ HH.text "conduit" ]
-      , HH.p_ [ HH.text "A place to share your knowledge." ]
+      , HH.p_ 
+        [ HH.text "A place to share your knowledge." ]
       ]
     ]
 
-  mainView :: forall p. State -> H.HTML p Query
-  mainView state =
-    HH.div
-    [ css "col-md-9" ]
-    [ HH.div
-      [ css "feed-toggle" ]
-      [ HH.ul
-        [ css "nav nav-pills outline-active" ]
-        [ whenElem (isJust state.authUser) \_ -> 
-            yourFeedTab state.tab
-        , globalFeedTab state.tab 
-        , whenElem (isJust state.authUser) \_ -> 
-            tagFilterTab state.tab
-        ]
-      ]
-    , articleList Navigate state.articles
-    ]
-
-  yourFeedTab :: forall p i. Tab -> HH.HTML p i
-  yourFeedTab tab =
+  tab :: forall i. State -> Tab -> H.HTML i Query
+  tab st thisTab =
     HH.li
-    [ css "nav-item" ]
-    [ HH.a
-      [ css $ "nav-link" <> modifiers ]
-      [ HH.text "Your Feed" ]
-    ]
-    where
-      modifiers = case tab of
-        Feed -> " active"
-        _ -> ""
-  
-  globalFeedTab :: forall p. Tab -> H.HTML p Query
-  globalFeedTab tab =
-    HH.li
-    [ css "nav-item" ]
-    [ HH.a
-      [ css $ "nav-link" <> modifiers
-      , HE.handler click $ HE.input_ $ ShowTab Global
-      ]
-      [ HH.text "Global Feed" ]
-    ]
-    where
-      modifiers = case tab of
-        Global -> " active"
-        _ -> ""
-
-
-  tagFilterTab :: forall p i. Tab -> HH.HTML p i
-  tagFilterTab = case _ of
-    Tag tag ->
-      HH.li
       [ css "nav-item" ]
       [ HH.a
-        [ css "navLink active" ]
-        [ HH.i [ HP.class_ $ H.ClassName "ion-pound" ] []
+        [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
+        , HE.onClick $ HE.input_ $ ShowTab thisTab 
+        , HP.href "#/"
+        ]
+        htmlBody
+      ]
+    where
+    htmlBody = case thisTab of
+      Feed -> 
+        [ HH.text "Your Feed" ]
+      Global -> 
+        [ HH.text "Global Feed" ]
+      Tag tag ->
+        [ HH.i 
+          [ css "ion-pound" ] 
+          []
         , HH.text $ "\160" <> tag
         ]
-      ]
-
-    _ -> HH.div_ []
   
-  
-  renderTags :: forall p. RemoteData String (Array String) -> H.HTML p Query
+  renderTags :: forall i. RemoteData String (Array String) -> H.HTML i Query
   renderTags = case _ of
-    NotAsked ->  HH.div_ [ HH.text "Tags not loaded" ]
-    Loading -> HH.div_ [ HH.text "Loading Tags" ]
-    Failure err ->  HH.div_ [ HH.text $ "Failed loading tags: " <> err ]
+    NotAsked ->  
+      HH.div_ 
+        [ HH.text "Tags not loaded" ]
+    Loading -> 
+      HH.div_ 
+        [ HH.text "Loading Tags" ]
+    Failure err ->  
+      HH.div_ 
+        [ HH.text $ "Failed loading tags: " <> err ]
     Success tags ->
       HH.div
-      [ css "tag-list" ]
-      $ tags <#> renderTag
+        [ css "tag-list" ]
+        (tags <#> renderTag)
 
   renderTag :: forall p. String -> H.HTML p Query
   renderTag tag =
     HH.a
     [ css "tag-default tag-pill"
-    , HE.handler click $ HE.input_ $ ShowTab (Tag tag)
+    , HE.onClick $ HE.input_ $ ShowTab (Tag tag)
+    , HP.href "#/"
     ]
     [ HH.text tag ]

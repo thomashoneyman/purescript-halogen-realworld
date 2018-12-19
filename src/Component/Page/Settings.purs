@@ -109,7 +109,7 @@ renderFormless fstate =
       HH.fieldset
         [ css "form-group" ]
         [ HH.input 
-          [ css "form-control-lg"
+          [ css "form-control form-control-lg"
           , HP.type_ type_
           , HP.placeholder placeholder 
           , HP.value val
