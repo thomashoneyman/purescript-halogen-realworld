@@ -5,7 +5,6 @@ import Prelude
 import Conduit.Api.Endpoint (ArticleParams, noArticleParams)
 import Conduit.Api.Request (AuthUser)
 import Conduit.Capability.ManageResource (class ManageResource, getArticles, getTags)
-import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
@@ -23,8 +22,6 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
-import Web.Event.Event (preventDefault)
-import Web.Event.Internal.Types (Event)
 
 type State =
   { tags :: RemoteData String (Array String)
@@ -50,7 +47,6 @@ tabIsTag _ = false
 data Query a
   = Initialize a
   | LoadTags a
-  | Navigate Route Event a
   | ShowTab Tab a
   | LoadArticles ArticleParams a
 
@@ -58,7 +54,6 @@ component
   :: forall m
    . MonadAff m
   => ManageResource m
-  => Navigate m
   => H.Component HH.HTML Query Input Void m
 component =
   H.lifecycleParentComponent
@@ -100,11 +95,6 @@ component =
       articles <- getArticles params
       H.modify_ _ { articles = either Failure Success articles }
       pure a      
-
-    Navigate route ev a -> do
-      H.liftEffect $ preventDefault ev
-      navigate route
-      pure a
 
     ShowTab thisTab a -> do
       st <- H.get
@@ -156,7 +146,7 @@ component =
         , whenElem (tabIsTag state.tab) \_ -> tab state state.tab
         ]
       ]
-    , articleList Navigate state.articles
+    , articleList state.articles
     ]
   
   banner :: forall i p. HH.HTML i p 
