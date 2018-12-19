@@ -1,7 +1,7 @@
 -- | A capability representing the ability to fetch the current time. This is
 -- | pure, so we can use fixed times in a test monad for determinism.
 
-module Capability.Now where
+module Conduit.Capability.Now where
 
 import Prelude
 

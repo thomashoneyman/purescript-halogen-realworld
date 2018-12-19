@@ -1,4 +1,4 @@
-module Api.Request
+module Conduit.Api.Request
   ( AuthUser -- constructors not exported
   , username
   , authUserKey
@@ -24,20 +24,20 @@ import Affjax as AX
 import Affjax.RequestBody as RB
 import Affjax.RequestHeader as RH
 import Affjax.ResponseFormat as RF
-import Api.Endpoint (Endpoint(..), endpointCodec)
+import Conduit.Api.Endpoint (Endpoint(..), endpointCodec)
 import Data.Argonaut.Core (Json, stringify)
 import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..), note)
-import Data.Email (Email)
+import Conduit.Data.Email (Email)
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
-import Data.Profile (Profile)
+import Conduit.Data.Profile (Profile)
 import Data.Tuple (Tuple(..))
-import Data.Username (Username)
+import Conduit.Data.Username (Username)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Routing.Duplex (print)
@@ -176,15 +176,16 @@ type LoginFields =
 -- For auth tokens specifically, because the decoder is not exposed
 
 login :: forall m. MonadAff m => LoginFields -> BaseURL -> m (Either String (Tuple AuthUser Profile))
-login body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson body) Login
+login body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson { user: body }) Login
 
 register :: forall m. MonadAff m => RegisterFields -> BaseURL -> m (Either String (Tuple AuthUser Profile))
-register body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson body) Users
+register body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson { user: body }) Users
 
 -- For decoding a user response from the server into an AuthUser + Profile
 
 decodeUser :: Json -> Either String (Tuple AuthUser Profile)
 decodeUser json = do
-  au <- decodeAuthUser json
-  prof <- decodeJson json
+  json' <- (_ .: "user") =<< decodeJson json
+  au <- decodeAuthUser json'
+  prof <- decodeJson json'
   pure $ Tuple au prof

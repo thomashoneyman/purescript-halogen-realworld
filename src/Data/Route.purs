@@ -1,12 +1,12 @@
-module Data.Route where
+module Conduit.Data.Route where
 
 import Prelude hiding ((/))
 
 import Data.Either (note)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Username (Username)
-import Data.Username as Username
+import Conduit.Data.Username (Username)
+import Conduit.Data.Username as Username
 import Routing.Duplex (RouteDuplex', as, root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
@@ -29,6 +29,7 @@ data Route
   | ViewArticle Slug
   | Profile Username
   | Favorites Username
+  | Logout
 
 derive instance genericRoute :: Generic Route _
 derive instance eqRoute :: Eq Route
@@ -56,6 +57,7 @@ routeCodec = root $ sum
   , "ViewArticle": "article" / slug segment
   , "Profile": "profile" / uname segment 
   , "Favorites": "profile" / uname segment / "favorites"
+  , "Logout": "logout" / noArgs
   }
 
 -- We can define our own combinators

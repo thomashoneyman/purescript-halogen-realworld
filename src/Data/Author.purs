@@ -1,4 +1,4 @@
-module Data.Author where
+module Conduit.Data.Author where
 
 import Prelude
 
@@ -8,8 +8,8 @@ import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (Either)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Data.Profile (Profile)
-import Data.Username (Username)
+import Conduit.Data.Profile (Profile)
+import Conduit.Data.Username (Username)
 
 -- The Author type is used to represent a user profile with additional context 
 -- around whether you, the authenticated user, follow them.
@@ -36,8 +36,6 @@ decodeAuthor (Just u) json = do
         then pure $ Following $ FollowedAuthor prof
         else pure $ NotFollowing $ UnfollowedAuthor prof
   
-
-
 -- We've written a safe but slightly annoying type. We don't want to have to 
 -- deeply pattern match every time we want to pull out an author's username or 
 -- profile, for example, so we'll provide some helpers.

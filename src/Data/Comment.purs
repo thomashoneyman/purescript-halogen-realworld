@@ -1,20 +1,19 @@
-module Data.Comment where
+module Conduit.Data.Comment where
 
 import Prelude
 
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Argonaut.Encode (class EncodeJson)
-import Data.Author (Author, decodeAuthor)
-import Data.DateTime (DateTime)
+import Conduit.Data.Author (Author, decodeAuthor)
+import Conduit.Data.PreciseDateTime (PreciseDateTime)
 import Data.Either (Either)
-import Data.Formatter.DateTime (unformatDateTime)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype)
 import Data.Traversable (traverse)
-import Data.Username (Username)
+import Conduit.Data.Username (Username)
 
 -- We'll newtype `CommentId` without putting any constraints on its value purely as an 
 -- identifier to distinguish it from strings. 
@@ -40,7 +39,7 @@ type CreateComment = { body :: String }
 
 type Comment =
   { id :: CommentId 
-  , createdAt :: DateTime
+  , createdAt :: PreciseDateTime
   , body :: String
   , author :: Author
   }
@@ -60,5 +59,5 @@ decodeComment u json = do
   author <- decodeAuthor u =<< obj .: "author"
   body <- obj .: "body"
   id <- obj .: "id"
-  createdAt <- unformatDateTime "X" =<< obj .: "createdAt"
+  createdAt <- obj .: "createdAt"
   pure { id, createdAt, body, author }

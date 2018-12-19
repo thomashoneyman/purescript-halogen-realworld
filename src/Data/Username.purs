@@ -1,4 +1,4 @@
-module Data.Username 
+module Conduit.Data.Username 
   ( Username
   , parse
   , toString

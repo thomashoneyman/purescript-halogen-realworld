@@ -1,8 +1,8 @@
-module Component.HTML.Footer where
+module Conduit.Component.HTML.Footer where
 
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import Component.HTML.Utils (css)
+import Conduit.Component.HTML.Utils (css)
 
 footer :: forall i p. HH.HTML i p
 footer = 

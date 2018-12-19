@@ -1,17 +1,16 @@
-module Data.Article where
+module Conduit.Data.Article where
 
 import Prelude
 
+import Conduit.Data.Author (Author, decodeAuthor)
+import Conduit.Data.PreciseDateTime (PreciseDateTime)
+import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.:))
-import Data.Author (Author, decodeAuthor)
-import Data.DateTime (DateTime)
-import Data.Either (Either)
-import Data.Formatter.DateTime (unformatDateTime)
+import Data.Array (filter)
+import Data.Either (Either, isRight)
 import Data.Maybe (Maybe)
-import Data.Traversable (traverse)
-import Data.Username (Username)
-import Debug.Trace (traceM)
+import Data.Traversable (sequence)
 import Slug (Slug)
 
 -- A partial article when we are creating it in the editor
@@ -39,7 +38,7 @@ type Article =
   , description :: String
   , body :: String
   , tagList :: Array String
-  , createdAt :: DateTime
+  , createdAt :: PreciseDateTime
   , favorited :: Boolean
   , favoritesCount :: Int
   , author :: Author
@@ -52,10 +51,9 @@ type Article =
 decodeArticles :: Maybe Username -> Json -> Either String (Array Article)
 decodeArticles u json = do
   obj <- decodeJson json 
-  traceM obj
   arr <- obj .: "articles"
-  traceM arr
-  traverse (decodeArticle u) arr
+  -- for now, we'll drop out malformed articles
+  sequence $ filter isRight $ map (decodeArticle u) arr
 
 decodeArticle :: Maybe Username -> Json -> Either String Article
 decodeArticle u json = do
@@ -67,6 +65,6 @@ decodeArticle u json = do
   tagList <- obj .: "tagList"
   favorited <- obj .: "favorited"
   favoritesCount <- obj .: "favoritesCount"
-  createdAt <- unformatDateTime "YY" =<< obj .: "createdAt"
+  createdAt <- obj .: "createdAt" 
   author <- decodeAuthor u =<< obj .: "author"
   pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }

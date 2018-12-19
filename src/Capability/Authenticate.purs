@@ -2,22 +2,21 @@
 -- | stored about a single user in the application. It is used for local storage 
 -- | now, but could be switched to another source later.
 
-module Capability.Authenticate where
+module Conduit.Capability.Authenticate where
 
 import Prelude
 
-import Api.Request (AuthUser, LoginFields)
+import Conduit.Api.Request (AuthUser, LoginFields)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either)
-import Data.Profile (Profile)
-import Data.Tuple (Tuple)
+import Conduit.Data.Profile (Profile)
 import Halogen (HalogenM)
 
 -- The ability to read, write, and clear credentials. Includes an instance for 
 -- HalogenM to make this class convenient to use in Halogen components.
 
 class Monad m <= Authenticate m where
-  authenticate :: LoginFields -> m (Either String (Tuple AuthUser Profile))
+  authenticate :: LoginFields -> m (Either String Profile)
   readAuth :: m (Either String AuthUser)
   writeAuth :: AuthUser -> m Unit
   deleteAuth :: m Unit

@@ -2,14 +2,14 @@
 -- | the console, an external service like Rollbar, or to files for golden testing. 
 -- | See AppM for the implementation.
 
-module Capability.LogMessages where
+module Conduit.Capability.LogMessages where
 
 import Prelude
 
-import Capability.Now (class Now)
+import Conduit.Capability.Now (class Now)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
-import Data.Log (Log, LogType(..), mkLog)
+import Conduit.Data.Log (Log, LogType(..), mkLog)
 import Data.Maybe (Maybe(..))
 import Halogen (HalogenM)
 
