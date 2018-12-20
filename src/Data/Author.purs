@@ -35,6 +35,13 @@ decodeAuthor (Just u) json = do
       if following
         then pure $ Following $ FollowedAuthor prof
         else pure $ NotFollowing $ UnfollowedAuthor prof
+
+-- Most of the time, we can decode the author directly from an object. However, the
+-- profiles endpoint returns wrapped in a further object with the label 'profile', 
+-- so this wrapper decoder helps handle that case.
+
+decodeAuthorProfile :: Maybe Username -> Json -> Either String Author
+decodeAuthorProfile u = decodeJson >=> (_ .: "profile") >=> decodeAuthor u
   
 -- We've written a safe but slightly annoying type. We don't want to have to 
 -- deeply pattern match every time we want to pull out an author's username or 
@@ -47,6 +54,10 @@ profile :: Author -> Profile
 profile (Following (FollowedAuthor p)) = p
 profile (NotFollowing (UnfollowedAuthor p)) = p
 profile (You p) = p
+
+isFollowed :: Author -> Boolean
+isFollowed (Following (FollowedAuthor _)) = true
+isFollowed _ = false
 
 -- We'll use a newtype to restrict the domain of functions that are meant to 
 -- only operate on *followed* profiles. This lets us write those functions 

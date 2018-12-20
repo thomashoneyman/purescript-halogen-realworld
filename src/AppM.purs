@@ -14,18 +14,19 @@ import Conduit.Capability.LogMessages (class LogMessages, logError)
 import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Now (class Now)
+import Conduit.Data.Article (decodeArticleWithMetadata, decodeArticles)
+import Conduit.Data.Author (decodeAuthorProfile)
+import Conduit.Data.Comment (decodeComment, decodeComments)
+import Conduit.Data.Log (LogType(..))
+import Conduit.Data.Log as Log
+import Conduit.Data.Profile (decodeProfileWithEmail, encodeUpdateProfile)
+import Conduit.Data.Route as Route
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
-import Conduit.Data.Article (decodeArticle, decodeArticles)
-import Conduit.Data.Author (decodeAuthor)
-import Conduit.Data.Comment (decodeComment, decodeComments)
 import Data.Either (Either(..))
-import Conduit.Data.Log (LogType(..))
-import Conduit.Data.Log as Log
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Conduit.Data.Route as Route
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -139,12 +140,12 @@ instance manageResourceAppM :: ManageResource AppM where
     let tagDecoder = (_ .: "tags") <=< decodeJson
     { baseUrl } <- ask
     runRequest tagDecoder $ get NoAuth Tags baseUrl
-  getProfile u = 
-    withUser decodeAuthor $ get NoAuth $ Profiles u
+  getAuthor u = 
+    withUser decodeAuthorProfile $ get NoAuth $ Profiles u
   getComments u = 
     withUser decodeComments $ get NoAuth $ Comments u
   getArticle slug =
-    withUser decodeArticle $ get NoAuth $ Article slug
+    withUser decodeArticleWithMetadata $ get NoAuth $ Article slug
   getArticles params = 
     withUser decodeArticles $ get NoAuth $ Articles params
 
@@ -152,26 +153,38 @@ instance manageResourceAppM :: ManageResource AppM where
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
   getUser = 
-    withAuthUser (const decodeJson) \t -> get (Auth t) Users
+    withAuthUser (const decodeProfileWithEmail) \t -> 
+      get (Auth t) User
   updateUser p = 
-    withAuthUser_ \t -> post (Auth t) (Just $ encodeJson p) Users
+    withAuthUser_ \t -> 
+      put (Auth t) ( encodeUpdateProfile p) User
   followUser u = 
-    withAuthUser decodeAuthor \t -> post (Auth t) Nothing (Follow u)
+    withAuthUser decodeAuthorProfile \t -> 
+      post (Auth t) Nothing (Follow u)
   unfollowUser u = 
-    withAuthUser decodeAuthor \t -> delete (Auth t) (Follow u)
-  createArticle a = 
-    withAuthUser decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
-  updateArticle s a = 
-    withAuthUser decodeArticle \t -> put (Auth t) (encodeJson a) (Article s)
+    withAuthUser decodeAuthorProfile \t -> 
+      delete (Auth t) (Follow u)
+  createArticle article = 
+    withAuthUser decodeArticleWithMetadata \t -> 
+      post (Auth t) (Just $ encodeJson { article }) (Articles noArticleParams)
+  updateArticle s article = 
+    withAuthUser decodeArticleWithMetadata \t -> 
+      put (Auth t) (encodeJson { article }) (Article s)
   deleteArticle s = 
-    withAuthUser_ \t -> delete (Auth t) (Article s)
-  createComment s c = 
-    withAuthUser decodeComment \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
+    withAuthUser_ \t -> 
+      delete (Auth t) (Article s)
+  createComment s comment = 
+    withAuthUser decodeComment \t -> 
+      post (Auth t) (Just $ encodeJson { comment }) (Comments s)
   deleteComment s cid = 
-    withAuthUser_ \t -> delete (Auth t) (Comment s cid)
+    withAuthUser_ \t -> 
+      delete (Auth t) (Comment s cid)
   favoriteArticle s = 
-    withAuthUser decodeArticle \t -> post (Auth t) Nothing (Favorite s)
+    withAuthUser decodeArticleWithMetadata \t -> 
+      post (Auth t) Nothing (Favorite s)
   unfavoriteArticle s = 
-    withAuthUser decodeArticle \t -> delete (Auth t) (Favorite s)
+    withAuthUser decodeArticleWithMetadata \t -> 
+      delete (Auth t) (Favorite s)
   getFeed p = 
-    withAuthUser decodeArticles \t -> get (Auth t) (Feed p)
+    withAuthUser decodeArticles \t -> 
+      get (Auth t) (Feed p)

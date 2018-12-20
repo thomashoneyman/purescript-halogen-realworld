@@ -1,15 +1,15 @@
-module Conduit.Component.Page.Home where
+module Conduit.Page.Home where
 
 import Prelude
 
-import Conduit.Api.Endpoint (ArticleParams, noArticleParams)
+import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.ManageResource (class ManageResource, getArticles, getTags)
+import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, getArticles, getFeed, getTags)
 import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, whenElem)
-import Conduit.Data.Article (Article)
+import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Route (Route(..))
 import Control.Parallel (parTraverse_)
 import Data.Const (Const)
@@ -25,7 +25,7 @@ import Network.RemoteData (RemoteData(..))
 
 type State =
   { tags :: RemoteData String (Array String)
-  , articles :: RemoteData String (Array Article)
+  , articles :: RemoteData String (Array ArticleWithMetadata)
   , tab :: Tab
   , authUser :: Maybe AuthUser
   }
@@ -46,14 +46,16 @@ tabIsTag _ = false
 
 data Query a
   = Initialize a
-  | LoadTags a
   | ShowTab Tab a
+  | LoadFeed Pagination a
   | LoadArticles ArticleParams a
+  | LoadTags a
 
 component
   :: forall m
    . MonadAff m
   => ManageResource m
+  => ManageAuthResource m
   => H.Component HH.HTML Query Input Void m
 component =
   H.lifecycleParentComponent
@@ -71,7 +73,7 @@ component =
   initialState { authUser } =
     { tags: NotAsked
     , articles: NotAsked
-    , tab: Global 
+    , tab: Feed 
     , authUser
     }
 
@@ -80,7 +82,7 @@ component =
     Initialize a -> do
       parTraverse_ H.fork
         [ eval $ LoadTags a
-        , eval $ LoadArticles noArticleParams a
+        , eval $ LoadFeed { limit: Nothing, offset: Nothing } a
         ]
       pure a
 
@@ -89,6 +91,12 @@ component =
       tags <- getTags
       H.modify_ _ { tags = either Failure Success tags }
       pure a
+
+    LoadFeed params a -> do
+      H.modify_ _ { articles = Loading }
+      articles <- getFeed params
+      H.modify_ _ { articles = either Failure Success articles }
+      pure a      
 
     LoadArticles params a -> do
       H.modify_ _ { articles = Loading }
@@ -101,7 +109,7 @@ component =
       when (thisTab /= st.tab) do
         H.modify_ _ { tab = thisTab }
         void case thisTab of 
-          Feed -> pure a -- TODO
+          Feed -> eval $ LoadFeed { limit: Nothing, offset: Nothing } a 
           Global -> eval $ LoadArticles noArticleParams a
           Tag tag -> eval $ LoadArticles (noArticleParams { tag = Just tag }) a
       pure a

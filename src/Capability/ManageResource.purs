@@ -8,26 +8,26 @@ import Prelude
 import Conduit.Api.Endpoint (ArticleParams, Pagination)
 import Conduit.Api.Request (RegisterFields)
 import Conduit.Capability.Authenticate (class Authenticate)
-import Conduit.Data.Article (Article, CreateArticle, UpdateArticle)
+import Conduit.Data.Article (Article, ArticleWithMetadata)
 import Conduit.Data.Author (Author)
 import Conduit.Data.Comment (Comment, CommentId, CreateComment)
-import Data.Either (Either)
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (Profile, ProfileWithEmail, UpdateProfile)
 import Conduit.Data.Username (Username)
+import Data.Either (Either)
 import Halogen (HalogenM, lift)
 import Slug (Slug)
 
 class Monad m <= ManageResource m where
   register :: RegisterFields -> m (Either String Profile)
-  getProfile :: Username -> m (Either String Author)
+  getAuthor :: Username -> m (Either String Author)
   getTags :: m (Either String (Array String))
   getComments :: Slug -> m (Either String (Array Comment))
-  getArticle :: Slug -> m (Either String Article)
-  getArticles :: ArticleParams -> m (Either String (Array Article))
+  getArticle :: Slug -> m (Either String ArticleWithMetadata)
+  getArticles :: ArticleParams -> m (Either String (Array ArticleWithMetadata))
 
 instance manageResourcesHalogenM :: ManageResource m => ManageResource (HalogenM s f g p o m) where
   register = lift <<< register
-  getProfile = lift <<< getProfile
+  getAuthor = lift <<< getAuthor
   getTags = lift getTags
   getComments = lift <<< getComments
   getArticle = lift <<< getArticle
@@ -39,19 +39,18 @@ instance manageResourcesHalogenM :: ManageResource m => ManageResource (HalogenM
 -- in our application monad will simply perform the request and parse the response.
 
 class Authenticate m <= ManageAuthResource m where
-  getUser :: m (Either String Profile)
-  updateUser :: Profile -> m Unit
+  getUser :: m (Either String ProfileWithEmail)
+  updateUser :: UpdateProfile -> m Unit
   followUser :: Username -> m (Either String Author)
   unfollowUser :: Username -> m (Either String Author)
-  createArticle :: CreateArticle -> m (Either String Article)
-  updateArticle :: Slug -> UpdateArticle -> m (Either String Article)
+  createArticle :: Article -> m (Either String ArticleWithMetadata)
+  updateArticle :: Slug -> Article -> m (Either String ArticleWithMetadata)
   deleteArticle :: Slug -> m Unit
   createComment :: Slug -> CreateComment -> m (Either String Comment)
   deleteComment :: Slug -> CommentId -> m Unit
-  favoriteArticle :: Slug -> m (Either String Article)
-  unfavoriteArticle :: Slug -> m (Either String Article)
-  getFeed :: Pagination -> m (Either String (Array Article))
-
+  favoriteArticle :: Slug -> m (Either String ArticleWithMetadata)
+  unfavoriteArticle :: Slug -> m (Either String ArticleWithMetadata)
+  getFeed :: Pagination -> m (Either String (Array ArticleWithMetadata))
 
 instance manageAuthResourceHalogenM :: ManageAuthResource m => ManageAuthResource (HalogenM s f g p o m) where
   getUser = lift getUser
