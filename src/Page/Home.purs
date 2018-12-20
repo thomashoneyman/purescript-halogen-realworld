@@ -82,7 +82,7 @@ component =
     Initialize a -> do
       parTraverse_ H.fork
         [ eval $ LoadTags a
-        , eval $ LoadArticles noArticleParams a
+        , eval $ LoadFeed { limit: Nothing, offset: Nothing } a
         ]
       pure a
 

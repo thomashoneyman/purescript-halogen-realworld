@@ -52,7 +52,6 @@ class Authenticate m <= ManageAuthResource m where
   unfavoriteArticle :: Slug -> m (Either String ArticleWithMetadata)
   getFeed :: Pagination -> m (Either String (Array ArticleWithMetadata))
 
-
 instance manageAuthResourceHalogenM :: ManageAuthResource m => ManageAuthResource (HalogenM s f g p o m) where
   getUser = lift getUser
   updateUser = lift <<< updateUser
