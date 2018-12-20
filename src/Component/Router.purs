@@ -17,8 +17,8 @@ import Conduit.Page.Profile (Tab(..))
 import Conduit.Page.Profile as Profile
 import Conduit.Page.Register as Register
 import Conduit.Page.Settings as Settings
+import Conduit.Page.ViewArticle as ViewArticle
 import Control.Monad.Reader (class MonadAsk)
-import Data.Const (Const)
 import Data.Either (hush)
 import Data.Either.Nested (Either7)
 import Data.Functor.Coproduct.Nested (Coproduct7)
@@ -43,7 +43,7 @@ type ChildQuery = Coproduct7
   Register.Query
   Settings.Query
   Editor.Query
-  (Const Void)
+  ViewArticle.Query
   Profile.Query
 
 type ChildSlot = Either7
@@ -92,8 +92,8 @@ component =
       HH.slot' CP.cp5 unit Editor.component { authUser, slug: Nothing } absurd
     EditArticle slug -> 
       HH.slot' CP.cp5 unit Editor.component { authUser, slug: Just slug } absurd
-    ViewArticle _ -> 
-      HH.div_ []
+    ViewArticle slug -> 
+      HH.slot' CP.cp6 unit ViewArticle.component { authUser, slug } absurd
     Profile username -> 
       HH.slot' CP.cp7 unit Profile.component { username, authUser, tab: ArticlesTab } absurd
     Favorites username -> 
