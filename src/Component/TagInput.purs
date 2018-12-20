@@ -12,7 +12,6 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Test.Unit.Console as Console
 import Web.Event.Event (preventDefault)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent, code, toEvent)
 

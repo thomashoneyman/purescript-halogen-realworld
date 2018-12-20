@@ -84,7 +84,7 @@ component =
               , body
               , tagList: map Tag tagList
               }
-          H.query unit $ F.loadForm_ newFields 
+          H.query unit $ F.loadForm_ newFields
       pure a
 
     HandleForm msg a -> case msg of
@@ -93,11 +93,11 @@ component =
         st <- H.get
         articleWithMetadata <- case st.slug of
           Nothing -> createArticle res
-          Just slug -> updateArticle slug res
-        H.modify_ _ 
-          { article = either Failure Success articleWithMetadata
-          , slug = _.slug <$> preview _Right articleWithMetadata 
-          }
+          Just s -> updateArticle s res
+        let 
+          slug = _.slug <$> preview _Right articleWithMetadata
+        H.modify_ _ { article = either Failure Success articleWithMetadata, slug = slug }
+        for_ slug (navigate <<< ViewArticle)       
         pure a
       _ -> pure a
     

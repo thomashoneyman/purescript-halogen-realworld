@@ -8,16 +8,15 @@ import Prelude
 
 import Affjax (Request)
 import Conduit.Api.Request (AuthUser, BaseURL, runRequest, username)
-import Conduit.Capability.Authenticate (class Authenticate, deleteAuth, readAuth)
+import Conduit.Capability.Authenticate (class Authenticate, readAuth)
 import Conduit.Capability.LogMessages (class LogMessages, logError)
-import Conduit.Capability.Navigate (class Navigate, logout, navigate)
+import Conduit.Capability.Navigate (class Navigate, logout)
 import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Argonaut.Core (Json)
 import Data.Bifoldable (bitraverse_)
 import Data.Bitraversable (ltraverse)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Conduit.Data.Route as Route
 import Conduit.Data.Username (Username)
 import Effect.Aff.Class (class MonadAff)
 
@@ -52,7 +51,7 @@ withAuthUser
   -> m (Either String a)
 withAuthUser decode req =
   readAuth >>= case _ of
-    Left err -> logError err *> deleteAuth *> navigate Route.Login *> pure (Left err) 
+    Left err -> logError err *> pure (Left err) 
     Right au -> do
       { baseUrl } <- ask
       res <- runRequest (decode $ Just $ username au) (req au baseUrl)

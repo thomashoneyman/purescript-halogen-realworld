@@ -52,10 +52,15 @@ decodeArticles :: Maybe Username -> Json -> Either String (Array ArticleWithMeta
 decodeArticles u json = do
   arr <- (_ .: "articles") =<< decodeJson json 
   -- for now, we'll drop out malformed articles
-  sequence $ filter isRight $ map (decodeArticleWithMetadata u) arr
+  sequence $ filter isRight $ map (decodeArticleWithMetadata' u) arr
 
 decodeArticleWithMetadata :: Maybe Username -> Json -> Either String ArticleWithMetadata
 decodeArticleWithMetadata u json = do
+  obj <- (_ .: "article") =<< decodeJson json
+  decodeArticleWithMetadata' u obj 
+
+decodeArticleWithMetadata' :: Maybe Username -> Json -> Either String ArticleWithMetadata
+decodeArticleWithMetadata' u json = do
   obj <- decodeJson json
   slug <- obj .: "slug"
   title <- obj .: "title"
