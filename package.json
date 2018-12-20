@@ -4,7 +4,9 @@
   "description": "An exemplary real-world application demonstrating PureScript and the Halogen framework",
   "scripts": {
     "postinstall": "bower install",
-    "build": "pulp build --to dist/app.js"
+    "build": "pulp browserify --to dist/app.js",
+    "watch": "pulp -w browserify --to dist/app.js",
+    "build-prod": "pulp browserify --optimise --to dist/app.js"
   },
   "repository": {
     "type": "git",
