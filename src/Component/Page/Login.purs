@@ -132,8 +132,8 @@ renderFormless fstate =
     [ HH.fieldset_
       [ email
       , password
+      , submit "Log in"
       ]
-    , submit "Log in"
     ]
   where
   email = 

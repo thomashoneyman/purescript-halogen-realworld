@@ -11,9 +11,9 @@ import Conduit.Capability.Authenticate (class Authenticate)
 import Conduit.Data.Article (Article, CreateArticle, UpdateArticle)
 import Conduit.Data.Author (Author)
 import Conduit.Data.Comment (Comment, CommentId, CreateComment)
-import Data.Either (Either)
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (Profile, ProfileWithEmail, UpdateProfile)
 import Conduit.Data.Username (Username)
+import Data.Either (Either)
 import Halogen (HalogenM, lift)
 import Slug (Slug)
 
@@ -39,8 +39,8 @@ instance manageResourcesHalogenM :: ManageResource m => ManageResource (HalogenM
 -- in our application monad will simply perform the request and parse the response.
 
 class Authenticate m <= ManageAuthResource m where
-  getUser :: m (Either String Profile)
-  updateUser :: Profile -> m Unit
+  getUser :: m (Either String ProfileWithEmail)
+  updateUser :: UpdateProfile -> m Unit
   followUser :: Username -> m (Either String Author)
   unfollowUser :: Username -> m (Either String Author)
   createArticle :: CreateArticle -> m (Either String Article)

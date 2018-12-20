@@ -19,6 +19,7 @@ import Conduit.Data.Author (decodeAuthorProfile)
 import Conduit.Data.Comment (decodeComment, decodeComments)
 import Conduit.Data.Log (LogType(..))
 import Conduit.Data.Log as Log
+import Conduit.Data.Profile (decodeProfileWithEmail, encodeUpdateProfile)
 import Conduit.Data.Route as Route
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Decode (decodeJson, (.:))
@@ -152,9 +153,9 @@ instance manageResourceAppM :: ManageResource AppM where
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
   getUser = 
-    withAuthUser (const decodeJson) \t -> get (Auth t) Users
+    withAuthUser (const decodeProfileWithEmail) \t -> get (Auth t) User
   updateUser p = 
-    withAuthUser_ \t -> post (Auth t) (Just $ encodeJson p) Users
+    withAuthUser_ \t -> put (Auth t) ( encodeUpdateProfile p) User
   followUser u = 
     withAuthUser decodeAuthorProfile \t -> post (Auth t) Nothing (Follow u)
   unfollowUser u = 
