@@ -1,20 +1,20 @@
-module Conduit.Component.Page.Login where
+module Conduit.Page.Register where
 
 import Prelude
 
 import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.Authenticate (class Authenticate, authenticate)
+import Conduit.Capability.ManageResource (class ManageResource, register)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Route (Route(..))
-import Conduit.Form.Field (submit)
+import Conduit.Data.Username (Username)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype)
+import Data.Traversable (traverse_)
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Formless as Formless
@@ -25,26 +25,28 @@ import Halogen.HTML.Properties as HP
 
 data Query a
   = Initialize a
-  | HandleForm (F.Message' LoginForm) a
+  | HandleForm (F.Message' RegisterForm) a
 
 type State =
+  { authUser :: Maybe AuthUser
+  , registerError :: Maybe (Array String)
+  }
+
+type Input = 
   { authUser :: Maybe AuthUser }
 
-type Input =
-  { authUser :: Maybe AuthUser }
-
-type ChildQuery m = F.Query' LoginForm m
+type ChildQuery m = F.Query' RegisterForm m
 type ChildSlot = Unit
 
 component 
   :: forall m
    . MonadAff m 
   => Navigate m
-  => Authenticate m
+  => ManageResource m
   => H.Component HH.HTML Query Input Void m
 component = 
   H.lifecycleParentComponent
-    { initialState: identity
+    { initialState: \{ authUser } -> { authUser, registerError: Nothing }
     , render
     , eval
     , receiver: const Nothing
@@ -53,20 +55,20 @@ component =
     }
   where
   render :: State -> H.ParentHTML Query (ChildQuery m) ChildSlot m
-  render { authUser } =
+  render { registerError } =
     container
       [ HH.h1
         [ css "text-xs-center"]
-        [ HH.text "Sign In" ]
+        [ HH.text "Sign Up" ]
       , HH.p
         [ css "text-xs-center" ]
         [ HH.a 
-          [ safeHref Register ]
-          [ HH.text "Need an account?" ]
+          [ safeHref Login ]
+          [ HH.text "Already have an account?" ]
         ]
       , HH.slot unit Formless.component 
           { initialInputs: F.mkInputFields formProxy
-          , validators
+          , validators 
           , render: renderFormless 
           } 
           (HE.input HandleForm)
@@ -74,7 +76,7 @@ component =
     where
     container html =
       HH.div_
-        [ header authUser Login
+        [ header Nothing Register
         , HH.div
           [ css "auth-page" ]
           [ HH.div
@@ -97,9 +99,9 @@ component =
       pure a
 
     HandleForm msg a -> case msg of
-      F.Submitted formOutputs -> do
-        eitherUser <- authenticate $ F.unwrapOutputFields formOutputs
-        traverse_ (\_ -> navigate Home) eitherUser
+      F.Submitted formOutputs -> do 
+        eitherAuthUser <- register $ F.unwrapOutputFields formOutputs
+        traverse_ (\_ -> navigate Home) eitherAuthUser
         pure a
       _ -> pure a
 
@@ -107,39 +109,46 @@ component =
 -----
 -- Form
 
-newtype LoginForm r f = LoginForm (r
-  ( email :: f V.FormError String Email
+newtype RegisterForm r f = RegisterForm (r
+  ( username :: f V.FormError String Username
+  , email :: f V.FormError String Email
   , password :: f V.FormError String String
   ))
 
-derive instance newtypeLoginForm :: Newtype (LoginForm r f) _
+derive instance newtypeRegisterForm :: Newtype (RegisterForm r f) _
 
-formProxy :: F.FormProxy LoginForm
+formProxy :: F.FormProxy RegisterForm
 formProxy = F.FormProxy
 
-proxies :: F.SProxies LoginForm
+proxies :: F.SProxies RegisterForm
 proxies = F.mkSProxies formProxy
 
-validators :: forall form m. Monad m => LoginForm Record (F.Validation form m)
-validators = LoginForm
-  { email: V.required >>> V.minLength 3 >>> V.emailFormat 
-  , password: V.required >>> V.minLength 2 >>> V.maxLength 20
+validators :: forall m. Monad m => RegisterForm Record (F.Validation RegisterForm m)
+validators = RegisterForm
+  { username: V.required >>> V.usernameFormat
+  , email: V.required >>> V.minLength 3 >>> V.emailFormat
+  , password: V.required >>> V.minLength 8 >>> V.maxLength 20
   }
 
-renderFormless :: forall m. MonadAff m => F.State LoginForm m -> F.HTML' LoginForm m
+renderFormless :: forall m. MonadAff m => F.State RegisterForm m -> F.HTML' RegisterForm m
 renderFormless fstate =
   HH.form_
     [ HH.fieldset_
-      [ email
+      [ username
+      , email
       , password
-      , submit "Log in"
       ]
+    , Field.submit "Sign up"
     ]
   where
+  username = 
+    Field.input proxies.username fstate.form 
+      [ HP.placeholder "Username", HP.type_ HP.InputText ]
+
   email = 
     Field.input proxies.email fstate.form 
-      [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
+      [ HP.placeholder "Email", HP.type_ HP.InputEmail ] 
 
   password = 
     Field.input proxies.password fstate.form 
-      [ HP.placeholder "Password", HP.type_ HP.InputPassword ]
+      [ HP.placeholder "Password" , HP.type_ HP.InputPassword ]

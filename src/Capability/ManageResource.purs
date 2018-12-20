@@ -8,7 +8,7 @@ import Prelude
 import Conduit.Api.Endpoint (ArticleParams, Pagination)
 import Conduit.Api.Request (RegisterFields)
 import Conduit.Capability.Authenticate (class Authenticate)
-import Conduit.Data.Article (Article, CreateArticle, UpdateArticle)
+import Conduit.Data.Article (Article, ArticleWithMetadata)
 import Conduit.Data.Author (Author)
 import Conduit.Data.Comment (Comment, CommentId, CreateComment)
 import Conduit.Data.Profile (Profile, ProfileWithEmail, UpdateProfile)
@@ -22,8 +22,8 @@ class Monad m <= ManageResource m where
   getAuthor :: Username -> m (Either String Author)
   getTags :: m (Either String (Array String))
   getComments :: Slug -> m (Either String (Array Comment))
-  getArticle :: Slug -> m (Either String Article)
-  getArticles :: ArticleParams -> m (Either String (Array Article))
+  getArticle :: Slug -> m (Either String ArticleWithMetadata)
+  getArticles :: ArticleParams -> m (Either String (Array ArticleWithMetadata))
 
 instance manageResourcesHalogenM :: ManageResource m => ManageResource (HalogenM s f g p o m) where
   register = lift <<< register
@@ -43,14 +43,14 @@ class Authenticate m <= ManageAuthResource m where
   updateUser :: UpdateProfile -> m Unit
   followUser :: Username -> m (Either String Author)
   unfollowUser :: Username -> m (Either String Author)
-  createArticle :: CreateArticle -> m (Either String Article)
-  updateArticle :: Slug -> UpdateArticle -> m (Either String Article)
+  createArticle :: Article -> m (Either String ArticleWithMetadata)
+  updateArticle :: Slug -> Article -> m (Either String ArticleWithMetadata)
   deleteArticle :: Slug -> m Unit
   createComment :: Slug -> CreateComment -> m (Either String Comment)
   deleteComment :: Slug -> CommentId -> m Unit
-  favoriteArticle :: Slug -> m (Either String Article)
-  unfavoriteArticle :: Slug -> m (Either String Article)
-  getFeed :: Pagination -> m (Either String (Array Article))
+  favoriteArticle :: Slug -> m (Either String ArticleWithMetadata)
+  unfavoriteArticle :: Slug -> m (Either String ArticleWithMetadata)
+  getFeed :: Pagination -> m (Either String (Array ArticleWithMetadata))
 
 
 instance manageAuthResourceHalogenM :: ManageAuthResource m => ManageAuthResource (HalogenM s f g p o m) where

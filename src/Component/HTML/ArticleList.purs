@@ -3,7 +3,7 @@ module Conduit.Component.HTML.ArticleList where
 import Prelude
 
 import Conduit.Component.HTML.Utils (css, safeHref)
-import Conduit.Data.Article (Article)
+import Conduit.Data.Article ( ArticleWithMetadata)
 import Conduit.Data.Author (profile, username)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.PreciseDateTime as PDT
@@ -13,7 +13,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
 
-articleList :: forall i p. RemoteData String (Array Article) -> HH.HTML i p
+articleList :: forall i p. RemoteData String (Array ArticleWithMetadata) -> HH.HTML i p
 articleList = case _ of
   NotAsked -> text "Articles not yet loaded"
   Loading -> text "Loading..."
@@ -27,7 +27,7 @@ articleList = case _ of
       [ HH.text str ]
 
 -- Provided with a query representing navigation, build an article preview
-articlePreview :: forall i p. Article -> HH.HTML i p
+articlePreview :: forall i p. ArticleWithMetadata -> HH.HTML i p
 articlePreview article =
   HH.div
   [ css "article-preview" ]

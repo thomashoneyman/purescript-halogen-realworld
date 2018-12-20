@@ -9,17 +9,19 @@ import Conduit.Capability.LogMessages (class LogMessages, debugHush)
 import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource)
 import Conduit.Capability.Navigate (class Navigate)
 import Conduit.Capability.Now (class Now)
-import Conduit.Component.Page.Home as Home
-import Conduit.Component.Page.Login as Login
-import Conduit.Component.Page.Profile as Profile
-import Conduit.Component.Page.Register as Register
-import Conduit.Component.Page.Settings as Settings
 import Conduit.Data.Route (Route(..))
+import Conduit.Page.Editor as Editor
+import Conduit.Page.Home as Home
+import Conduit.Page.Login as Login
+import Conduit.Page.Profile (Tab(..))
+import Conduit.Page.Profile as Profile
+import Conduit.Page.Register as Register
+import Conduit.Page.Settings as Settings
 import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Either (hush)
-import Data.Either.Nested (Either9)
-import Data.Functor.Coproduct.Nested (Coproduct9)
+import Data.Either.Nested (Either7)
+import Data.Functor.Coproduct.Nested (Coproduct7)
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
@@ -35,20 +37,16 @@ data Query a
   = Initialize a
   | Navigate Route a
 
-type ChildQuery = Coproduct9
+type ChildQuery = Coproduct7
   Home.Query
   Login.Query
   Register.Query
   Settings.Query
-  (Const Void)
-  (Const Void)
+  Editor.Query
   (Const Void)
   Profile.Query
-  (Const Void)
 
-type ChildSlot = Either9
-  Unit
-  Unit
+type ChildSlot = Either7
   Unit
   Unit
   Unit
@@ -82,15 +80,24 @@ component =
 
   render :: State -> H.ParentHTML Query ChildQuery ChildSlot m
   render { route, authUser } = case route of
-    Home -> HH.slot' CP.cp1 unit Home.component { authUser } absurd
-    Login -> HH.slot' CP.cp2 unit Login.component { authUser } absurd
-    Register -> HH.slot' CP.cp3 unit Register.component { authUser } absurd
-    Settings -> HH.slot' CP.cp4 unit Settings.component { authUser } absurd
-    Editor -> HH.div_ []
-    EditArticle _ -> HH.div_ []
-    ViewArticle _ -> HH.div_ []
-    Profile username -> HH.slot' CP.cp8 unit Profile.component { username, authUser } absurd
-    Favorites _ -> HH.div_ []
+    Home -> 
+      HH.slot' CP.cp1 unit Home.component { authUser } absurd
+    Login -> 
+      HH.slot' CP.cp2 unit Login.component { authUser } absurd
+    Register -> 
+      HH.slot' CP.cp3 unit Register.component { authUser } absurd
+    Settings -> 
+      HH.slot' CP.cp4 unit Settings.component { authUser } absurd
+    Editor -> 
+      HH.slot' CP.cp5 unit Editor.component { authUser, slug: Nothing } absurd
+    EditArticle slug -> 
+      HH.slot' CP.cp5 unit Editor.component { authUser, slug: Just slug } absurd
+    ViewArticle _ -> 
+      HH.div_ []
+    Profile username -> 
+      HH.slot' CP.cp7 unit Profile.component { username, authUser, tab: ArticlesTab } absurd
+    Favorites username -> 
+      HH.slot' CP.cp7 unit Profile.component { username, authUser, tab: FavoritesTab } absurd
     Logout -> HH.text "Logging out..."
   
   eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void m

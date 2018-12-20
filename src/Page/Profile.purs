@@ -1,4 +1,4 @@
-module Conduit.Component.Page.Profile where
+module Conduit.Page.Profile where
 
 import Prelude
 
@@ -9,7 +9,7 @@ import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, safeHref)
-import Conduit.Data.Article (Article)
+import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Author (Author)
 import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
@@ -30,8 +30,8 @@ import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), isSuccess, toMaybe)
 
 type State =
-  { articles :: RemoteData String (Array Article)
-  , favorites :: RemoteData String (Array Article)
+  { articles :: RemoteData String (Array ArticleWithMetadata)
+  , favorites :: RemoteData String (Array ArticleWithMetadata)
   , author :: RemoteData String Author
   , authUser :: Maybe AuthUser
   , username :: Username
@@ -40,6 +40,7 @@ type State =
 
 type Input =
   { username :: Username
+  , tab :: Tab
   , authUser :: Maybe AuthUser 
   }
 
@@ -77,11 +78,11 @@ component =
   where 
 
   initialState :: Input -> State
-  initialState { authUser, username } =
+  initialState { authUser, username, tab } =
     { articles: NotAsked
     , favorites: NotAsked
     , author: NotAsked
-    , tab: ArticlesTab 
+    , tab
     , username
     , authUser
     }
@@ -207,8 +208,8 @@ component =
       [ css "articles-toggle" ]
       [ HH.ul
         [ css "nav nav-pills outline-active" ]
-        [ tab state ArticlesTab
-        , tab state FavoritesTab
+        [ mkTab state ArticlesTab
+        , mkTab state FavoritesTab
         ]
       ]
     , if state.tab == ArticlesTab 
@@ -216,8 +217,8 @@ component =
         else articleList state.favorites
     ]
   
-  tab :: forall i. State -> Tab -> H.HTML i Query
-  tab st thisTab =
+  mkTab :: forall i. State -> Tab -> H.HTML i Query
+  mkTab st thisTab =
     HH.li
       [ css "nav-item" ]
       [ HH.a

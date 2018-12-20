@@ -1,4 +1,4 @@
-module Conduit.Component.Page.Settings where
+module Conduit.Page.Settings where
 
 import Prelude
 
@@ -67,7 +67,7 @@ component =
       st <- H.get
       when (isNothing st.authUser) (navigate Logout)
 
-      H.modify_ _ { profile = NotAsked }
+      H.modify_ _ { profile = Loading }
       profileWithEmail <- getUser 
       H.modify_ _ { profile = either Failure Success profileWithEmail }
 
