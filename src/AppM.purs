@@ -14,18 +14,18 @@ import Conduit.Capability.LogMessages (class LogMessages, logError)
 import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Now (class Now)
+import Conduit.Data.Article (decodeArticle, decodeArticles)
+import Conduit.Data.Author (decodeAuthorProfile)
+import Conduit.Data.Comment (decodeComment, decodeComments)
+import Conduit.Data.Log (LogType(..))
+import Conduit.Data.Log as Log
+import Conduit.Data.Route as Route
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
-import Conduit.Data.Article (decodeArticle, decodeArticles)
-import Conduit.Data.Author (decodeAuthor)
-import Conduit.Data.Comment (decodeComment, decodeComments)
 import Data.Either (Either(..))
-import Conduit.Data.Log (LogType(..))
-import Conduit.Data.Log as Log
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Conduit.Data.Route as Route
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -139,8 +139,8 @@ instance manageResourceAppM :: ManageResource AppM where
     let tagDecoder = (_ .: "tags") <=< decodeJson
     { baseUrl } <- ask
     runRequest tagDecoder $ get NoAuth Tags baseUrl
-  getProfile u = 
-    withUser decodeAuthor $ get NoAuth $ Profiles u
+  getAuthor u = 
+    withUser decodeAuthorProfile $ get NoAuth $ Profiles u
   getComments u = 
     withUser decodeComments $ get NoAuth $ Comments u
   getArticle slug =
@@ -156,9 +156,9 @@ instance manageAuthResourceAppM :: ManageAuthResource AppM where
   updateUser p = 
     withAuthUser_ \t -> post (Auth t) (Just $ encodeJson p) Users
   followUser u = 
-    withAuthUser decodeAuthor \t -> post (Auth t) Nothing (Follow u)
+    withAuthUser decodeAuthorProfile \t -> post (Auth t) Nothing (Follow u)
   unfollowUser u = 
-    withAuthUser decodeAuthor \t -> delete (Auth t) (Follow u)
+    withAuthUser decodeAuthorProfile \t -> delete (Auth t) (Follow u)
   createArticle a = 
     withAuthUser decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
   updateArticle s a = 

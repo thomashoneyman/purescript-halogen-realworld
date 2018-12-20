@@ -11,6 +11,7 @@ import Conduit.Capability.Navigate (class Navigate)
 import Conduit.Capability.Now (class Now)
 import Conduit.Component.Page.Home as Home
 import Conduit.Component.Page.Login as Login
+import Conduit.Component.Page.Profile as Profile
 import Conduit.Component.Page.Register as Register
 import Conduit.Component.Page.Settings as Settings
 import Conduit.Data.Route (Route(..))
@@ -42,7 +43,7 @@ type ChildQuery = Coproduct9
   (Const Void)
   (Const Void)
   (Const Void)
-  (Const Void)
+  Profile.Query
   (Const Void)
 
 type ChildSlot = Either9
@@ -88,7 +89,7 @@ component =
     Editor -> HH.div_ []
     EditArticle _ -> HH.div_ []
     ViewArticle _ -> HH.div_ []
-    Profile _ -> HH.div_ []
+    Profile username -> HH.slot' CP.cp8 unit Profile.component { username, authUser } absurd
     Favorites _ -> HH.div_ []
     Logout -> HH.text "Logging out..."
   

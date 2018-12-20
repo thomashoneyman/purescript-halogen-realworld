@@ -19,7 +19,7 @@ import Slug (Slug)
 
 class Monad m <= ManageResource m where
   register :: RegisterFields -> m (Either String Profile)
-  getProfile :: Username -> m (Either String Author)
+  getAuthor :: Username -> m (Either String Author)
   getTags :: m (Either String (Array String))
   getComments :: Slug -> m (Either String (Array Comment))
   getArticle :: Slug -> m (Either String Article)
@@ -27,7 +27,7 @@ class Monad m <= ManageResource m where
 
 instance manageResourcesHalogenM :: ManageResource m => ManageResource (HalogenM s f g p o m) where
   register = lift <<< register
-  getProfile = lift <<< getProfile
+  getAuthor = lift <<< getAuthor
   getTags = lift getTags
   getComments = lift <<< getComments
   getArticle = lift <<< getArticle

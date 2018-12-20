@@ -15,10 +15,16 @@ import Network.RemoteData (RemoteData(..))
 
 articleList :: forall i p. RemoteData String (Array Article) -> HH.HTML i p
 articleList = case _ of
-  NotAsked -> HH.text "Not loaded"
-  Loading -> HH.text "Loading"
-  Failure err -> HH.text ("Error loading articles: " <> err)
+  NotAsked -> text "Articles not yet loaded"
+  Loading -> text "Loading..."
+  Failure err -> text ("Error loading articles: " <> err)
+  Success [] -> text "No articles are here...yet!"
   Success articles -> HH.div_ (articlePreview <$> articles)
+  where
+  text str = 
+    HH.div
+      [ css "article-preview" ]
+      [ HH.text str ]
 
 -- Provided with a query representing navigation, build an article preview
 articlePreview :: forall i p. Article -> HH.HTML i p
