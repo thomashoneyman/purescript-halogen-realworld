@@ -120,7 +120,7 @@ component =
     where
     container html =
       HH.div_
-        [ header authUser Settings
+        [ header authUser Editor
         , HH.div
           [ css "editor-page" ]
           [ HH.div

@@ -1,4 +1,4 @@
-var marked = require("marked.js");
+var marked = require("marked");
 
 marked.setOptions({
   pedantic: false,

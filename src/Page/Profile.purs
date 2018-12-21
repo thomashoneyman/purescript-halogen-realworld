@@ -4,11 +4,14 @@ import Prelude
 
 import Conduit.Api.Endpoint (noArticleParams)
 import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, followUser, getArticles, getAuthor, unfollowUser)
+import Conduit.Capability.LogMessages (class LogMessages)
+import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, getArticles, getAuthor)
 import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, safeHref)
+import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
+import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Author (Author)
 import Conduit.Data.Author as Author
@@ -20,14 +23,18 @@ import Conduit.Data.Username as Username
 import Control.Parallel (parTraverse_)
 import Data.Const (Const)
 import Data.Either (either)
+import Data.Lens (Traversal')
+import Data.Lens.Index (ix)
+import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
+import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..), isSuccess, toMaybe)
+import Network.RemoteData (RemoteData(..), _Success, isSuccess, toMaybe)
 
 type State =
   { articles :: RemoteData String (Array ArticleWithMetadata)
@@ -55,8 +62,10 @@ data Query a
   | LoadArticles a
   | LoadFavorites a
   | LoadAuthor a
-  | FollowUser a
-  | UnfollowUser a
+  | FollowAuthor a
+  | UnfollowAuthor a
+  | FavoriteArticle Int a
+  | UnfavoriteArticle Int a
   | ShowTab Tab a
 
 component
@@ -64,6 +73,7 @@ component
    . MonadAff m
   => ManageResource m
   => ManageAuthResource m
+  => LogMessages m
   => H.Component HH.HTML Query Input Void m
 component =
   H.lifecycleParentComponent
@@ -114,17 +124,17 @@ component =
       H.modify_ _ { author = either Failure Success author }
       pure a
     
-    FollowUser a -> do
-      st <- H.get
-      author <- followUser st.username
-      H.modify_ _ { author = either Failure Success author }
-      pure a
+    FollowAuthor a -> 
+      follow _author $> a
 
-    UnfollowUser a -> do
-      st <- H.get
-      author <- unfollowUser st.username
-      H.modify_ _ { author = either Failure Success author }
-      pure a
+    UnfollowAuthor a -> 
+      unfollow _author $> a
+
+    FavoriteArticle index a -> 
+      favorite (_article index) $> a
+
+    UnfavoriteArticle index a -> 
+      unfavorite (_article index) $> a
 
     ShowTab thisTab a -> do
       st <- H.get
@@ -136,6 +146,12 @@ component =
           FavoritesTab -> unless (isSuccess st.favorites) do
             void $ H.fork $ eval $ LoadFavorites a
       pure a
+  
+  _author :: Traversal' State Author
+  _author = prop (SProxy :: SProxy "author") <<< _Success
+
+  _article :: Int -> Traversal' State ArticleWithMetadata
+  _article i = prop (SProxy :: SProxy "articles") <<< _Success <<< ix i
 
   render :: State -> H.ParentHTML Query (Const Void) Void m
   render state@{ authUser } =
@@ -172,31 +188,13 @@ component =
           , maybeElem (_.bio =<< profile) \str ->
               HH.p_
                 [ HH.text str ]
-          , maybeElem (toMaybe state.author) \author -> 
-              case author of
-                Author.Following _ -> 
-                  HH.button
-                    [ css "btn btn-sm action-btn btn-outline-secondary" 
-                    , HE.onClick $ HE.input_ UnfollowUser
-                    ]
-                    [ HH.text $ " Unfollow " <> Username.toString state.username ]
-                Author.NotFollowing _ -> 
-                  HH.button
-                    [ css "btn btn-sm action-btn btn-outline-secondary" 
-                    , HE.onClick $ HE.input_ FollowUser
-                    ]
-                    [ HH.i 
-                      [ css "ion-plus-round"]
-                      []
-                    , HH.text $ " Follow " <> Username.toString state.username
-                    ]
-                Author.You _ -> HH.text ""
+          , maybeElem (toMaybe state.author) (followButton FollowAuthor UnfollowAuthor)
           ]
         ]
       ]
     ]
     where
-    profile :: Maybe Profile 
+    profile :: Maybe Profile
     profile = pure <<< Author.profile =<< toMaybe state.author
 
 
@@ -213,8 +211,8 @@ component =
         ]
       ]
     , if state.tab == ArticlesTab 
-        then articleList state.articles
-        else articleList state.favorites
+        then articleList FavoriteArticle UnfavoriteArticle state.articles
+        else articleList FavoriteArticle UnfavoriteArticle state.favorites
     ]
   
   mkTab :: forall i. State -> Tab -> H.HTML i Query

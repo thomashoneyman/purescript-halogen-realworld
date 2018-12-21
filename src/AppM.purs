@@ -174,7 +174,7 @@ instance manageAuthResourceAppM :: ManageAuthResource AppM where
     withAuthUser_ \t -> 
       delete (Auth t) (Article s)
   createComment s comment = 
-    withAuthUser decodeComment \t -> 
+    withAuthUser (\x -> decodeComment x <=< (_ .: "comment") <=< decodeJson) \t -> 
       post (Auth t) (Just $ encodeJson { comment }) (Comments s)
   deleteComment s cid = 
     withAuthUser_ \t -> 
