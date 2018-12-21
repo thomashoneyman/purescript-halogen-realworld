@@ -19,5 +19,4 @@ dist
 *.map
 
 # Saved
-!dist/app.js
 !dist/index.html
