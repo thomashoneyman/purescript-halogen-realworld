@@ -4,10 +4,11 @@
   "description": "An exemplary real-world application demonstrating PureScript and the Halogen framework",
   "scripts": {
     "postinstall": "bower install",
-    "build": "pulp build --to dist/app.js",
-    "watch": "pulp -w build --to dist/app.js",
-    "bundle": "pulp --then 'yarn parcel' build --to dist/app.js",
-    "parcel": "parcel build dist/app.js"
+    "build": "pulp --then 'parcel build dist/app.js' build --to dist/app.js",
+    "build-dev": "pulp build",
+    "watch-dev": "pulp -w build",
+    "build-serve": "pulp --then 'yarn parcel && http-server dist' build --to dist/app.js",
+    "watch-serve": "pulp -w --then 'parcel build dist/app.js && http-server dist' build --to dist/app.js"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
   },
   "dependencies": {
     "decimal.js": "^10.0.2",
+    "http-server": "^0.11.1",
     "marked": "^0.5.2"
   }
 }
