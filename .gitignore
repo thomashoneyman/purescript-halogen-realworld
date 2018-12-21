@@ -3,11 +3,21 @@
 bower_components
 node_modules
 
-# Generated files
+# Dot files
 .psci
 .pulp-cache
 .purs-repl
 .package-lock
 .psc-ide-port
+.cache
+
+# Generated
 output
+dce-output
+dist
 *.lock
+*.map
+
+# Saved
+!dist/index.js
+!dist/index.html
