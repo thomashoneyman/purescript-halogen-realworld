@@ -121,7 +121,7 @@ component =
         for_ (preview _Success st.article) \article -> do
           void $ createComment article.slug { body: st.myComment }
           comments <- getComments st.slug
-          H.modify_ _ { comments = either Failure Success comments }
+          H.modify_ _ { comments = either Failure Success comments, myComment = "" }
       pure a
 
     UpdateCommentText str a -> do

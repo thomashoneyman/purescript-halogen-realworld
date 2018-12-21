@@ -82,16 +82,19 @@ component =
   initialState { authUser } =
     { tags: NotAsked
     , articles: NotAsked
-    , tab: Feed 
+    , tab: if isJust authUser then Feed else Global 
     , authUser
     }
 
   eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
   eval = case _ of
     Initialize a -> do
+      st <- H.get
       parTraverse_ H.fork
-        [ eval $ LoadTags a
-        , eval $ LoadFeed { limit: Nothing, offset: Nothing } a
+        [ if isJust st.authUser 
+            then eval $ LoadFeed { limit: Nothing, offset: Nothing } a
+            else eval $ LoadArticles noArticleParams a
+        , eval $ LoadTags a
         ]
       pure a
 

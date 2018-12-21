@@ -17,6 +17,3 @@ dce-output
 dist
 *.lock
 *.map
-
-# Saved
-!dist/index.html
