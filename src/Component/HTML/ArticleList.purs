@@ -23,18 +23,22 @@ articleList
   -> RemoteData String (Array ArticleWithMetadata) 
   -> HH.HTML i (p Unit)
 articleList favoriteQuery unfavoriteQuery = case _ of
-  NotAsked -> text "Articles not yet loaded"
-  Loading -> text "Loading..."
-  Failure err -> text ("Error loading articles: " <> err)
-  Success [] -> text "No articles are here...yet!"
-  Success articles -> HH.div_ (articlePreview favoriteQuery unfavoriteQuery `mapWithIndex` articles)
+  NotAsked -> 
+    text "Articles not yet loaded"
+  Loading -> 
+    text "Loading..."
+  Failure err -> 
+    text ("Error loading articles: " <> err)
+  Success [] -> 
+    text "No articles are here...yet!"
+  Success articles -> 
+    HH.div_ (articlePreview favoriteQuery unfavoriteQuery `mapWithIndex` articles)
   where
   text str = 
     HH.div
       [ css "article-preview" ]
       [ HH.text str ]
 
--- Provided with a query representing navigation, build an article preview
 articlePreview 
   :: forall i p
    . (Int -> H.Action p)
@@ -61,7 +65,7 @@ articlePreview favoriteQuery unfavoriteQuery ix article =
         [ HH.text $ Username.toString uname ]
       , HH.span
         [ css "date" ]
-        [ HH.text $ PDT.toDisplay article.createdAt ]
+        [ HH.text $ PDT.toDisplayWeekName article.createdAt ]
       ]
     , HH.div
       [ css "pull-xs-right" ]

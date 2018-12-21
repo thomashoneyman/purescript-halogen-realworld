@@ -39,8 +39,9 @@ toRFC3339String = unwrap >>> PDT.toRFC3339String
 
 -- Display a human-readable version of the precise datetime, as described
 -- in the Conduit spec
-toDisplay :: PreciseDateTime -> String
-toDisplay = toDateTime >>> format dateFormatter
+
+toDisplayWeekName :: PreciseDateTime -> String
+toDisplayWeekName = toDateTime >>> format dateFormatter
   where
   dateFormatter :: List FormatterCommand
   dateFormatter = fromFoldable
@@ -49,6 +50,18 @@ toDisplay = toDateTime >>> format dateFormatter
     , MonthShort
     , Placeholder " "
     , DayOfMonth
+    , Placeholder ", "
+    , YearFull
+    ]
+
+toDisplayMonthDayYear :: PreciseDateTime -> String
+toDisplayMonthDayYear = toDateTime >>> format dateFormatter
+  where
+  dateFormatter :: List FormatterCommand
+  dateFormatter = fromFoldable
+    [ MonthFull
     , Placeholder " "
+    , DayOfMonth
+    , Placeholder ", "
     , YearFull
     ]

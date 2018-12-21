@@ -50,7 +50,7 @@ type Comment =
 
 decodeComments :: Maybe Username -> Json -> Either String (Array Comment)
 decodeComments u json = do
-  arr <- decodeJson json 
+  arr <- (_ .: "comments") =<< decodeJson json 
   traverse (decodeComment u) arr
 
 decodeComment :: Maybe Username -> Json -> Either String Comment

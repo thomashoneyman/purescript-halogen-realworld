@@ -5,24 +5,25 @@ import Prelude
 import Conduit.Api.Request (AuthUser)
 import Conduit.Api.Request as AuthUser
 import Conduit.Capability.LogMessages (class LogMessages)
-import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, deleteArticle, getArticle)
+import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, createComment, deleteArticle, deleteComment, getArticle, getComments)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
-import Conduit.Component.HTML.Utils (css, maybeElem, safeHref)
+import Conduit.Component.HTML.Utils (css, maybeElem, safeHref, whenElem)
 import Conduit.Component.Part.FavoriteButton (ButtonSize(..), favorite, favoriteButton, unfavorite)
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Component.RawHTML as RawHTML
 import Conduit.Data.Article (ArticleWithMetadata)
-import Conduit.Data.Author (Author)
+import Conduit.Data.Author (Author(..))
 import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
+import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Data.Either (either, hush)
+import Control.Parallel (parTraverse_)
+import Data.Either (either)
 import Data.Foldable (for_)
-import Data.Formatter.DateTime (formatDateTime)
 import Data.Lens (Traversal', preview)
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -37,6 +38,8 @@ import Slug (Slug)
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
+  , comments :: RemoteData String (Array Comment)
+  , myComment :: String
   , slug :: Slug
   , authUser :: Maybe AuthUser
   }
@@ -47,12 +50,17 @@ type Input =
   }
 
 data Query a
-  = GetArticle a
+  = Initialize a
+  | GetArticle a
+  | GetComments a
+  | AddComment a
+  | UpdateCommentText String a
   | FollowAuthor a
   | UnfollowAuthor a
   | FavoriteArticle a
   | UnfavoriteArticle a
   | DeleteArticle a
+  | DeleteComment CommentId a
 
 type ChildQuery = RawHTML.Query
 type ChildSlot = Unit
@@ -71,22 +79,54 @@ component =
     , render
     , eval
     , receiver: const Nothing
-    , initializer: Just $ H.action GetArticle
+    , initializer: Just $ H.action Initialize
     , finalizer: Nothing
     }
 
   where 
 
   initialState :: Input -> State
-  initialState { slug, authUser } = { article: NotAsked, slug, authUser }
+  initialState { slug, authUser } = 
+    { article: NotAsked
+    , comments: NotAsked
+    , myComment: ""
+    , slug
+    , authUser 
+    }
 
   eval :: Query ~> H.ParentDSL State Query ChildQuery Unit Void m
   eval = case _ of
+    Initialize a -> do
+      parTraverse_ H.fork
+        [ eval (GetArticle a) 
+        , eval (GetComments a) 
+        ]
+      pure a
+
     GetArticle a -> do
       st <- H.modify _ { article = Loading }
       article <- getArticle st.slug
       H.modify_ _ { article = either Failure Success article }
       pure a      
+
+    GetComments a -> do
+      st <- H.modify _ { comments = Loading }
+      comments <- getComments st.slug
+      H.modify_ _ { comments = either Failure Success comments }
+      pure a      
+    
+    AddComment a -> do
+      st <- H.get
+      when (st.myComment /= "") do
+        for_ (preview _Success st.article) \article -> do
+          void $ createComment article.slug { body: st.myComment }
+          comments <- getComments st.slug
+          H.modify_ _ { comments = either Failure Success comments }
+      pure a
+
+    UpdateCommentText str a -> do
+      H.modify_ _ { myComment = str }
+      pure a
 
     FollowAuthor a -> 
       follow _author $> a
@@ -105,6 +145,13 @@ component =
       for_ (preview _Success st.article) (deleteArticle <<< _.slug) 
       navigate Home
       pure a
+    
+    DeleteComment commentId a -> do
+      st <- H.get
+      deleteComment st.slug commentId
+      comments <- getComments st.slug
+      H.modify_ _ { comments = either Failure Success comments }
+      pure a
   
   _author :: Traversal' State Author
   _author = _article <<< prop (SProxy :: SProxy "author")
@@ -118,7 +165,7 @@ component =
       [ css "article-page" ]
       [ header state.authUser (ViewArticle state.slug)
       , maybeElem mbArticle banner
-      , maybeElem mbArticle content 
+      , maybeElem mbArticle content
       , footer
       ]
     where
@@ -135,6 +182,65 @@ component =
           , articleMeta article
           ]
         ]
+
+    content article =
+      HH.div
+        [ css "container page" ]
+        [ HH.div
+          [ css "col-xs-12" ]
+          [ HH.slot unit RawHTML.component { markdown } absurd 
+          , HH.ul  
+            [ css "tag-list" ]
+            (renderTag <$> article.tagList)
+          , HH.hr_
+          , HH.div
+            [ css "article-actions" ]
+            [ articleMeta article ]
+          , HH.div
+            [ css "row" ]
+            [ HH.div
+              [ css "col-xs-12 col-md-8 offset-md-2" ]
+              ( append 
+                [ maybeElem state.authUser \au ->
+                    HH.form 
+                      [ css "card comment-form"
+                      , HE.onSubmit $ HE.input_ AddComment 
+                      ]
+                      [ HH.div
+                        [ css "card-block" ]
+                        [ HH.textarea 
+                          [ css "form-control" 
+                          , HP.placeholder "Write a comment..." 
+                          , HP.rows 3
+                          , HE.onValueInput $ HE.input UpdateCommentText
+                          ]
+                        ]
+                      , HH.div
+                        [ css "card-footer" ]
+                        [ HH.img 
+                          [ css "comment-author-img" 
+                          , HP.src "" -- TODO: get the avatar
+                          ]
+                        , HH.button
+                          [ css "btn btn-sm btn-primary" 
+                          , HP.type_ HP.ButtonSubmit 
+                          ]
+                          [ HH.text "Post Comment" ]
+                        ]
+                      ]
+                ]
+                case preview _Success state.comments of 
+                  Nothing -> [ HH.text "" ]
+                  Just arr -> viewComment <$> arr
+              )
+            ]
+          ]
+        ]
+      where
+      renderTag str = 
+        HH.li 
+          [ css "tag-default tag-pill tag-outline" ] 
+          [ HH.text str ]
     
     articleMeta article =
       HH.div
@@ -153,7 +259,7 @@ component =
             [ HH.text $ Username.toString username ]
           , HH.span
             [ css "date" ]
-            [ HH.text $ fromMaybe "" $ hush $ formatDateTime "MMMM DD, YYYY" $ PDT.toDateTime article.createdAt ]
+            [ HH.text $ PDT.toDisplayMonthDayYear article.createdAt ]
           ]
         , case state.authUser of
             Just au | AuthUser.username au == username ->
@@ -189,24 +295,50 @@ component =
       username = Author.username article.author
       avatar = (Author.profile article.author).image
 
-    content article =
+    viewComment comment =
       HH.div
-        [ css "container page" ]
-        [ HH.div
-          [ css "col-xs-12" ]
-          [ HH.slot unit RawHTML.component { markdown } absurd 
-          , HH.ul  
-            [ css "tag-list" ]
-            (renderTag <$> article.tagList)
-          , HH.hr_
-          , HH.div
-            [ css "article-actions" ]
-            [ articleMeta article ]
+        [ css "card" ]
+        [ HH.div 
+          [ css "card-block" ]
+          [ HH.p 
+            [ css "card-text" ]
+            [ HH.text comment.body ]
+          ]
+        , HH.div
+          [ css "card-footer" ]
+          [ HH.a
+            [ css "comment-author" 
+            , safeHref $ Profile authorUsername
+            ]
+            [ HH.img 
+              [ css "comment-author-img" 
+              , HP.src $ Avatar.toStringWithDefault $ _.image $ Author.profile comment.author
+              ]
+            ]
+          , HH.text " "
+          , HH.a
+            [ css "comment-author" 
+            , safeHref $ Profile authorUsername
+            ]
+            [ HH.text $ Username.toString authorUsername ]
+          , HH.text " "
+          , HH.span
+            [ css "date-posted" ]
+            [ HH.text $ PDT.toDisplayMonthDayYear comment.createdAt ]
+          , whenElem (isAuthor comment.author) \_ ->
+              HH.span
+                [ css "mod-options" ]
+                [ HH.i 
+                  [ css "ion-trash-a" 
+                  , HE.onClick $ HE.input_ $ DeleteComment comment.id
+                  ]
+                  []
+                ]
           ]
         ]
       where
-      renderTag str = 
-        HH.li 
-          [ css "tag-default tag-pill tag-outline" ] 
-          [ HH.text str ]
+      authorUsername = Author.username comment.author
+      isAuthor = case _ of
+        You _ -> true
+        _ -> false
       
