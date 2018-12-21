@@ -25,6 +25,8 @@ data ButtonSize
   = Icon
   | Medium
 
+derive instance eqButtonSize :: Eq ButtonSize 
+
 favoriteButton 
   :: forall i p
    . ButtonSize 
@@ -34,17 +36,23 @@ favoriteButton
   -> HH.HTML i (p Unit)
 favoriteButton buttonSize favoriteQuery unfavoriteQuery article =
   HH.button
-    [ css "btn btn-sm btn-primary" 
+    [ css $ "btn btn-sm " <> if buttonSize == Icon then "btn-outline-primary" else "btn-primary"
     , HE.onClick $ HE.input_ $ if article.favorited then unfavoriteQuery else favoriteQuery
     ]
     [ HH.i 
       [ css "ion-heart" ]
       []
     , HH.span_
-      [ HH.text $ if article.favorited then "Unfavorite Article" else "Favorite Article" ]
+      [ HH.text $ case article.favorited, buttonSize of 
+          true, Medium -> " Unfavorite Article" 
+          _, Medium -> " Favorite Article" 
+          _, _ -> " "
+      ]
     , HH.span
       [ css "counter" ]
-      [ HH.text $ "(" <> show article.favoritesCount <> ")" ]
+      [ HH.text $ case buttonSize of
+          Icon -> " " <> show article.favoritesCount
+          _ -> " (" <> show article.favoritesCount <> ")" ]
     ]
 
 -- Eval
@@ -82,5 +90,5 @@ act cond f _article = do
       new <- H.lift $ f article.slug
       case new of
         Left str -> logError str
-        Right newAuthor -> 
-          H.put (set _article newAuthor st)
+        Right newArticle -> 
+          H.modify_ (set _article newArticle)

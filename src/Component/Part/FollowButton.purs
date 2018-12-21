@@ -34,7 +34,7 @@ followButton
 followButton followQuery unfollowQuery author = case author of
   Author.Following _ -> 
     HH.button
-      [ css "btn btn-sm action-btn btn-outline-secondary" 
+      [ css "btn btn-sm action-btn btn-secondary" 
       , HE.onClick $ HE.input_ unfollowQuery
       ]
       [ HH.text $ " Unfollow " <> Username.toString (Author.username author) ]
@@ -97,4 +97,4 @@ act cond f _author = do
       case new of
         Left str -> logError str
         Right newAuthor -> 
-          H.put (set _author newAuthor st)
+          H.modify_ (set _author newAuthor)

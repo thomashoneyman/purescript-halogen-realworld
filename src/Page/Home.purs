@@ -4,24 +4,30 @@ import Prelude
 
 import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Api.Request (AuthUser)
+import Conduit.Capability.LogMessages (class LogMessages)
 import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, getArticles, getFeed, getTags)
 import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, whenElem)
+import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Route (Route(..))
 import Control.Parallel (parTraverse_)
 import Data.Const (Const)
 import Data.Either (either)
+import Data.Lens (Traversal')
+import Data.Lens.Index (ix)
+import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
+import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..))
+import Network.RemoteData (RemoteData(..), _Success)
 
 type State =
   { tags :: RemoteData String (Array String)
@@ -50,12 +56,15 @@ data Query a
   | LoadFeed Pagination a
   | LoadArticles ArticleParams a
   | LoadTags a
+  | FavoriteArticle Int a
+  | UnfavoriteArticle Int a
 
 component
   :: forall m
    . MonadAff m
   => ManageResource m
   => ManageAuthResource m
+  => LogMessages m
   => H.Component HH.HTML Query Input Void m
 component =
   H.lifecycleParentComponent
@@ -113,6 +122,15 @@ component =
           Global -> eval $ LoadArticles noArticleParams a
           Tag tag -> eval $ LoadArticles (noArticleParams { tag = Just tag }) a
       pure a
+    
+    FavoriteArticle index a -> 
+      favorite (_article index) $> a
+
+    UnfavoriteArticle index a -> 
+      unfavorite (_article index) $> a
+  
+  _article :: Int -> Traversal' State ArticleWithMetadata
+  _article i = prop (SProxy :: SProxy "articles") <<< _Success <<< ix i
 
   render :: State -> H.ParentHTML Query (Const Void) Void m
   render state@{ tags, articles, authUser } =
@@ -154,7 +172,7 @@ component =
         , whenElem (tabIsTag state.tab) \_ -> tab state state.tab
         ]
       ]
-    , articleList state.articles
+    , articleList FavoriteArticle UnfavoriteArticle state.articles
     ]
   
   banner :: forall i p. HH.HTML i p 

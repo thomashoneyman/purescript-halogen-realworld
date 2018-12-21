@@ -3,23 +3,31 @@ module Conduit.Component.HTML.ArticleList where
 import Prelude
 
 import Conduit.Component.HTML.Utils (css, safeHref)
+import Conduit.Component.Part.FavoriteButton (favoriteButton, ButtonSize(..))
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Author (profile, username)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
+import Data.Array (mapWithIndex)
+import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
 
-articleList :: forall i p. RemoteData String (Array ArticleWithMetadata) -> HH.HTML i p
-articleList = case _ of
+articleList 
+  :: forall i p
+   . (Int -> H.Action p)
+  -> (Int -> H.Action p)
+  -> RemoteData String (Array ArticleWithMetadata) 
+  -> HH.HTML i (p Unit)
+articleList favoriteQuery unfavoriteQuery = case _ of
   NotAsked -> text "Articles not yet loaded"
   Loading -> text "Loading..."
   Failure err -> text ("Error loading articles: " <> err)
   Success [] -> text "No articles are here...yet!"
-  Success articles -> HH.div_ (articlePreview <$> articles)
+  Success articles -> HH.div_ (articlePreview favoriteQuery unfavoriteQuery `mapWithIndex` articles)
   where
   text str = 
     HH.div
@@ -27,8 +35,14 @@ articleList = case _ of
       [ HH.text str ]
 
 -- Provided with a query representing navigation, build an article preview
-articlePreview :: forall i p. ArticleWithMetadata -> HH.HTML i p
-articlePreview article =
+articlePreview 
+  :: forall i p
+   . (Int -> H.Action p)
+  -> (Int -> H.Action p)
+  -> Int
+  -> ArticleWithMetadata 
+  -> HH.HTML i (p Unit)
+articlePreview favoriteQuery unfavoriteQuery ix article =
   HH.div
   [ css "article-preview" ]
   [ HH.div
@@ -51,14 +65,7 @@ articlePreview article =
       ]
     , HH.div
       [ css "pull-xs-right" ]
-      [ HH.button
-        [ css "btn btn-sm btn-outline-primary" ]
-        [ HH.i 
-          [ css "ion-heart" ] 
-          []
-        , HH.text $ "\160" <> show article.favoritesCount 
-        ]
-      ]
+      [ favoriteButton Icon (favoriteQuery ix) (unfavoriteQuery ix) article ]
     ]
   , HH.a
     [ css "preview-link" 

@@ -10,6 +10,7 @@ import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, safeHref)
+import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Author (Author)
@@ -23,6 +24,7 @@ import Control.Parallel (parTraverse_)
 import Data.Const (Const)
 import Data.Either (either)
 import Data.Lens (Traversal')
+import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
@@ -62,6 +64,8 @@ data Query a
   | LoadAuthor a
   | FollowAuthor a
   | UnfollowAuthor a
+  | FavoriteArticle Int a
+  | UnfavoriteArticle Int a
   | ShowTab Tab a
 
 component
@@ -120,13 +124,17 @@ component =
       H.modify_ _ { author = either Failure Success author }
       pure a
     
-    FollowAuthor a ->
-      follow _author 
-        *> eval (LoadAuthor a)
+    FollowAuthor a -> 
+      follow _author $> a
 
-    UnfollowAuthor a ->
-      unfollow _author
-        *> eval (LoadAuthor a)
+    UnfollowAuthor a -> 
+      unfollow _author $> a
+
+    FavoriteArticle index a -> 
+      favorite (_article index) $> a
+
+    UnfavoriteArticle index a -> 
+      unfavorite (_article index) $> a
 
     ShowTab thisTab a -> do
       st <- H.get
@@ -141,6 +149,9 @@ component =
   
   _author :: Traversal' State Author
   _author = prop (SProxy :: SProxy "author") <<< _Success
+
+  _article :: Int -> Traversal' State ArticleWithMetadata
+  _article i = prop (SProxy :: SProxy "articles") <<< _Success <<< ix i
 
   render :: State -> H.ParentHTML Query (Const Void) Void m
   render state@{ authUser } =
@@ -183,7 +194,7 @@ component =
       ]
     ]
     where
-    profile :: Maybe Profile 
+    profile :: Maybe Profile
     profile = pure <<< Author.profile =<< toMaybe state.author
 
 
@@ -200,8 +211,8 @@ component =
         ]
       ]
     , if state.tab == ArticlesTab 
-        then articleList state.articles
-        else articleList state.favorites
+        then articleList FavoriteArticle UnfavoriteArticle state.articles
+        else articleList FavoriteArticle UnfavoriteArticle state.favorites
     ]
   
   mkTab :: forall i. State -> Tab -> H.HTML i Query
