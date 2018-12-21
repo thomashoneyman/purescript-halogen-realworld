@@ -9305,27 +9305,15 @@ var Medium = (function () {
     Medium.value = new Medium();
     return Medium;
 })();
-var eqButtonSize = new Data_Eq.Eq(function (x) {
-    return function (y) {
-        if (x instanceof Icon && y instanceof Icon) {
-            return true;
-        };
-        if (x instanceof Medium && y instanceof Medium) {
-            return true;
-        };
-        return false;
-    };
-});
 var favoriteButton = function (buttonSize) {
     return function (favoriteQuery) {
         return function (unfavoriteQuery) {
             return function (article) {
                 return Halogen_HTML_Elements.button([ Conduit_Component_HTML_Utils.css("btn btn-sm " + (function () {
-                    var $16 = Data_Eq.eq(eqButtonSize)(buttonSize)(Icon.value);
-                    if ($16) {
-                        return "btn-outline-primary";
+                    if (article.favorited) {
+                        return "btn-primary";
                     };
-                    return "btn-primary";
+                    return "btn-outline-primary";
                 })()), Halogen_HTML_Events.onClick(Halogen_HTML_Events.input_((function () {
                     if (article.favorited) {
                         return unfavoriteQuery;
@@ -9349,6 +9337,17 @@ var favoriteButton = function (buttonSize) {
         };
     };
 };
+var eqButtonSize = new Data_Eq.Eq(function (x) {
+    return function (y) {
+        if (x instanceof Icon && y instanceof Icon) {
+            return true;
+        };
+        if (x instanceof Medium && y instanceof Medium) {
+            return true;
+        };
+        return false;
+    };
+});
 var act = function (dictManageAuthResource) {
     return function (dictLogMessages) {
         return function (cond) {

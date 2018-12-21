@@ -36,7 +36,7 @@ favoriteButton
   -> HH.HTML i (p Unit)
 favoriteButton buttonSize favoriteQuery unfavoriteQuery article =
   HH.button
-    [ css $ "btn btn-sm " <> if buttonSize == Icon then "btn-outline-primary" else "btn-primary"
+    [ css $ "btn btn-sm " <> if article.favorited then "btn-primary" else "btn-outline-primary"
     , HE.onClick $ HE.input_ $ if article.favorited then unfavoriteQuery else favoriteQuery
     ]
     [ HH.i 
