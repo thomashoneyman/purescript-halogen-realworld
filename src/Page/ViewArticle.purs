@@ -6,7 +6,6 @@ import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, deleteArticle, getArticle)
 import Conduit.Capability.Resource.Comment (class ManageComment, createComment, deleteComment, getComments)
 import Conduit.Capability.Resource.User (class ManageUser)
-import Conduit.Capability.Utils (guardSession)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, safeHref, whenElem)
@@ -22,7 +21,7 @@ import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Control.Monad.Reader (class MonadAsk)
+import Control.Monad.Reader (class MonadAsk, asks)
 import Control.Parallel (parTraverse_)
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview)
@@ -32,6 +31,7 @@ import Data.Maybe as Maybe
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
+import Effect.Ref as Ref
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -101,7 +101,7 @@ component =
   eval = case _ of
     Initialize a -> do
       parTraverse_ H.fork [ eval (GetArticle a), eval (GetComments a) ]
-      mbProfile <- guardSession
+      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.currentUser
       H.modify_ _ { currentUser = mbProfile } 
       pure a
 

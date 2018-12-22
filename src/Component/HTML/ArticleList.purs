@@ -2,25 +2,31 @@ module Conduit.Component.HTML.ArticleList where
 
 import Prelude
 
-import Conduit.Component.HTML.Utils (css, safeHref)
+import Conduit.Component.HTML.Utils (css, safeHref, whenElem)
 import Conduit.Component.Part.FavoriteButton (favoriteButton, ButtonSize(..))
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Author (profile, username)
 import Conduit.Data.Avatar as Avatar
+import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Data.Array (mapWithIndex)
+import Data.Enum (enumFromTo)
+import Data.Foldable (length)
+import Data.Monoid (guard)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
+import Web.UIEvent.MouseEvent (MouseEvent)
 
 articleList 
   :: forall i p
    . (Int -> H.Action p)
   -> (Int -> H.Action p)
-  -> RemoteData String (Array ArticleWithMetadata) 
+  -> RemoteData String (PaginatedArray ArticleWithMetadata) 
   -> HH.HTML i (p Unit)
 articleList favoriteQuery unfavoriteQuery = case _ of
   NotAsked -> 
@@ -29,10 +35,11 @@ articleList favoriteQuery unfavoriteQuery = case _ of
     text "Loading..."
   Failure err -> 
     text ("Error loading articles: " <> err)
-  Success [] -> 
+  Success { body } | length body == 0 -> 
     text "No articles are here...yet!"
   Success articles -> 
-    HH.div_ (articlePreview favoriteQuery unfavoriteQuery `mapWithIndex` articles)
+    HH.div_ 
+      (articlePreview favoriteQuery unfavoriteQuery `mapWithIndex` articles.body)
   where
   text str = 
     HH.div
@@ -95,3 +102,24 @@ renderTag tag =
   HH.li
   [ css "tag-default tag-pill tag-outline" ]
   [ HH.text tag ]
+
+-- Pagination
+
+renderPagination :: forall i p. (Int -> MouseEvent -> H.Action p) -> Int -> PaginatedArray ArticleWithMetadata -> HH.HTML i (p Unit)
+renderPagination query currentIndex { body, total } =
+  whenElem (total > 20) \_ ->
+    HH.ul  
+      [ css "pagination" ]
+      (renderPageLink query currentIndex <$> enumFromTo 1 (total / 20))
+
+renderPageLink :: forall i p. (Int -> MouseEvent -> H.Action p) -> Int -> Int -> HH.HTML i (p Unit)
+renderPageLink query activeIndex index =
+  HH.li
+    [ css $ "page-item" <> guard (activeIndex == index) " active" ]
+    [ HH.a 
+      [ css "page-link"
+      , HP.href "" -- needed for realworld css; remember to prevent default! 
+      , HE.onClick $ HE.input $ query index
+      ]
+      [ HH.text $ show index ]
+    ]

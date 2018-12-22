@@ -17,22 +17,23 @@ import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))
 import Slug (Slug)
 
--- Standard pagination
-
-type Pagination =
-  { limit :: Maybe Int 
-  , offset :: Maybe Int 
-  }
-
 -- Possible parameters that can be passed to the Article endpoint
 
 type ArticleParams =
   { tag :: Maybe String 
   , author :: Maybe Username 
   , favorited :: Maybe Username
-  , offset :: Maybe Int
-  , limit :: Maybe Int
+  | PaginationRep 
   }
+
+-- Standard pagination
+
+type Pagination = { | PaginationRep  }
+
+type PaginationRep =
+  ( limit :: Maybe Int 
+  , offset :: Maybe Int 
+  )
 
 noArticleParams :: ArticleParams
 noArticleParams =

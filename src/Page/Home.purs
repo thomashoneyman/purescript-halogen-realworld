@@ -6,13 +6,14 @@ import Conduit.Capability.Navigate (class Navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, getArticles, getCurrentUserFeed)
 import Conduit.Capability.Resource.Tag (class ManageTag, getAllTags)
 import Conduit.Capability.Utils (guardSession)
-import Conduit.Component.HTML.ArticleList (articleList)
+import Conduit.Component.HTML.ArticleList (articleList, renderPagination)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
-import Conduit.Component.HTML.Utils (css, whenElem)
+import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Endpoint (ArticleParams, Pagination, noArticleParams)
+import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Control.Monad.Reader (class MonadAsk)
@@ -28,13 +29,16 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
+import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
+import Web.Event.Event (preventDefault)
+import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 type State =
   { tags :: RemoteData String (Array String)
-  , articles :: RemoteData String (Array ArticleWithMetadata)
+  , articles :: RemoteData String (PaginatedArray ArticleWithMetadata)
   , tab :: Tab
   , currentUser :: Maybe Profile
+  , page :: Int
   }
 
 data Tab
@@ -56,6 +60,7 @@ data Query a
   | LoadTags a
   | FavoriteArticle Int a
   | UnfavoriteArticle Int a
+  | SelectPage Int MouseEvent a
 
 component
   :: forall m r
@@ -74,15 +79,14 @@ component =
     , initializer: Just $ H.action Initialize
     , finalizer: Nothing
     }
-
   where 
-
   initialState :: Unit -> State
   initialState _ =
     { tags: NotAsked
     , articles: NotAsked
     , tab: Global 
     , currentUser: Nothing
+    , page: 1
     }
 
   eval :: Query ~> H.ComponentDSL State Query Void m
@@ -93,7 +97,7 @@ component =
         Nothing -> do 
           void $ H.fork $ eval $ LoadArticles noArticleParams a
         profile -> do
-          void $ H.fork $ eval $ LoadFeed { limit: Nothing, offset: Nothing } a
+          void $ H.fork $ eval $ LoadFeed { limit: Just 20, offset: Nothing } a
           H.modify_ _ { currentUser = profile, tab = Feed }
       pure a
 
@@ -104,7 +108,7 @@ component =
       pure a
 
     LoadFeed params a -> do
-      H.modify_ _ { articles = Loading }
+      st <- H.modify _ { articles = Loading }
       articles <- getCurrentUserFeed params
       H.modify_ _ { articles = fromMaybe articles }
       pure a      
@@ -120,9 +124,12 @@ component =
       when (thisTab /= st.tab) do
         H.modify_ _ { tab = thisTab }
         void $ H.fork $ eval case thisTab of 
-          Feed -> LoadFeed { limit: Nothing, offset: Nothing } a 
-          Global -> LoadArticles noArticleParams a
-          Tag tag -> LoadArticles (noArticleParams { tag = Just tag }) a
+          Feed -> 
+            LoadFeed { limit: Just 20, offset: Nothing } a 
+          Global -> 
+            LoadArticles (noArticleParams { limit = Just 20 }) a
+          Tag tag -> 
+            LoadArticles (noArticleParams { tag = Just tag, limit = Just 20 }) a
       pure a
     
     FavoriteArticle index a -> 
@@ -130,9 +137,26 @@ component =
 
     UnfavoriteArticle index a -> 
       unfavorite (_article index) $> a
+    
+    SelectPage index event a -> do
+      H.liftEffect $ preventDefault $ toEvent event
+      st <- H.modify _ { page = index }
+      let offset = Just (index * 20)
+      void $ H.fork $ eval case st.tab of 
+        Feed -> 
+          LoadFeed { limit: Just 20, offset } a 
+        Global -> 
+          LoadArticles (noArticleParams { limit = Just 20, offset = offset }) a
+        Tag tag -> 
+          LoadArticles (noArticleParams { tag = Just tag, limit = Just 20, offset = offset }) a
+      pure a
   
   _article :: Int -> Traversal' State ArticleWithMetadata
-  _article i = prop (SProxy :: SProxy "articles") <<< _Success <<< ix i
+  _article i = 
+    prop (SProxy :: SProxy "articles") 
+      <<< _Success 
+      <<< prop (SProxy :: SProxy "body") 
+      <<< ix i
 
   render :: State -> H.ComponentHTML Query
   render state@{ tags, articles, currentUser } =
@@ -175,6 +199,8 @@ component =
         ]
       ]
     , articleList FavoriteArticle UnfavoriteArticle state.articles
+    , maybeElem (toMaybe state.articles) \paginated ->  
+        renderPagination SelectPage state.page paginated
     ]
   
   banner :: forall i p. HH.HTML i p 
