@@ -1,4 +1,4 @@
-module Conduit.Api.Endpoint where
+module Conduit.Data.Endpoint where
 
 -- We'll use a smart constructor once again to provide a reasonable guarantee that
 -- the string being passed is a valid endpoint.
@@ -16,7 +16,6 @@ import Routing.Duplex (RouteDuplex', int, optional, prefix, root, segment, strin
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))
 import Slug (Slug)
-
 
 -- Standard pagination
 

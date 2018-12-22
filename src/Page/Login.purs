@@ -2,20 +2,21 @@ module Conduit.Page.Login where
 
 import Prelude
 
-import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.Authenticate (class Authenticate, authenticate)
-import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Capability.Navigate (class Navigate)
+import Conduit.Capability.Utils (guardSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
 import Conduit.Data.Email (Email)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field (submit)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Data.Foldable (traverse_)
-import Data.Maybe (Maybe(..), isJust)
+import Control.Monad.Reader (class MonadAsk)
+import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref (Ref)
 import Formless as F
 import Formless as Formless
 import Halogen as H
@@ -28,23 +29,19 @@ data Query a
   | HandleForm (F.Message' LoginForm) a
 
 type State =
-  { authUser :: Maybe AuthUser }
-
-type Input =
-  { authUser :: Maybe AuthUser }
+  { currentUser :: Maybe Profile }
 
 type ChildQuery m = F.Query' LoginForm m
-type ChildSlot = Unit
 
 component 
-  :: forall m
+  :: forall m r
    . MonadAff m 
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
-  => Authenticate m
-  => H.Component HH.HTML Query Input Void m
+  => H.Component HH.HTML Query Unit Void m
 component = 
   H.lifecycleParentComponent
-    { initialState: identity
+    { initialState: \_ -> { currentUser: Nothing }
     , render
     , eval
     , receiver: const Nothing
@@ -52,8 +49,23 @@ component =
     , finalizer: Nothing
     }
   where
-  render :: State -> H.ParentHTML Query (ChildQuery m) ChildSlot m
-  render { authUser } =
+  eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
+  eval = case _ of
+    Initialize a -> do
+      mbProfile <- guardSession
+      H.modify_ _ { currentUser = mbProfile } 
+      pure a
+
+    HandleForm msg a -> case msg of
+      F.Submitted formOutputs -> do
+        -- TODO
+        -- eitherUser <- authenticate $ F.unwrapOutputFields formOutputs
+        -- traverse_ (\_ -> navigate Home) eitherUser
+        pure a
+      _ -> pure a
+
+  render :: State -> H.ParentHTML Query (ChildQuery m) Unit m
+  render { currentUser } =
     container
       [ HH.h1
         [ css "text-xs-center"]
@@ -74,7 +86,7 @@ component =
     where
     container html =
       HH.div_
-        [ header authUser Login
+        [ header currentUser Login
         , HH.div
           [ css "auth-page" ]
           [ HH.div
@@ -89,22 +101,6 @@ component =
           ]
         ]
 
-  eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
-  eval = case _ of
-    Initialize a -> do
-      st <- H.get
-      when (isJust st.authUser) (navigate Home)
-      pure a
-
-    HandleForm msg a -> case msg of
-      F.Submitted formOutputs -> do
-        eitherUser <- authenticate $ F.unwrapOutputFields formOutputs
-        traverse_ (\_ -> navigate Home) eitherUser
-        pure a
-      _ -> pure a
-
-
------
 -- Form
 
 newtype LoginForm r f = LoginForm (r

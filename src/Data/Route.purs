@@ -29,7 +29,6 @@ data Route
   | ViewArticle Slug
   | Profile Username
   | Favorites Username
-  | Logout
 
 derive instance genericRoute :: Generic Route _
 derive instance eqRoute :: Eq Route
@@ -57,7 +56,6 @@ routeCodec = root $ sum
   , "ViewArticle": "article" / slug segment
   , "Profile": "profile" / uname segment 
   , "Favorites": "profile" / uname segment / "favorites"
-  , "Logout": "logout" / noArgs
   }
 
 -- We can define our own combinators

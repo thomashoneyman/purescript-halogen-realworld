@@ -1,17 +1,13 @@
 module Conduit.Data.Profile where
 
-import Prelude
 
 import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Username (Username)
-import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson, (.:))
-import Data.Argonaut.Encode (encodeJson)
-import Data.Either (Either)
-import Data.Maybe (Maybe, isJust)
+import Data.Lens (Lens')
+import Data.Lens.Record (prop)
+import Data.Maybe (Maybe)
 import Data.Symbol (SProxy(..))
-import Record as Record
 
 -- Our Profile entity will represent information necessary to render any user 
 -- profile in the in the system, including the currently-authenticated one. In
@@ -22,10 +18,7 @@ import Record as Record
 -- these various states.
 
 type Profile = { | ProfileRep () }
-
 type ProfileWithEmail = { | ProfileRep ( email :: Email) }
-
-type UpdateProfile = { | ProfileRep ( email :: Email, password :: Maybe String ) }
 
 type ProfileRep r =
   ( username :: Username
@@ -34,17 +27,18 @@ type ProfileRep r =
   | r
   )
 
--- Unfortunately, the object is wrapped in a `User` field, so we have to drill 
--- down a layer  
-decodeProfileWithEmail :: Json -> Either String ProfileWithEmail
-decodeProfileWithEmail = decodeJson >=> (_ .: "user") >=> decodeJson
+-- We work with two fields in particular all the time, so for convenience, we can
+-- write lenses that allow us to drill down into the structure. Lenses for records
+-- are essentially identical with the dot syntax you're used to, but can be composed
+-- with lenses for other kinds of data like our `Author` data type, and can be used
+-- to set or modify values (this is what powers Record.set and Record.modify under
+-- the hood).
 
--- When encoding a user profile to be updated, we want to ensure that we only
--- send a new password if the user has changed it, indicated by the Maybe status.
--- 
--- The other fields are pre-filled via the API, so it's OK to send to the server
--- even if the user did not set the value.
-encodeUpdateProfile :: UpdateProfile -> Json
-encodeUpdateProfile rec
-  | isJust rec.password = encodeJson rec 
-  | otherwise = encodeJson $ Record.delete (SProxy :: SProxy "password") rec
+_username :: forall r. Lens' { username :: Username | r } Username
+_username = prop (SProxy :: SProxy "username")
+
+_bio :: forall r. Lens' { bio :: Maybe String | r } (Maybe String)
+_bio = prop (SProxy :: SProxy "bio")
+
+_image :: forall r. Lens' { image :: Maybe Avatar | r } (Maybe Avatar)
+_image = prop (SProxy :: SProxy "image")

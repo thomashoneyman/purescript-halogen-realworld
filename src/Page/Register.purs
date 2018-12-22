@@ -2,20 +2,23 @@ module Conduit.Page.Register where
 
 import Prelude
 
-import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.ManageResource (class ManageResource, register)
 import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Capability.Resource.User (class ManageUser, registerUser)
+import Conduit.Capability.Utils (guardNoSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
 import Conduit.Data.Email (Email)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Data.Maybe (Maybe(..), isJust)
+import Control.Monad.Reader (class MonadAsk)
+import Data.Foldable (for_)
+import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Data.Traversable (traverse_)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref (Ref)
 import Formless as F
 import Formless as Formless
 import Halogen as H
@@ -28,25 +31,21 @@ data Query a
   | HandleForm (F.Message' RegisterForm) a
 
 type State =
-  { authUser :: Maybe AuthUser
-  , registerError :: Maybe (Array String)
+  { currentUser :: Maybe Profile
   }
 
-type Input = 
-  { authUser :: Maybe AuthUser }
-
 type ChildQuery m = F.Query' RegisterForm m
-type ChildSlot = Unit
 
 component 
-  :: forall m
+  :: forall m r
    . MonadAff m 
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+  => ManageUser m
   => Navigate m
-  => ManageResource m
-  => H.Component HH.HTML Query Input Void m
-component = 
+  => H.Component HH.HTML Query Unit Void m
+component =
   H.lifecycleParentComponent
-    { initialState: \{ authUser } -> { authUser, registerError: Nothing }
+    { initialState: \_ -> { currentUser: Nothing }
     , render
     , eval
     , receiver: const Nothing
@@ -54,8 +53,22 @@ component =
     , finalizer: Nothing
     }
   where
-  render :: State -> H.ParentHTML Query (ChildQuery m) ChildSlot m
-  render { registerError } =
+  eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
+  eval = case _ of
+    Initialize a -> do
+      -- we won't load the page if the user is already logged in
+      guardNoSession 
+      pure a
+
+    HandleForm msg a -> case msg of
+      F.Submitted formOutputs -> do 
+        mbUser <- registerUser $ F.unwrapOutputFields formOutputs
+        for_ mbUser (\_ -> navigate Home)
+        pure a
+      _ -> pure a
+
+  render :: State -> H.ParentHTML Query (ChildQuery m) Unit m
+  render _ =
     container
       [ HH.h1
         [ css "text-xs-center"]
@@ -82,28 +95,14 @@ component =
           [ HH.div
               [ css "container page" ]
               [ HH.div
-              [ css "row" ]
-              [ HH.div
+                [ css "row" ]
+                [ HH.div
                   [ css "col-md-6 offset-md-3 col-xs12" ]
                   html
-              ]
+                ]
               ]
           ]
         ]
-
-  eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
-  eval = case _ of
-    Initialize a -> do
-      st <- H.get
-      when (isJust st.authUser) (navigate Home)
-      pure a
-
-    HandleForm msg a -> case msg of
-      F.Submitted formOutputs -> do 
-        eitherAuthUser <- register $ F.unwrapOutputFields formOutputs
-        traverse_ (\_ -> navigate Home) eitherAuthUser
-        pure a
-      _ -> pure a
 
 
 -----

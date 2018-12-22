@@ -2,20 +2,20 @@ module Conduit.Page.Home where
 
 import Prelude
 
-import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
-import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.LogMessages (class LogMessages)
-import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, getArticles, getFeed, getTags)
+import Conduit.Capability.Navigate (class Navigate)
+import Conduit.Capability.Resource.Article (class ManageArticle, getArticles, getCurrentUserFeed)
+import Conduit.Capability.Resource.Tag (class ManageTag, getAllTags)
+import Conduit.Capability.Utils (guardSession)
 import Conduit.Component.HTML.ArticleList (articleList)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Data.Article (ArticleWithMetadata)
+import Conduit.Data.Endpoint (ArticleParams, Pagination, noArticleParams)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Control.Parallel (parTraverse_)
-import Data.Const (Const)
-import Data.Either (either)
+import Control.Monad.Reader (class MonadAsk)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
@@ -23,21 +23,19 @@ import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref (Ref)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..), _Success)
+import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
 
 type State =
   { tags :: RemoteData String (Array String)
   , articles :: RemoteData String (Array ArticleWithMetadata)
   , tab :: Tab
-  , authUser :: Maybe AuthUser
+  , currentUser :: Maybe Profile
   }
-
-type Input =
-  { authUser :: Maybe AuthUser }
 
 data Tab
   = Feed
@@ -60,14 +58,15 @@ data Query a
   | UnfavoriteArticle Int a
 
 component
-  :: forall m
+  :: forall m r
    . MonadAff m
-  => ManageResource m
-  => ManageAuthResource m
-  => LogMessages m
-  => H.Component HH.HTML Query Input Void m
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+  => Navigate m
+  => ManageTag m
+  => ManageArticle m
+  => H.Component HH.HTML Query Unit Void m
 component =
-  H.lifecycleParentComponent
+  H.lifecycleComponent
     { initialState
     , render
     , eval
@@ -78,52 +77,52 @@ component =
 
   where 
 
-  initialState :: Input -> State
-  initialState { authUser } =
+  initialState :: Unit -> State
+  initialState _ =
     { tags: NotAsked
     , articles: NotAsked
-    , tab: if isJust authUser then Feed else Global 
-    , authUser
+    , tab: Global 
+    , currentUser: Nothing
     }
 
-  eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
+  eval :: Query ~> H.ComponentDSL State Query Void m
   eval = case _ of
     Initialize a -> do
-      st <- H.get
-      parTraverse_ H.fork
-        [ if isJust st.authUser 
-            then eval $ LoadFeed { limit: Nothing, offset: Nothing } a
-            else eval $ LoadArticles noArticleParams a
-        , eval $ LoadTags a
-        ]
+      void $ H.fork $ eval $ LoadTags a
+      guardSession >>= case _ of
+        Nothing -> do 
+          void $ H.fork $ eval $ LoadArticles noArticleParams a
+        profile -> do
+          void $ H.fork $ eval $ LoadFeed { limit: Nothing, offset: Nothing } a
+          H.modify_ _ { currentUser = profile, tab = Feed }
       pure a
 
     LoadTags a -> do
       H.modify_ _ { tags = Loading}
-      tags <- getTags
-      H.modify_ _ { tags = either Failure Success tags }
+      tags <- getAllTags
+      H.modify_ _ { tags = fromMaybe tags }
       pure a
 
     LoadFeed params a -> do
       H.modify_ _ { articles = Loading }
-      articles <- getFeed params
-      H.modify_ _ { articles = either Failure Success articles }
+      articles <- getCurrentUserFeed params
+      H.modify_ _ { articles = fromMaybe articles }
       pure a      
 
     LoadArticles params a -> do
       H.modify_ _ { articles = Loading }
       articles <- getArticles params
-      H.modify_ _ { articles = either Failure Success articles }
+      H.modify_ _ { articles = fromMaybe articles }
       pure a      
 
     ShowTab thisTab a -> do
       st <- H.get
       when (thisTab /= st.tab) do
         H.modify_ _ { tab = thisTab }
-        void case thisTab of 
-          Feed -> eval $ LoadFeed { limit: Nothing, offset: Nothing } a 
-          Global -> eval $ LoadArticles noArticleParams a
-          Tag tag -> eval $ LoadArticles (noArticleParams { tag = Just tag }) a
+        void $ H.fork $ eval case thisTab of 
+          Feed -> LoadFeed { limit: Nothing, offset: Nothing } a 
+          Global -> LoadArticles noArticleParams a
+          Tag tag -> LoadArticles (noArticleParams { tag = Just tag }) a
       pure a
     
     FavoriteArticle index a -> 
@@ -135,13 +134,13 @@ component =
   _article :: Int -> Traversal' State ArticleWithMetadata
   _article i = prop (SProxy :: SProxy "articles") <<< _Success <<< ix i
 
-  render :: State -> H.ParentHTML Query (Const Void) Void m
-  render state@{ tags, articles, authUser } =
+  render :: State -> H.ComponentHTML Query
+  render state@{ tags, articles, currentUser } =
     HH.div_
-    [ header authUser Home
+    [ header currentUser Home
     , HH.div
       [ css "home-page" ]
-      [ whenElem (isNothing authUser) \_ -> banner
+      [ whenElem (isNothing currentUser) \_ -> banner
       , HH.div
         [ css "container page" ]
         [ HH.div
@@ -170,7 +169,7 @@ component =
       [ css "feed-toggle" ]
       [ HH.ul
         [ css "nav nav-pills outline-active" ]
-        [ whenElem (isJust state.authUser) \_ -> tab state Feed
+        [ whenElem (isJust state.currentUser) \_ -> tab state Feed
         , tab state Global
         , whenElem (tabIsTag state.tab) \_ -> tab state state.tab
         ]
