@@ -1,4 +1,19 @@
-module Conduit.Api.Request where
+module Conduit.Api.Request 
+  ( Token -- constructor and decoders not exported
+  , BaseURL(..)
+  , RequestMethod(..)
+  , RequestOptions(..)
+  , defaultRequest
+  , Unlifted(..)
+  , RegisterFields(..)
+  , LoginFields(..)
+  , AuthFieldsRep(..)
+  , login
+  , register
+  , readToken
+  , writeToken
+  , removeToken
+  ) where
 
 import Prelude
 
@@ -57,10 +72,6 @@ type RequestOptions =
   { endpoint :: Endpoint
   , method :: RequestMethod
   }
-
-data ApiResponse 
-  = Error Json
-  | Success Json
 
 defaultRequest :: BaseURL -> Maybe Token -> RequestOptions -> Request Json
 defaultRequest baseUrl auth { endpoint, method } =
