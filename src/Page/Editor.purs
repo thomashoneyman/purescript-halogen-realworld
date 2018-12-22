@@ -2,31 +2,33 @@ module Conduit.Page.Editor where
 
 import Prelude
 
-import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, createArticle, getArticle, updateArticle)
 import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
+import Conduit.Capability.Utils (guardSession)
 import Conduit.Component.HTML.Header (header)
-import Conduit.Component.HTML.Utils (css)
+import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
 import Conduit.Data.Article (ArticleWithMetadata)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field as Field
+import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
-import Data.Either (either)
+import Control.Monad.Reader (class MonadAsk)
 import Data.Foldable (for_)
-import Data.Lens (_Right, preview)
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref (Ref)
 import Formless as F
 import Formless as Formless
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..), toMaybe)
+import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Slug (Slug)
 
 data Query a
@@ -37,27 +39,24 @@ data Query a
 type State =
   { article :: RemoteData String ArticleWithMetadata
   , slug :: Maybe Slug
-  , authUser :: Maybe AuthUser 
+  , currentUser :: Maybe Profile 
   }
 
 type Input =
-  { slug :: Maybe Slug
-  , authUser :: Maybe AuthUser 
-  }
+  { slug :: Maybe Slug }
 
 type ChildQuery m = F.Query Query TagInput.Query Unit EditorFields m
-type ChildSlot = Unit
 
 component 
-  :: forall m
+  :: forall m r
    . MonadAff m 
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
-  => ManageResource m
-  => ManageAuthResource m
+  => ManageArticle m
   => H.Component HH.HTML Query Input Void m
 component = 
   H.lifecycleParentComponent
-    { initialState: \{ authUser, slug } -> { article: NotAsked, authUser, slug }
+    { initialState: \{ slug } -> { article: NotAsked, currentUser: Nothing, slug }
     , render
     , eval
     , receiver: const Nothing
@@ -69,21 +68,17 @@ component =
   eval = case _ of
     Initialize a ->  do
       st <- H.get
-      when (isNothing st.authUser) (navigate Logout)
+      mbProfile <- guardSession
+      H.modify_ _ { currentUser = mbProfile }
+
       for_ st.slug \slug -> do
         H.modify_ _ { article = Loading }
-        eitherArticle <- getArticle slug
-        H.modify_ _ { article = either Failure Success eitherArticle }
+        mbArticle <- getArticle slug
+        H.modify_ _ { article = fromMaybe mbArticle }
 
         -- We'll pre-fill the form with values from the article being edited
-        for_ eitherArticle \{ title, description, body, tagList } -> do
-          let 
-            newFields = F.wrapInputFields 
-              { title
-              , description
-              , body
-              , tagList: map Tag tagList
-              }
+        for_ mbArticle \{ title, description, body, tagList } -> do
+          let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
           H.query unit $ F.loadForm_ newFields
       pure a
 
@@ -91,12 +86,11 @@ component =
       F.Submitted formOutputs -> do
         let res = F.unwrapOutputFields formOutputs
         st <- H.get
-        articleWithMetadata <- case st.slug of
+        mbArticleWithMetadata <- case st.slug of
           Nothing -> createArticle res
           Just s -> updateArticle s res
-        let 
-          slug = _.slug <$> preview _Right articleWithMetadata
-        H.modify_ _ { article = either Failure Success articleWithMetadata, slug = slug }
+        let slug = _.slug <$> mbArticleWithMetadata
+        H.modify_ _ { article = fromMaybe mbArticleWithMetadata, slug = slug }
         for_ slug (navigate <<< ViewArticle)       
         pure a
       _ -> pure a
@@ -107,8 +101,8 @@ component =
       TagInput.TagRemoved _ set -> a <$ do
         H.query unit $ F.set_ proxies.tagList (Set.toUnfoldable set)
     
-  render :: State -> H.ParentHTML Query (ChildQuery m) ChildSlot m
-  render { authUser, article } =
+  render :: State -> H.ParentHTML Query (ChildQuery m) Unit m
+  render { currentUser, article } =
     container
       [ HH.slot unit Formless.component 
           { initialInputs: F.mkInputFields formProxy
@@ -120,7 +114,7 @@ component =
     where
     container html =
       HH.div_
-        [ header authUser Editor
+        [ header currentUser Editor
         , HH.div
           [ css "editor-page" ]
           [ HH.div
@@ -195,4 +189,8 @@ renderFormless mbArticle fstate =
         , HP.rows 8
         , HE.onValueInput $ HE.input $ F.setValidate proxies.body
         ]
+      , maybeElem (F.getError proxies.body fstate.form) \err ->
+        HH.div
+          [ css "error-messages" ]
+          [ HH.text $ errorToString err ]
       ] 

@@ -2,14 +2,15 @@ module Conduit.Data.Author where
 
 import Prelude
 
+import Conduit.Data.Profile (Profile)
+import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (Either)
+import Data.Lens (Prism', prism')
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
-import Conduit.Data.Profile (Profile)
-import Conduit.Data.Username (Username)
 
 -- The Author type is used to represent a user profile with additional context 
 -- around whether you, the authenticated user, follow them.
@@ -18,6 +19,30 @@ data Author
   = Following FollowedAuthor
   | NotFollowing UnfollowedAuthor
   | You Profile
+
+-- This is a reasonably nested type, so we'll likely want to easily recover parts
+-- of the type like a profile, username, or avatar. We can do that by defining a
+-- few prisms (an optic for values that may or may not exist).
+--
+-- For example, to retrieve a profile of a followed user, we could write:
+--
+-- getFollowedProfile :: Author -> Maybe Profile
+-- getFollowedProfile = preview (_Newtype >>> _Following)
+
+_Following :: Prism' Author FollowedAuthor
+_Following  = prism' Following case _ of
+  Following author -> Just author
+  _ -> Nothing
+
+_NotFollowing :: Prism' Author UnfollowedAuthor
+_NotFollowing  = prism' NotFollowing case _ of
+  NotFollowing author -> Just author
+  _ -> Nothing
+
+_You :: Prism' Author Profile
+_You  = prism' You case _ of
+  You prof -> Just prof
+  _ -> Nothing
 
 -- We'll write a manual decoder instead of a decode instance so that we can test
 -- if the current user is the same as the one received in the object.
@@ -31,21 +56,14 @@ decodeAuthor (Just u) json = do
   if prof.username == u
     then pure $ You prof
     else do
-      following <- (_ .: "following") =<< decodeJson json
+      following <- decodeJson =<< (_ .:  "following") =<< decodeJson json
       if following
         then pure $ Following $ FollowedAuthor prof
         else pure $ NotFollowing $ UnfollowedAuthor prof
 
--- Most of the time, we can decode the author directly from an object. However, the
--- profiles endpoint returns wrapped in a further object with the label 'profile', 
--- so this wrapper decoder helps handle that case.
-
-decodeAuthorProfile :: Maybe Username -> Json -> Either String Author
-decodeAuthorProfile u = decodeJson >=> (_ .: "profile") >=> decodeAuthor u
-  
--- We've written a safe but slightly annoying type. We don't want to have to 
--- deeply pattern match every time we want to pull out an author's username or 
--- profile, for example, so we'll provide some helpers.
+-- We can use our prisms and lenses to drill down any particular pathway in the 
+-- data type, but sometimes we want to just get a shared piece of information 
+-- no matter where in the structure we have to get it from. 
 
 username :: Author -> Username
 username = _.username <<< profile
@@ -54,10 +72,6 @@ profile :: Author -> Profile
 profile (Following (FollowedAuthor p)) = p
 profile (NotFollowing (UnfollowedAuthor p)) = p
 profile (You p) = p
-
-isFollowed :: Author -> Boolean
-isFollowed (Following (FollowedAuthor _)) = true
-isFollowed _ = false
 
 -- We'll use a newtype to restrict the domain of functions that are meant to 
 -- only operate on *followed* profiles. This lets us write those functions 

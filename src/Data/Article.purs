@@ -3,6 +3,7 @@ module Conduit.Data.Article where
 import Prelude
 
 import Conduit.Data.Author (Author, decodeAuthor)
+import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.PreciseDateTime (PreciseDateTime)
 import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
@@ -11,8 +12,8 @@ import Data.Array (filter)
 import Data.Either (Either, isRight)
 import Data.Maybe (Maybe)
 import Data.Traversable (sequence)
-import Type.Row (type (+))
 import Slug (Slug)
+import Type.Row (type (+))
 
 -- Our article will be made up of two segments merged together: some base fields which
 -- can be set and modified, and some metadata fields.
@@ -48,14 +49,19 @@ type ArticleMetadataRep r =
 -- or datetime; we'll need additional information for decoding than the data type
 -- alone, though generic decoding for records is supported.
 
-decodeArticles :: Maybe Username -> Json -> Either String (Array ArticleWithMetadata)
+decodeArticles :: Maybe Username -> Json -> Either String (PaginatedArray ArticleWithMetadata)
 decodeArticles u json = do
-  arr <- (_ .: "articles") =<< decodeJson json 
-  -- for now, we'll drop out malformed articles
-  sequence $ filter isRight $ map (decodeArticleWithMetadata' u) arr
+  obj <- decodeJson json 
+  arr <- obj .: "articles"
+  total <- obj .: "articlesCount"
+  -- for now, we'll drop out malformed articles. the server shouldn't even
+  -- send us bad data, and we could have a more sophisticated response, but
+  -- this will do for now.
+  filteredArr <- sequence $ filter isRight $ map (decodeArticleWithMetadata' u) arr
+  pure { body: filteredArr, total }
 
-decodeArticleWithMetadata :: Maybe Username -> Json -> Either String ArticleWithMetadata
-decodeArticleWithMetadata u json = do
+decodeArticle :: Maybe Username -> Json -> Either String ArticleWithMetadata
+decodeArticle u json = do
   obj <- (_ .: "article") =<< decodeJson json
   decodeArticleWithMetadata' u obj 
 

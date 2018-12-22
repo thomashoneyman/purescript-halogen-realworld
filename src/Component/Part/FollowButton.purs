@@ -6,16 +6,15 @@ module Conduit.Component.Part.FollowButton
 
 import Prelude
 
-import Conduit.Capability.LogMessages (class LogMessages, logError)
-import Conduit.Capability.ManageResource (class ManageAuthResource, followUser, unfollowUser)
+import Conduit.Capability.Resource.User (class ManageUser, followUser, unfollowUser)
 import Conduit.Component.HTML.Utils (css)
-import Conduit.Data.Author (Author, isFollowed)
+import Conduit.Data.Author (Author, _Following)
 import Conduit.Data.Author as Author
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
+import Data.Maybe (Maybe, isJust, isNothing)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -65,36 +64,30 @@ followButton followQuery unfollowQuery author = case author of
 
 follow  
   :: forall s f g p o m
-   . ManageAuthResource m
-  => LogMessages m
+   . ManageUser m
   => Traversal' s Author
   -> H.HalogenM s f g p o m Unit
-follow _author = act (not <<< isFollowed) followUser _author
+follow _author = act (isNothing <<< preview _Following) followUser _author
 
 unfollow  
   :: forall s f g p o m
-   . ManageAuthResource m
-  => LogMessages m
+   . ManageUser m
   => Traversal' s Author
   -> H.HalogenM s f g p o m Unit
-unfollow _author = act isFollowed unfollowUser _author
+unfollow _author = act (isJust <<< preview _Following) unfollowUser _author
 
 -- This will be kept internal.
 
 act  
   :: forall s f g p o m
-   . ManageAuthResource m
-  => LogMessages m
+   . ManageUser m
   => (Author -> Boolean)
-  -> (Username -> m (Either String Author))
+  -> (Username -> m (Maybe Author))
   -> Traversal' s Author
   -> H.HalogenM s f g p o m Unit
 act cond f _author = do
   st <- H.get
   for_ (preview _author st) \author -> do
     when (cond author) do
-      new <- H.lift $ f (Author.username author)
-      case new of
-        Left str -> logError str
-        Right newAuthor -> 
-          H.modify_ (set _author newAuthor)
+      mbAuthor <- H.lift $ f (Author.username author)
+      for_ mbAuthor $ H.modify_ <<< set _author

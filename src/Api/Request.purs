@@ -1,43 +1,39 @@
-module Conduit.Api.Request
-  ( AuthUser -- constructors not exported
-  , username
-  , authUserKey
-  , readAuthUserFromLocalStorage
-  , writeAuthUserToLocalStorage
-  , deleteAuthUserFromLocalStorage
-  , get
-  , post
-  , put
-  , delete
-  , AuthType(..)
+module Conduit.Api.Request 
+  ( Token -- constructor and decoders not exported
   , BaseURL(..)
-  , runRequest
-  , RegisterFields
-  , LoginFields
+  , RequestMethod(..)
+  , RequestOptions(..)
+  , defaultRequest
+  , Unlifted(..)
+  , RegisterFields(..)
+  , LoginFields(..)
+  , AuthFieldsRep(..)
   , login
   , register
+  , readToken
+  , writeToken
+  , removeToken
   ) where
 
 import Prelude
 
-import Affjax as AX
+import Affjax (Request, printResponseFormatError, request)
 import Affjax.RequestBody as RB
-import Affjax.RequestHeader as RH
+import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
-import Conduit.Api.Endpoint (Endpoint(..), endpointCodec)
-import Data.Argonaut.Core (Json, stringify)
+import Conduit.Data.Email (Email)
+import Conduit.Data.Endpoint (Endpoint(..), endpointCodec)
+import Conduit.Data.Profile (Profile)
+import Conduit.Data.Username (Username)
+import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Argonaut.Encode (encodeJson)
-import Data.Argonaut.Parser (jsonParser)
 import Data.Bifunctor (lmap)
-import Data.Either (Either(..), note)
-import Conduit.Data.Email (Email)
+import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
-import Conduit.Data.Profile (Profile)
 import Data.Tuple (Tuple(..))
-import Conduit.Data.Username (Username)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Routing.Duplex (print)
@@ -45,72 +41,20 @@ import Web.HTML (window)
 import Web.HTML.Window (localStorage)
 import Web.Storage.Storage (getItem, removeItem, setItem)
 
--- We need a token in order to authenticate requests in the application. However,
--- we also want to ensure that this value never gets constructed except via logging
--- in, registering, or reading from local storage. We also need to be able to 
--- retrieve the username of the currently logged-in user at any point. We could
--- store that in global state, but for the sake of keeping related data together
--- and not having to invalidate / update in two places, we'll keep it in storage.
+-- Constructor hidden so that tokens can't be inadvertently read or arbitrarily created. 
+-- One downside of this is that any function that manipulates a token must be defined in 
+-- this module and exported, but the upside is that we always know the token was retrieved
+-- properly before use.
+newtype Token = Token String
 
-data AuthUser = AuthUser Username String
-
-derive instance eqAuthUser :: Eq AuthUser
-derive instance ordAuthUser :: Ord AuthUser
+derive instance eqToken :: Eq Token
+derive instance ordToken :: Ord Token
 
 -- We don't want to inadvertently show the user's token, so we'll write a manual
 -- `Show` instance
 
-instance showAuthUser :: Show AuthUser where
-  show (AuthUser uname _) = "AuthUser (" <> show uname <> ") {- token -}"
-
--- We've need to be able to retrieve the username, but not the token
-
-username :: AuthUser -> Username
-username (AuthUser uname _) = uname
-
--- We need to be able to serialize and de-serialize AuthUsers from JSON. We won't
--- export these functions, but they'll provide necessary parsing for our request
--- functions.
-
--- Do not export.
-decodeAuthUser :: Json -> Either String AuthUser
-decodeAuthUser json = do 
-  obj <- decodeJson json
-  uname <- obj .: "username"
-  tok <- obj .: "token"
-  pure $ AuthUser uname tok
-
--- Do not export.
-encodeAuthUser :: AuthUser -> Json
-encodeAuthUser (AuthUser uname t) = encodeJson { username: uname, token: t }
-
-authUserKey = "authUser" :: String
-
--- These functions can be exported; they construct or use an auth user and its
--- information but don't allow the end user to see anything internal, like the
--- specific token of a given user. Because these are used to implement our
--- Authenticate capability, our test monad can use different implementations like
--- dummy data instead.
-
-readAuthUserFromLocalStorage :: Effect (Either String AuthUser)
-readAuthUserFromLocalStorage = do
-  rec <- getItem authUserKey =<< localStorage =<< window
-  pure $ decodeAuthUser =<< jsonParser =<< note "Failed to retrieve token" rec
-
-writeAuthUserToLocalStorage :: AuthUser -> Effect Unit
-writeAuthUserToLocalStorage au =
-  setItem authUserKey (stringify $ encodeAuthUser au) =<< localStorage =<< window
-
-deleteAuthUserFromLocalStorage :: Effect Unit
-deleteAuthUserFromLocalStorage =
-  removeItem authUserKey =<< localStorage =<< window
-
--- We'll represent authenticated and non-authenticated requests with a custom type
--- to avoid ambiguity over what a `Nothing` value means.
-data AuthType = NoAuth | Auth AuthUser
-
-derive instance eqAuthType :: Eq AuthType
-derive instance ordAuthType :: Ord AuthType
+instance showToken :: Show Token where
+  show (Token _) = "Token {- token -}"
 
 -- We build a BaseURL newtype to have a meaningful type to pass around in parameters
 -- a more powerful type that does validation could be an improvement.
@@ -118,74 +62,94 @@ newtype BaseURL = BaseURL String
 
 derive instance newtypeBaseURL :: Newtype BaseURL _
 
--- We need to be able to make requests. Here, we'll assume that we've been provided
--- with an `AuthUser`. In practice, the only way to get an `AuthUser` is via our
--- `Authenticate` capability, so we'll leverage that to actually perform requests.
--- These data types create the request data type, but do not actually perform effects.
+data RequestMethod 
+  = Get
+  | Post (Maybe Json)
+  | Put (Maybe Json)
+  | Delete
 
-get :: AuthType -> Endpoint -> BaseURL -> AX.Request Json
-get auth = mkRequest GET auth Nothing
+type RequestOptions =
+  { endpoint :: Endpoint
+  , method :: RequestMethod
+  }
 
-post :: AuthType -> Maybe Json -> Endpoint -> BaseURL -> AX.Request Json
-post auth = mkRequest POST auth
-
-put :: AuthType -> Json -> Endpoint -> BaseURL -> AX.Request Json
-put auth body = mkRequest PUT auth (Just body)
-
-delete :: AuthType -> Endpoint -> BaseURL -> AX.Request Json
-delete auth = mkRequest DELETE auth Nothing
-
--- The underlying helper to construct a request 
-
-mkRequest :: Method -> AuthType -> Maybe Json -> Endpoint -> BaseURL -> AX.Request Json
-mkRequest method auth body endpoint baseUrl =
+defaultRequest :: BaseURL -> Maybe Token -> RequestOptions -> Request Json
+defaultRequest baseUrl auth { endpoint, method } =
   { method: Left method 
-  , url: unwrap baseUrl <> print endpointCodec endpoint  -- TODO: FIXME
+  , url: unwrap baseUrl <> print endpointCodec endpoint
   , headers: case auth of
-      NoAuth -> []
-      Auth (AuthUser _ t) -> [ RH.RequestHeader "Authorization" $ "Token " <> t ]
+      Nothing -> []
+      Just (Token t) -> [ RequestHeader "Authorization" $ "Token " <> t ]
   , content: RB.json <$> body
   , username: Nothing
   , password: Nothing
   , withCredentials: false
   , responseFormat: RF.json
   }
+  where
+  Tuple method body = case method of
+    Get -> Tuple GET Nothing
+    Post b -> Tuple POST b
+    Put b -> Tuple PUT b
+    Delete -> Tuple DELETE Nothing
 
--- Helper to actually run the request in Aff
+-- The `Unlifted` type here allows us to turn any concrete type of kind  `Type` 
+-- into a type with a single argument of kind `(Type -> Type)`. This is useful
+-- when we want to represent a value within various 'boxes'. For example, our
+-- we might like our `AuthFieldsRep` type to cover the possibilites that a password
+-- has a `Maybe` value `(Maybe String)`, an array value `(Array String)`, or a 
+-- simple `String` value `(Unlifted String)`.
+type Unlifted a = a 
 
-runRequest :: forall m a. MonadAff m => (Json -> Either String a) -> AX.Request Json -> m (Either String a)
-runRequest decode req = do
-  res <- liftAff (AX.request req)
-  pure (decode =<< lmap RF.printResponseFormatError res.body)
+-- For example, in both of these cases, we want to ensure a password was provided.
+-- However, in the Capability.Resource.User module we'll see an example of when this 
+-- should be a `Maybe` value instead.
+type RegisterFields = { | AuthFieldsRep Unlifted (username :: Username) }
+type LoginFields = { | AuthFieldsRep Unlifted () }
 
+-- The underlying shared row for various requests which manage user credentials.
+type AuthFieldsRep f r = ( email :: Email, password :: f String | r )
 
--- Fields necessary to authenticate a user. Could be done with extensible rows, but 
--- there aren't enough fields to justify it, IMO
+-- For decoding a user response from the server into an Token + Profile. Not exported
+-- in order to ensure that the only way to acquire a token is via our user management 
+-- functions.
+decodeAuthProfile :: Json -> Either String (Tuple Token Profile)
+decodeAuthProfile json = do
+  str <- decodeJson =<< (_ .: "token") =<< decodeJson json
+  prof <- decodeJson json
+  pure $ Tuple (Token str) prof
 
-type RegisterFields =
-  { username :: Username
-  , email :: Email
-  , password :: String
-  }
+-- Required to write in this module because it operates on tokens
+login :: forall m. MonadAff m => BaseURL -> LoginFields -> m (Either String (Tuple Token Profile))
+login baseUrl fields = 
+  let method = Post $ Just $ encodeJson { user: fields } 
+   in requestUser baseUrl { endpoint: Login, method }
 
-type LoginFields = 
-  { email :: Email
-  , password :: String 
-  }
+-- Required to write in this module because it operates on tokens
+register :: forall m. MonadAff m => BaseURL -> RegisterFields -> m (Either String (Tuple Token Profile))
+register baseUrl fields = 
+  let method = Post $ Just $ encodeJson { user: fields }
+   in requestUser baseUrl { endpoint: Users, method } 
 
--- For auth tokens specifically, because the decoder is not exposed
+-- Same underlying mechanism for both requests
+requestUser :: forall m. MonadAff m => BaseURL -> RequestOptions -> m (Either String (Tuple Token Profile))
+requestUser baseUrl opts = do
+  res <- liftAff $ request $ defaultRequest baseUrl Nothing opts
+  pure $ decodeAuthProfile =<< (_ .: "user") =<< decodeJson =<< lmap printResponseFormatError res.body
 
-login :: forall m. MonadAff m => LoginFields -> BaseURL -> m (Either String (Tuple AuthUser Profile))
-login body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson { user: body }) Login
+-- Managing tokens in local storage
 
-register :: forall m. MonadAff m => RegisterFields -> BaseURL -> m (Either String (Tuple AuthUser Profile))
-register body = runRequest decodeUser <<< post NoAuth (Just $ encodeJson { user: body }) Users
+tokenKey = "token" :: String
 
--- For decoding a user response from the server into an AuthUser + Profile
+readToken :: Effect (Maybe Token)
+readToken = do
+  str <- getItem tokenKey =<< localStorage =<< window
+  pure $ map Token str
 
-decodeUser :: Json -> Either String (Tuple AuthUser Profile)
-decodeUser json = do
-  json' <- (_ .: "user") =<< decodeJson json
-  au <- decodeAuthUser json'
-  prof <- decodeJson json'
-  pure $ Tuple au prof
+writeToken :: Token -> Effect Unit
+writeToken (Token str) =
+  setItem tokenKey str =<< localStorage =<< window
+
+removeToken :: Effect Unit
+removeToken =
+  removeItem tokenKey =<< localStorage =<< window

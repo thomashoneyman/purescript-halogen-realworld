@@ -7,13 +7,12 @@ module Conduit.Component.Part.FavoriteButton
 
 import Prelude
 
-import Conduit.Capability.LogMessages (class LogMessages, logError)
-import Conduit.Capability.ManageResource (class ManageAuthResource, favoriteArticle, unfavoriteArticle)
+import Conduit.Capability.Resource.Article (class ManageArticle, favoriteArticle, unfavoriteArticle)
 import Conduit.Component.HTML.Utils (css)
 import Conduit.Data.Article (ArticleWithMetadata)
-import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
+import Data.Maybe (Maybe)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -59,16 +58,14 @@ favoriteButton buttonSize favoriteQuery unfavoriteQuery article =
 
 favorite  
   :: forall s f g p o m
-   . ManageAuthResource m
-  => LogMessages m
+   . ManageArticle m
   => Traversal' s ArticleWithMetadata
   -> H.HalogenM s f g p o m Unit
 favorite _article = act (not <<< _.favorited) favoriteArticle _article
 
 unfavorite  
   :: forall s f g p o m
-   . ManageAuthResource m
-  => LogMessages m
+   . ManageArticle m
   => Traversal' s ArticleWithMetadata
   -> H.HalogenM s f g p o m Unit
 unfavorite _article = act _.favorited unfavoriteArticle _article
@@ -77,18 +74,14 @@ unfavorite _article = act _.favorited unfavoriteArticle _article
 
 act  
   :: forall s f g p o m
-   . ManageAuthResource m
-  => LogMessages m
+   . ManageArticle m
   => (ArticleWithMetadata -> Boolean)
-  -> (Slug -> m (Either String ArticleWithMetadata))
+  -> (Slug -> m (Maybe ArticleWithMetadata))
   -> Traversal' s ArticleWithMetadata
   -> H.HalogenM s f g p o m Unit
 act cond f _article = do
   st <- H.get
   for_ (preview _article st) \article -> do
     when (cond article) do
-      new <- H.lift $ f article.slug
-      case new of
-        Left str -> logError str
-        Right newArticle -> 
-          H.modify_ (set _article newArticle)
+      mbArticle <- H.lift $ f article.slug
+      for_ mbArticle $ H.modify_ <<< set _article

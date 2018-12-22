@@ -2,11 +2,10 @@ module Conduit.Page.ViewArticle where
 
 import Prelude
 
-import Conduit.Api.Request (AuthUser)
-import Conduit.Api.Request as AuthUser
-import Conduit.Capability.LogMessages (class LogMessages)
-import Conduit.Capability.ManageResource (class ManageAuthResource, class ManageResource, createComment, deleteArticle, deleteComment, getArticle, getComments)
 import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Capability.Resource.Article (class ManageArticle, deleteArticle, getArticle)
+import Conduit.Capability.Resource.Comment (class ManageComment, createComment, deleteComment, getComments)
+import Conduit.Capability.Resource.User (class ManageUser)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, safeHref, whenElem)
@@ -19,21 +18,25 @@ import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.PreciseDateTime as PDT
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
+import Control.Monad.Reader (class MonadAsk, asks)
 import Control.Parallel (parTraverse_)
-import Data.Either (either)
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview)
 import Data.Lens.Record (prop)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..))
+import Data.Maybe as Maybe
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..), _Success)
+import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
 import Slug (Slug)
 
 type State =
@@ -41,12 +44,11 @@ type State =
   , comments :: RemoteData String (Array Comment)
   , myComment :: String
   , slug :: Slug
-  , authUser :: Maybe AuthUser
+  , currentUser :: Maybe Profile
   }
 
 type Input =
   { slug :: Slug
-  , authUser :: Maybe AuthUser
   }
 
 data Query a
@@ -66,11 +68,12 @@ type ChildQuery = RawHTML.Query
 type ChildSlot = Unit
 
 component
-  :: forall m
+  :: forall m r
    . MonadAff m
-  => ManageResource m
-  => ManageAuthResource m
-  => LogMessages m
+  => ManageArticle m
+  => ManageComment m
+  => ManageUser m
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
   => H.Component HH.HTML Query Input Void m
 component =
@@ -86,33 +89,32 @@ component =
   where 
 
   initialState :: Input -> State
-  initialState { slug, authUser } = 
+  initialState { slug } = 
     { article: NotAsked
     , comments: NotAsked
     , myComment: ""
+    , currentUser: Nothing 
     , slug
-    , authUser 
     }
 
   eval :: Query ~> H.ParentDSL State Query ChildQuery Unit Void m
   eval = case _ of
     Initialize a -> do
-      parTraverse_ H.fork
-        [ eval (GetArticle a) 
-        , eval (GetComments a) 
-        ]
+      parTraverse_ H.fork [ eval (GetArticle a), eval (GetComments a) ]
+      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.currentUser
+      H.modify_ _ { currentUser = mbProfile } 
       pure a
 
     GetArticle a -> do
       st <- H.modify _ { article = Loading }
       article <- getArticle st.slug
-      H.modify_ _ { article = either Failure Success article }
+      H.modify_ _ { article = fromMaybe article }
       pure a      
 
     GetComments a -> do
       st <- H.modify _ { comments = Loading }
       comments <- getComments st.slug
-      H.modify_ _ { comments = either Failure Success comments }
+      H.modify_ _ { comments = fromMaybe comments }
       pure a      
     
     AddComment a -> do
@@ -121,7 +123,7 @@ component =
         for_ (preview _Success st.article) \article -> do
           void $ createComment article.slug { body: st.myComment }
           comments <- getComments st.slug
-          H.modify_ _ { comments = either Failure Success comments, myComment = "" }
+          H.modify_ _ { comments = fromMaybe comments, myComment = "" }
       pure a
 
     UpdateCommentText str a -> do
@@ -150,7 +152,7 @@ component =
       st <- H.get
       deleteComment st.slug commentId
       comments <- getComments st.slug
-      H.modify_ _ { comments = either Failure Success comments }
+      H.modify_ _ { comments = fromMaybe comments }
       pure a
   
   _author :: Traversal' State Author
@@ -163,14 +165,14 @@ component =
   render state =
     HH.div
       [ css "article-page" ]
-      [ header state.authUser (ViewArticle state.slug)
+      [ header state.currentUser (ViewArticle state.slug)
       , maybeElem mbArticle banner
       , maybeElem mbArticle content
       , footer
       ]
     where
     mbArticle = preview _Success state.article
-    markdown = fromMaybe "Failed to load article!" (_.body <$> mbArticle)
+    markdown = Maybe.fromMaybe "Failed to load article!" (_.body <$> mbArticle)
 
     banner article = 
       HH.div
@@ -201,7 +203,7 @@ component =
             [ HH.div
               [ css "col-xs-12 col-md-8 offset-md-2" ]
               ( append 
-                [ maybeElem state.authUser \au ->
+                [ maybeElem state.currentUser \profile ->
                     HH.form 
                       [ css "card comment-form"
                       , HE.onSubmit $ HE.input_ AddComment 
@@ -219,7 +221,7 @@ component =
                         [ css "card-footer" ]
                         [ HH.img 
                           [ css "comment-author-img" 
-                          , HP.src "" -- TODO: get the avatar
+                          , HP.src $ Avatar.toStringWithDefault profile.image
                           ]
                         , HH.button
                           [ css "btn btn-sm btn-primary" 
@@ -261,8 +263,8 @@ component =
             [ css "date" ]
             [ HH.text $ PDT.toDisplayMonthDayYear article.createdAt ]
           ]
-        , case state.authUser of
-            Just au | AuthUser.username au == username ->
+        , case state.currentUser of
+            Just profile | profile.username == username ->
               HH.span_
                 [ HH.a
                   [ css "btn btn-outline-secondary btn-sm" 

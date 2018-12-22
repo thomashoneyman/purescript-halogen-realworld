@@ -2,9 +2,8 @@ module Conduit.Page.Settings where
 
 import Prelude
 
-import Conduit.Api.Request (AuthUser)
-import Conduit.Capability.ManageResource (class ManageAuthResource, getUser, updateUser)
-import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Capability.Navigate (class Navigate, logout)
+import Conduit.Capability.Resource.User (class ManageUser, getCurrentUser, updateUser)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css)
 import Conduit.Data.Avatar (Avatar)
@@ -16,9 +15,9 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Data.Either (either)
-import Data.Foldable (for_)
-import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.Lens (preview)
+import Data.Maybe (Maybe(..))
+import Data.Maybe as Maybe
 import Data.Newtype (class Newtype, unwrap)
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
@@ -27,7 +26,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..), toMaybe)
+import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
 
 data Query a
   = Initialize a
@@ -36,24 +35,19 @@ data Query a
 
 type State =
   { profile :: RemoteData String ProfileWithEmail 
-  , authUser :: Maybe AuthUser 
   }
 
-type Input =
-  { authUser :: Maybe AuthUser }
-
 type ChildQuery m = F.Query' SettingsForm m
-type ChildSlot = Unit
 
 component 
   :: forall m
    . MonadAff m 
   => Navigate m
-  => ManageAuthResource m
-  => H.Component HH.HTML Query Input Void m
+  => ManageUser m
+  => H.Component HH.HTML Query Unit Void m
 component = 
   H.lifecycleParentComponent
-    { initialState: \{ authUser } -> { profile: NotAsked, authUser }
+    { initialState: \_ -> { profile: NotAsked }
     , render
     , eval
     , receiver: const Nothing
@@ -64,40 +58,39 @@ component =
   eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
   eval = case _ of
     Initialize a ->  do
-      st <- H.get
-      when (isNothing st.authUser) (navigate Logout)
-
       H.modify_ _ { profile = Loading }
-      profileWithEmail <- getUser 
-      H.modify_ _ { profile = either Failure Success profileWithEmail }
+      mbProfileWithEmail <- getCurrentUser 
+      H.modify_ _ { profile = fromMaybe mbProfileWithEmail }
 
-      -- We'll pre-fill the form with values from the current user
-      for_ profileWithEmail \rec -> do
-        let 
-          newInputs = F.wrapInputFields
-            { image: fromMaybe "" $ Avatar.toString <$> rec.image
-            , username: Username.toString rec.username
-            , bio: fromMaybe "" rec.bio
-            , email: unwrap rec.email
-            , password: ""
-            }
-        H.query unit $ F.loadForm_ newInputs 
+      -- if the profile couldn't be located then something horrible has gone wrong
+      -- and we should log the user out
+      case mbProfileWithEmail of
+        Nothing -> logout
+        Just profile -> do
+          let 
+            newInputs = F.wrapInputFields
+              { image: Maybe.fromMaybe "" $ Avatar.toString <$> profile.image
+              , username: Username.toString profile.username
+              , bio: Maybe.fromMaybe "" profile.bio
+              , email: unwrap profile.email
+              , password: ""
+              }
+          void $ H.query unit $ F.loadForm_ newInputs 
+
       pure a
 
     HandleForm msg a -> case msg of
       F.Submitted formOutputs -> do
         updateUser $ F.unwrapOutputFields formOutputs
-        profileWithEmail <- getUser
-        H.modify_ _ { profile = either Failure Success profileWithEmail }
+        mbProfileWithEmail <- getCurrentUser
+        H.modify_ _ { profile = fromMaybe mbProfileWithEmail }
         pure a
       _ -> pure a
     
-    LogUserOut a -> do
-      navigate Logout
-      pure a
+    LogUserOut a -> logout *> pure a
 
-  render :: State -> H.ParentHTML Query (ChildQuery m) ChildSlot m
-  render { authUser, profile } =
+  render :: State -> H.ParentHTML Query (ChildQuery m) Unit m
+  render { profile } =
     container
       [ HH.h1
         [ css "text-xs-center"]
@@ -118,7 +111,7 @@ component =
     where
     container html =
       HH.div_
-        [ header authUser Settings
+        [ header (preview _Success profile) Settings
         , HH.div
           [ css "settings-page" ]
           [ HH.div
