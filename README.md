@@ -5,6 +5,24 @@ A PureScript + Halogen codebase containing real world examples (CRUD, auth, desi
 - Check out the [RealWorld](https://github.com/gothinkster/realworld) project for more information on how to use this with various backends and compare it to other frameworks.
 - [Read the guide](https://thomashoneyman.com/guides/real-world-halogen) to learn how to design and build applications like this in PureScript & Halogen.
 
+## Installation
+
+You can install and build the project with:
+
+```sh
+# clone the repository
+git clone https://github.com/thomashoneyman/purescript-halogen-realworld
+cd purescript-halogen-realworld
+
+# install dependencies
+yarn install
+
+# build the project and run the local server
+yarn build-serve
+```
+
+If you are doing local development, I'd recommend using `yarn watch-dev` while working, and only use `yarn watch-serve` when you need to view how your changes reflect in the application (Parcel takes some time to run).
+
 # Learn to build a real-world Halogen application
 
 This repository contains the full implementation of a social blogging application (a Medium.com clone) called Conduit. It also contains a thorough guide to design and build real-world applications in PureScript with the Halogen library.
