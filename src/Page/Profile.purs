@@ -11,7 +11,7 @@ import Conduit.Component.HTML.Utils (css, maybeElem, safeHref)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
-import Conduit.Data.Author (Author, _You)
+import Conduit.Data.Author (Author)
 import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Endpoint (noArticleParams)
@@ -19,24 +19,27 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Control.Parallel (parTraverse_)
-import Data.Lens (Traversal', preview)
+import Control.Monad.Reader (class MonadAsk, asks)
+import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Network.RemoteData (RemoteData(..), _Success, fromMaybe, isSuccess, toMaybe)
+import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
 
 type State =
   { articles :: RemoteData String (Array ArticleWithMetadata)
   , favorites :: RemoteData String (Array ArticleWithMetadata)
   , author :: RemoteData String Author
+  , currentUser :: Maybe Profile
   , username :: Username
   , tab :: Tab
   }
@@ -54,6 +57,7 @@ derive instance eqTab :: Eq Tab
 
 data Query a
   = Initialize a
+  | Receive Input a
   | LoadArticles a
   | LoadFavorites a
   | LoadAuthor a
@@ -61,11 +65,11 @@ data Query a
   | UnfollowAuthor a
   | FavoriteArticle Int a
   | UnfavoriteArticle Int a
-  | ShowTab Tab a
 
 component
-  :: forall m
+  :: forall m r
    . MonadAff m
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => ManageUser m
   => ManageArticle m
   => H.Component HH.HTML Query Input Void m
@@ -74,7 +78,7 @@ component =
     { initialState
     , render
     , eval
-    , receiver: const Nothing
+    , receiver: HE.input Receive
     , initializer: Just $ H.action Initialize
     , finalizer: Nothing
     }
@@ -86,6 +90,7 @@ component =
     { articles: NotAsked
     , favorites: NotAsked
     , author: NotAsked
+    , currentUser: Nothing
     , tab
     , username
     }
@@ -93,7 +98,19 @@ component =
   eval :: Query ~> H.ComponentDSL State Query Void m
   eval = case _ of
     Initialize a -> do
-      parTraverse_ H.fork [ eval (LoadAuthor a), eval (LoadArticles a) ]
+      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.currentUser
+      st <- H.modify _ { currentUser = mbProfile }
+      void $ H.fork $ eval $ LoadAuthor a
+      void $ H.fork $ case st.tab of
+        ArticlesTab -> eval $ LoadArticles a
+        FavoritesTab -> eval $ LoadFavorites a
+      pure a
+    
+    Receive { tab } a -> do
+      st <- H.modify _ { tab = tab }
+      void $ H.fork $ case st.tab of
+        ArticlesTab -> eval $ LoadArticles a
+        FavoritesTab -> eval $ LoadFavorites a
       pure a
 
     LoadArticles a -> do
@@ -125,17 +142,6 @@ component =
 
     UnfavoriteArticle index a -> 
       unfavorite (_article index) $> a
-
-    ShowTab thisTab a -> do
-      st <- H.get
-      when (thisTab /= st.tab) do
-        H.modify_ _ { tab = thisTab }
-        case thisTab of 
-          ArticlesTab -> unless (isSuccess st.articles) do 
-            void $ H.fork $ eval $ LoadArticles a
-          FavoritesTab -> unless (isSuccess st.favorites) do
-            void $ H.fork $ eval $ LoadFavorites a
-      pure a
   
   _author :: Traversal' State Author
   _author = prop (SProxy :: SProxy "author") <<< _Success
@@ -146,9 +152,7 @@ component =
   render :: State -> H.ComponentHTML Query
   render state =
     HH.div_
-    -- We can use our prisms here to only recover a profile if the author happens 
-    -- to be the current user.
-    [ header (preview (_You >>> _Success) state.author) Home
+    [ header state.currentUser (Profile state.username)
     , HH.div
       [ css "profile-page" ]
       [ userInfo state 
@@ -211,15 +215,18 @@ component =
   mkTab st thisTab =
     HH.li
       [ css "nav-item" ]
-      [ HH.a
-        [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
-        , HE.onClick $ HE.input_ $ ShowTab thisTab 
-        , safeHref $ Profile st.username
-        ]
-        htmlBody
+      [ case thisTab of
+          ArticlesTab -> 
+            HH.a
+              [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
+              , safeHref $ Profile st.username
+              ]
+              [ HH.text "My Articles" ]
+          FavoritesTab -> 
+            HH.a
+              [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
+              , safeHref $ Favorites st.username
+              ]
+              [ HH.text "My Favorites" ]
       ]
-    where
-    htmlBody = case thisTab of
-      ArticlesTab -> [ HH.text "My Articles" ]
-      FavoritesTab -> [ HH.text "Favorites" ]
   

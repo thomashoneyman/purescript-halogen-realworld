@@ -110,11 +110,15 @@ decodeAuthProfile json = do
 
 -- Required to write in this module because it operates on tokens
 login :: forall m. MonadAff m => BaseURL -> LoginFields -> m (Either String (Tuple Token Profile))
-login baseUrl fields = requestUser baseUrl { endpoint: Login, method: Post (Just $ encodeJson fields) } 
+login baseUrl fields = 
+  let method = Post $ Just $ encodeJson { user: fields } 
+   in requestUser baseUrl { endpoint: Login, method }
 
 -- Required to write in this module because it operates on tokens
 register :: forall m. MonadAff m => BaseURL -> RegisterFields -> m (Either String (Tuple Token Profile))
-register baseUrl fields = requestUser baseUrl { endpoint: Users, method: Post (Just $ encodeJson fields) } 
+register baseUrl fields = 
+  let method = Post $ Just $ encodeJson { user: fields }
+   in requestUser baseUrl { endpoint: Users, method } 
 
 -- Same underlying mechanism for both requests
 requestUser :: forall m. MonadAff m => BaseURL -> RequestOptions -> m (Either String (Tuple Token Profile))

@@ -56,7 +56,6 @@ component =
   eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
   eval = case _ of
     Initialize a -> do
-      -- we won't load the page if the user is already logged in
       guardNoSession 
       pure a
 

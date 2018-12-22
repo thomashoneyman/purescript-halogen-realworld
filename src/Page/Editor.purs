@@ -6,13 +6,14 @@ import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
 import Conduit.Capability.Utils (guardSession)
 import Conduit.Component.HTML.Header (header)
-import Conduit.Component.HTML.Utils (css)
+import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field as Field
+import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
 import Control.Monad.Reader (class MonadAsk)
 import Data.Foldable (for_)
@@ -188,4 +189,8 @@ renderFormless mbArticle fstate =
         , HP.rows 8
         , HE.onValueInput $ HE.input $ F.setValidate proxies.body
         ]
+      , maybeElem (F.getError proxies.body fstate.form) \err ->
+        HH.div
+          [ css "error-messages" ]
+          [ HH.text $ errorToString err ]
       ] 

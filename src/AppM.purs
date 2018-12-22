@@ -24,7 +24,6 @@ import Conduit.Data.Log as Log
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route as Route
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
@@ -135,24 +134,25 @@ instance manageUserAppM :: ManageUser AppM where
 
   getAuthor username = 
     mkRequest { endpoint: Profiles username, method: Get }
-      >>= decodeWithUser decodeAuthor
+      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
 
   updateUser fields = 
     void $ mkAuthRequest { endpoint: User, method: Post (Just (encodeJson fields)) }
 
   followUser username = 
     mkAuthRequest { endpoint: Follow username, method: Post Nothing }
-      >>= decodeWithUser decodeAuthor
+      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
   
   unfollowUser username =
     mkAuthRequest { endpoint: Follow username, method: Delete }
-      >>= decodeWithUser decodeAuthor
+      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
+
 
 -- Our operations for managing tags
 instance manageTagAppM :: ManageTag AppM where 
   getAllTags = 
     mkRequest { endpoint: Tags, method: Get }
-      >>= decode decodeJson
+      >>= decode (decodeAt "tags")
 
 -- Our operations for managing comments
 instance manageCommentAppm :: ManageComment AppM where

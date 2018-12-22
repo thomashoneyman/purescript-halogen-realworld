@@ -2,8 +2,9 @@ module Conduit.Page.Login where
 
 import Prelude
 
-import Conduit.Capability.Navigate (class Navigate)
-import Conduit.Capability.Utils (guardSession)
+import Conduit.Capability.Navigate (class Navigate, navigate)
+import Conduit.Capability.Resource.User (class ManageUser, loginUser)
+import Conduit.Capability.Utils (guardNoSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
 import Conduit.Data.Email (Email)
@@ -13,6 +14,7 @@ import Conduit.Form.Field (submit)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
 import Control.Monad.Reader (class MonadAsk)
+import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Effect.Aff.Class (class MonadAff)
@@ -28,9 +30,6 @@ data Query a
   = Initialize a
   | HandleForm (F.Message' LoginForm) a
 
-type State =
-  { currentUser :: Maybe Profile }
-
 type ChildQuery m = F.Query' LoginForm m
 
 component 
@@ -38,10 +37,11 @@ component
    . MonadAff m 
   => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
+  => ManageUser m
   => H.Component HH.HTML Query Unit Void m
 component = 
   H.lifecycleParentComponent
-    { initialState: \_ -> { currentUser: Nothing }
+    { initialState: identity
     , render
     , eval
     , receiver: const Nothing
@@ -49,23 +49,21 @@ component =
     , finalizer: Nothing
     }
   where
-  eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
+  eval :: Query ~> H.ParentDSL Unit Query (ChildQuery m) Unit Void m
   eval = case _ of
     Initialize a -> do
-      mbProfile <- guardSession
-      H.modify_ _ { currentUser = mbProfile } 
+      guardNoSession
       pure a
 
     HandleForm msg a -> case msg of
       F.Submitted formOutputs -> do
-        -- TODO
-        -- eitherUser <- authenticate $ F.unwrapOutputFields formOutputs
-        -- traverse_ (\_ -> navigate Home) eitherUser
+        mbUser <- loginUser $ F.unwrapOutputFields formOutputs
+        traverse_ (\_ -> navigate Home) mbUser
         pure a
       _ -> pure a
 
-  render :: State -> H.ParentHTML Query (ChildQuery m) Unit m
-  render { currentUser } =
+  render :: Unit -> H.ParentHTML Query (ChildQuery m) Unit m
+  render _ =
     container
       [ HH.h1
         [ css "text-xs-center"]
@@ -85,19 +83,17 @@ component =
       ]
     where
     container html =
-      HH.div_
-        [ header currentUser Login
+      HH.div
+        [ css "auth-page" ]
+        [ header Nothing Login
         , HH.div
-          [ css "auth-page" ]
+          [ css "container page" ]
           [ HH.div
-              [ css "container page" ]
-              [ HH.div
-              [ css "row" ]
-              [ HH.div
-                  [ css "col-md-6 offset-md-3 col-xs12" ]
-                  html
-              ]
-              ]
+            [ css "row" ]
+            [ HH.div
+              [ css "col-md-6 offset-md-3 col-xs12" ]
+              html
+            ]
           ]
         ]
 
