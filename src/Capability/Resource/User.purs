@@ -7,40 +7,34 @@ module Conduit.Capability.Resource.User where
 
 import Prelude
 
-import Conduit.Api.Request (Token)
+import Conduit.Api.Request (AuthFieldsRep, LoginFields, RegisterFields)
 import Conduit.Data.Author (Author)
-import Conduit.Data.Email (Email)
 import Conduit.Data.Profile (Profile, ProfileRep, ProfileWithEmail)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe)
-import Data.Tuple (Tuple)
 import Halogen (HalogenM, lift)
 import Type.Row (type (+))
 
--- Fields necessary in user management as arguments.
-
-type Unlifted a = a 
-
+-- A profile can be updated using any fields from a profile plus any of the auth
+-- fields, with a password represented with `Maybe`.
 type UpdateProfileFields = { | ProfileRep + AuthFieldsRep Maybe () }
-type RegisterFields = { | AuthFieldsRep Unlifted (username :: Username) }
-type LoginFields = { | AuthFieldsRep Unlifted () }
 
-type AuthFieldsRep f r = ( email :: Email, password :: f String | r )
-
+-- Our ManageUser type class will describe what operations we can perform to 
+-- acquire, update, and delete users.
 class Monad m <= ManageUser m where
+  loginUser :: LoginFields -> m (Maybe Profile)
+  registerUser :: RegisterFields -> m (Maybe Profile)
   getCurrentUser :: m (Maybe ProfileWithEmail)
   getAuthor :: Username -> m (Maybe Author)
-  loginUser :: LoginFields -> m (Maybe (Tuple Token Profile))
-  registerUser :: RegisterFields -> m (Maybe (Tuple Token Profile))
   updateUser :: UpdateProfileFields -> m Unit
   followUser :: Username -> m (Maybe Author)
   unfollowUser :: Username -> m (Maybe Author)
 
 instance manageUserHalogenM :: ManageUser m => ManageUser (HalogenM s f g p o m) where
-  getCurrentUser = lift getCurrentUser
-  getAuthor = lift <<< getAuthor
   loginUser = lift <<< loginUser
   registerUser = lift <<< registerUser
+  getCurrentUser = lift getCurrentUser
+  getAuthor = lift <<< getAuthor
   updateUser = lift <<< updateUser
   followUser = lift <<< followUser
   unfollowUser = lift <<< unfollowUser

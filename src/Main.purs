@@ -2,20 +2,21 @@ module Main where
 
 import Prelude
 
-import Conduit.Api.Request (BaseURL(..), RequestType(..), readToken)
-import Conduit.Api.Utils (mkAuthRequest, mkRequest)
+import Affjax (printResponseFormatError, request)
+import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
+import Conduit.Api.Utils (decodeAt)
 import Conduit.AppM (Env, LogLevel(..), runAppM)
 import Conduit.Component.Router as Router
 import Conduit.Data.Endpoint (Endpoint(..))
 import Conduit.Data.Route (routeCodec)
-import Data.Argonaut.Decode (decodeJson, (.:))
+import Data.Bifunctor (lmap)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
-import Data.Traversable (for_, traverse)
+import Data.Traversable (for_)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Ref as Ref
-import Halogen (liftEffect)
+import Halogen (liftAff, liftEffect)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -33,18 +34,22 @@ main = HA.runHalogenAff do
   currentUser <- liftEffect $ Ref.new Nothing
   mbToken <- liftEffect readToken
 
-  -- If there is a token in local storage, request the associated user
-  for_ mbToken \tok -> do
-    res <- mkAuthRequest { endpoint: User, requestType: Get }
-    -- (decodeJson <=< (_ .: "user") <=< decodeJson)
+  -- If there is a token in local storage, request the associated user. This is verbose because
+  -- it doesn't use our helper functions, but instead uses the `request` function from Affjax
+  -- directly. We aren't in `AppM` yet!
+  for_ mbToken \token -> do
+    let opts = { endpoint: User, method: Get }
+    res <- liftAff $ request $ defaultRequest baseUrl (Just token) opts
+    let u = decodeAt "user" =<< lmap printResponseFormatError res.body
+    liftEffect $ Ref.write (hush u) currentUser
     pure unit
-    -- liftEffect $ Ref.write (hush res) currentUser
 
-  let environment :: Env
-      environment = { logLevel: Dev, baseUrl, currentUser }
+  let 
+    environment :: Env
+    environment = { logLevel: Dev, baseUrl, currentUser }
 
-      router :: H.Component HH.HTML Router.Query Unit Void Aff
-      router = H.hoist (runAppM environment) Router.component
+    router :: H.Component HH.HTML Router.Query Unit Void Aff
+    router = H.hoist (runAppM environment) Router.component
   
   driver <- runUI router unit body
 

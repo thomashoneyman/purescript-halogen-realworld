@@ -56,7 +56,7 @@ decodeAuthor (Just u) json = do
   if prof.username == u
     then pure $ You prof
     else do
-      following <- (_ .: "following") =<< decodeJson json
+      following <- decodeJson =<< (_ .:  "following") =<< decodeJson json
       if following
         then pure $ Following $ FollowedAuthor prof
         else pure $ NotFollowing $ UnfollowedAuthor prof

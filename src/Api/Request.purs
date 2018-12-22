@@ -2,24 +2,34 @@ module Conduit.Api.Request where
 
 import Prelude
 
-import Affjax (Request)
+import Affjax (Request, printResponseFormatError, request)
 import Affjax.RequestBody as RB
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
-import Conduit.Data.Endpoint (Endpoint, endpointCodec)
+import Conduit.Data.Email (Email)
+import Conduit.Data.Endpoint (Endpoint(..), endpointCodec)
+import Conduit.Data.Profile (Profile)
+import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
+import Data.Argonaut.Decode (decodeJson, (.:))
+import Data.Argonaut.Encode (encodeJson)
+import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Routing.Duplex (print)
 import Web.HTML (window)
 import Web.HTML.Window (localStorage)
 import Web.Storage.Storage (getItem, removeItem, setItem)
 
--- Constructor hidden so that tokens can't be inadvertently read
+-- Constructor hidden so that tokens can't be inadvertently read or arbitrarily created. 
+-- One downside of this is that any function that manipulates a token must be defined in 
+-- this module and exported, but the upside is that we always know the token was retrieved
+-- properly before use.
 newtype Token = Token String
 
 derive instance eqToken :: Eq Token
@@ -37,7 +47,7 @@ newtype BaseURL = BaseURL String
 
 derive instance newtypeBaseURL :: Newtype BaseURL _
 
-data RequestType 
+data RequestMethod 
   = Get
   | Post (Maybe Json)
   | Put (Maybe Json)
@@ -45,7 +55,7 @@ data RequestType
 
 type RequestOptions =
   { endpoint :: Endpoint
-  , requestType :: RequestType
+  , method :: RequestMethod
   }
 
 data ApiResponse 
@@ -53,7 +63,7 @@ data ApiResponse
   | Success Json
 
 defaultRequest :: BaseURL -> Maybe Token -> RequestOptions -> Request Json
-defaultRequest baseUrl auth { endpoint, requestType } =
+defaultRequest baseUrl auth { endpoint, method } =
   { method: Left method 
   , url: unwrap baseUrl <> print endpointCodec endpoint
   , headers: case auth of
@@ -66,31 +76,51 @@ defaultRequest baseUrl auth { endpoint, requestType } =
   , responseFormat: RF.json
   }
   where
-  Tuple method body = case requestType of
+  Tuple method body = case method of
     Get -> Tuple GET Nothing
     Post b -> Tuple POST b
     Put b -> Tuple PUT b
     Delete -> Tuple DELETE Nothing
 
--- -- For auth tokens specifically, because the decoder is not exposed
+-- The `Unlifted` type here allows us to turn any concrete type of kind  `Type` 
+-- into a type with a single argument of kind `(Type -> Type)`. This is useful
+-- when we want to represent a value within various 'boxes'. For example, our
+-- we might like our `AuthFieldsRep` type to cover the possibilites that a password
+-- has a `Maybe` value `(Maybe String)`, an array value `(Array String)`, or a 
+-- simple `String` value `(Unlifted String)`.
+type Unlifted a = a 
 
--- login :: forall m. MonadAff m => LoginFields -> BaseURL -> m (Either String (Tuple Token Profile))
--- login body = 
---   runRequest (decodeAuthProfile <=< (_ .: "user") <=< decodeJson) 
---     <<< post NoAuth (Just $ encodeJson { user: body }) Login
+-- For example, in both of these cases, we want to ensure a password was provided.
+-- However, in the Capability.Resource.User module we'll see an example of when this 
+-- should be a `Maybe` value instead.
+type RegisterFields = { | AuthFieldsRep Unlifted (username :: Username) }
+type LoginFields = { | AuthFieldsRep Unlifted () }
 
--- register :: forall m. MonadAff m => RegisterFields -> BaseURL -> m (Either String (Tuple Token Profile))
--- register body = 
---   runRequest (decodeAuthProfile <=< (_ .: "user") <=< decodeJson)
---     <<< post NoAuth (Just $ encodeJson { user: body }) Users
+-- The underlying shared row for various requests which manage user credentials.
+type AuthFieldsRep f r = ( email :: Email, password :: f String | r )
 
--- -- For decoding a user response from the server into an Token + Profile
+-- For decoding a user response from the server into an Token + Profile. Not exported
+-- in order to ensure that the only way to acquire a token is via our user management 
+-- functions.
+decodeAuthProfile :: Json -> Either String (Tuple Token Profile)
+decodeAuthProfile json = do
+  str <- decodeJson =<< (_ .: "token") =<< decodeJson json
+  prof <- decodeJson json
+  pure $ Tuple (Token str) prof
 
--- decodeAuthProfile :: Json -> Either String (Tuple Token Profile)
--- decodeAuthProfile json = do
---   str <- (_ .: "token") =<< decodeJson json
---   prof <- decodeJson json
---   pure $ Tuple (Token str) prof
+-- Required to write in this module because it operates on tokens
+login :: forall m. MonadAff m => BaseURL -> LoginFields -> m (Either String (Tuple Token Profile))
+login baseUrl fields = requestUser baseUrl { endpoint: Login, method: Post (Just $ encodeJson fields) } 
+
+-- Required to write in this module because it operates on tokens
+register :: forall m. MonadAff m => BaseURL -> RegisterFields -> m (Either String (Tuple Token Profile))
+register baseUrl fields = requestUser baseUrl { endpoint: Users, method: Post (Just $ encodeJson fields) } 
+
+-- Same underlying mechanism for both requests
+requestUser :: forall m. MonadAff m => BaseURL -> RequestOptions -> m (Either String (Tuple Token Profile))
+requestUser baseUrl opts = do
+  res <- liftAff $ request $ defaultRequest baseUrl Nothing opts
+  pure $ decodeAuthProfile =<< (_ .: "user") =<< decodeJson =<< lmap printResponseFormatError res.body
 
 -- Managing tokens in local storage
 

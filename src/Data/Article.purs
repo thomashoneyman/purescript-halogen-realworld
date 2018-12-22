@@ -54,8 +54,8 @@ decodeArticles u json = do
   -- for now, we'll drop out malformed articles
   sequence $ filter isRight $ map (decodeArticleWithMetadata' u) arr
 
-decodeArticleWithMetadata :: Maybe Username -> Json -> Either String ArticleWithMetadata
-decodeArticleWithMetadata u json = do
+decodeArticle :: Maybe Username -> Json -> Either String ArticleWithMetadata
+decodeArticle u json = do
   obj <- (_ .: "article") =<< decodeJson json
   decodeArticleWithMetadata' u obj 
 
