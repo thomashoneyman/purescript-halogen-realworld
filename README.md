@@ -1,5 +1,8 @@
 # Real World Halogen
 
+[![RealWorld Frontend](https://camo.githubusercontent.com/b507ac8f2ec6427bbef518193567c4ec6060c780/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f7265616c776f726c642d66726f6e74656e642d2532333738333537382e737667)](http://realworld.io)
+[![Maintainer: thomashoneyman](https://img.shields.io/badge/maintainer-thomashoneyman-lightgrey.svg)](http://github.com/thomashoneyman)
+
 A PureScript + Halogen codebase containing real world examples (CRUD, auth, design patterns, routing, pagination, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API. 
 
 - Check out the [RealWorld](https://github.com/gothinkster/realworld) project for more information on how to use this with various backends and compare it to other frameworks.
