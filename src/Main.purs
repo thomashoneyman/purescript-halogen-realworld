@@ -58,9 +58,9 @@ main = HA.runHalogenAff do
   -- Our router component requires some information about its environment in order to run, so let's
   -- get that handled before we do anything else. 
   
-  -- Our environment is a small record type, `Env`, defined in the `AppM` module. It requires three
-  -- fields: the profile of the currently-authenticated user (if there is one), the base URL of
-  -- the application, and the log level. 
+  -- Our environment is a small record type, `Env`, defined in the `Conduit.AppM` module. It 
+  -- requires three fields: the profile of the currently-authenticated user (if there is one), the 
+  -- base URL of the application, and the log level. 
 
   -- This is a small MVP, so we'll just define pure values like our base URL and log level as 
   -- constants. But it's also common to read configuration like this from the build environment.
@@ -108,8 +108,8 @@ main = HA.runHalogenAff do
   -- and the component we want to transform (the router). This will make our root component (the router)
   -- ready to run as a Halogen application.
   --
-  -- The `runAppM` function we wrote in the `AppM` module provides this transformation from `AppM`
-  -- to `Aff`, so long as you provide it with the proper environment -- which we have!
+  -- The `runAppM` function we wrote in the `Conduit.AppM` module provides this transformation from 
+  -- `AppM` to `Aff`, so long as you provide it with the proper environment -- which we have!
   --
   -- Let's put it all together. With `hoist`, `runAppM`, our environment, and our router component,
   -- we can produce a proper root component for Halogen to run.  
