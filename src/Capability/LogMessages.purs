@@ -1,7 +1,10 @@
--- | This module describes the capability to log messages to some output, whether 
--- | the console, an external service like Rollbar, or to files for golden testing. 
--- | See AppM for the implementation.
-
+-- | A capability representing the ability to save status information to some output, which could 
+-- | be the console, an external service like Splunk, or to the file system for testing purposes. 
+-- | The implementation can be freely swapped out without changing any application code besides 
+-- | the application monad, `Conduit.AppM`.
+-- |
+-- | To learn more about why we use capabilities and this architecture, please see the guide:
+-- | https://thomashoneyman.com/guides/real-world-halogen/push-effects-to-the-edges/
 module Conduit.Capability.LogMessages where
 
 import Prelude
@@ -13,45 +16,48 @@ import Conduit.Data.Log (Log, LogType(..), mkLog)
 import Data.Maybe (Maybe(..))
 import Halogen (HalogenM)
 
+-- | We require a strict format for the messages that we log so that we can search this structured 
+-- | data from our logging service later on. We can enforce this with the type system by using the 
+-- | `Log` type from `Conduit.Data.Log`. This type can only be constructed using helper functions
+-- | in that module, which enforce the correct format. However, we'll leave it up to the implementer
+-- | to decide what to do with the log once created. 
+class Monad m <= LogMessages m where
+  logMessage :: Log -> m Unit
+
+-- | This instance lets us avoid having to use `lift` when we use these functions in a component.
+instance logMessagesHalogenM :: LogMessages m => LogMessages (HalogenM s f g p o m) where
+  logMessage = lift <<< logMessage
+
+-- | Next, we'll provide a few helper functions to help users easily create and dispatch logs
+-- | from anywhere in the application. Each helper composes a couple of small functions together
+-- | so that we've got less to remember later on.
+
 -- | Log a message to given a particular `LogType` 
-log :: forall m. LogMessages m => LogType -> String -> m Unit
-log t = logMessage <=< mkLog t
+log :: forall m. LogMessages m => Now m => LogType -> String -> m Unit
+log logType = logMessage <=< mkLog logType
 
 -- | Log a message for debugging purposes  
-logDebug :: forall m. LogMessages m => String -> m Unit
+logDebug :: forall m. LogMessages m => Now m => String -> m Unit
 logDebug = log Debug 
 
 -- | Log a message as a warning
-logWarn :: forall m. LogMessages m => String -> m Unit
+logWarn :: forall m. LogMessages m =>  Now m =>String -> m Unit
 logWarn = log Warn 
 
 -- | Log a message as an error
-logError :: forall m. LogMessages m => String -> m Unit
+logError :: forall m. LogMessages m => Now m => String -> m Unit
 logError = log Error 
 
 -- | Hush a monadic action by logging the error
-logHush :: forall m a. LogMessages m => LogType -> m (Either String a) -> m (Maybe a)
-logHush lt act =
-  act >>= case _ of
-    Left e -> case lt of
+logHush :: forall m a. LogMessages m => Now m => LogType -> m (Either String a) -> m (Maybe a)
+logHush logType action =
+  action >>= case _ of
+    Left e -> case logType of
       Debug -> logDebug e *> pure Nothing
       Warn -> logWarn e *> pure Nothing
       Error -> logError e *> pure Nothing
     Right v -> pure $ Just v
    
 -- | Hush a monadic action by logging the error in debug mode
-debugHush :: forall m a. LogMessages m => m (Either String a) -> m (Maybe a)
+debugHush :: forall m a. LogMessages m => Now m => m (Either String a) -> m (Maybe a)
 debugHush = logHush Debug
-
--- We will require the `log` type class member to use the `LogMessage` newtype, 
--- which is not exported from this module and can only be constructed using our 
--- pure implementation below. This restricts all instances to a predictable output.
-
--- In addition, we'll superclass another capability that is required for this one:
--- the ability to get the current time.
-
-class Now m <= LogMessages m where
-  logMessage :: Log -> m Unit
-
-instance logMessagesHalogenM :: LogMessages m => LogMessages (HalogenM s f g p o m) where
-  logMessage = lift <<< logMessage

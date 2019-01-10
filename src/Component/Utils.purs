@@ -1,4 +1,5 @@
-module Conduit.Capability.Utils where
+-- | 
+module Conduit.Component.Utils where
 
 import Prelude
 

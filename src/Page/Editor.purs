@@ -4,11 +4,11 @@ import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
-import Conduit.Capability.Utils (guardSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
+import Conduit.Component.Utils (guardSession)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))

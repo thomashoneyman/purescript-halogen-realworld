@@ -5,6 +5,7 @@ import Prelude
 import Affjax (request)
 import Conduit.Api.Request (BaseURL, RequestOptions, Token, defaultRequest, readToken, writeToken)
 import Conduit.Capability.LogMessages (class LogMessages, logError)
+import Conduit.Capability.Now (class Now)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
 import Control.Monad.Reader (class MonadAsk, ask, asks)
@@ -57,6 +58,7 @@ authenticate
    . MonadAff m
   => MonadAsk { baseUrl :: BaseURL, currentUser :: Ref (Maybe Profile) | r } m
   => LogMessages m
+  => Now m
   => (BaseURL -> a -> m (Either String (Tuple Token Profile))) 
   -> a 
   -> m (Maybe Profile)
@@ -70,7 +72,7 @@ authenticate req fields = do
       pure (Just profile)
 
 -- A small utility to log out decoding failures
-decode :: forall m a. LogMessages m => (Json -> Either String a) -> Maybe Json -> m (Maybe a)
+decode :: forall m a. LogMessages m => Now m => (Json -> Either String a) -> Maybe Json -> m (Maybe a)
 decode _ Nothing = logError "Response malformed" *> pure Nothing 
 decode decoder (Just json) = case decoder json of
   Left err -> logError err *> pure Nothing
@@ -82,6 +84,7 @@ decodeWithUser
    . MonadEffect m
   => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => LogMessages m 
+  => Now m
   => (Maybe Username -> Json -> Either String a) 
   -> Maybe Json 
   -> m (Maybe a)

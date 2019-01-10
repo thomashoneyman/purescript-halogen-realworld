@@ -4,9 +4,9 @@ import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.User (class ManageUser, loginUser)
-import Conduit.Capability.Utils (guardNoSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
+import Conduit.Component.Utils (guardNoSession)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
