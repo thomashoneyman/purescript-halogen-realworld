@@ -245,8 +245,8 @@ instance manageCommentAppm :: ManageComment AppM where
     mkRequest { endpoint: Comments slug, method: Get }
       >>= decodeWithUser decodeComments
   
-  createComment slug fields = 
-    let method = Post $ Just $ encodeJson fields
+  createComment slug body = 
+    let method = Post $ Just $ encodeJson { body }
      in void $ mkAuthRequest { endpoint: Comments slug, method }
 
   deleteComment slug id =

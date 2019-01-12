@@ -13,7 +13,7 @@ module Conduit.Capability.Resource.Comment where
 
 import Prelude
 
-import Conduit.Data.Comment (Comment, CommentId, CreateComment)
+import Conduit.Data.Comment (Comment, CommentId)
 import Data.Maybe (Maybe)
 import Halogen (HalogenM, lift)
 import Slug (Slug)
@@ -26,7 +26,7 @@ import Slug (Slug)
 -- | so on in the implementation.
 class Monad m <= ManageComment m where
   getComments :: Slug -> m (Maybe (Array Comment))
-  createComment :: Slug -> CreateComment -> m Unit
+  createComment :: Slug -> String -> m Unit
   deleteComment :: Slug -> CommentId -> m Unit
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.

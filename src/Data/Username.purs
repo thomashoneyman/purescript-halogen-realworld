@@ -1,5 +1,5 @@
 module Conduit.Data.Username 
-  ( Username
+  ( Username -- constructors not exported
   , parse
   , toString
   ) where

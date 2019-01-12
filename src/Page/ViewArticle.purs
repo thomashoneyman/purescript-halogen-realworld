@@ -121,7 +121,7 @@ component =
       st <- H.get
       when (st.myComment /= "") do
         for_ (preview _Success st.article) \article -> do
-          void $ createComment article.slug { body: st.myComment }
+          void $ createComment article.slug st.myComment
           comments <- getComments st.slug
           H.modify_ _ { comments = fromMaybe comments, myComment = "" }
       pure a
