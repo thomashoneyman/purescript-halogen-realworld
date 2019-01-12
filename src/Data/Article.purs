@@ -1,4 +1,4 @@
--- | Articles are an example of an *entity* (a persistent data type with a unique identity. They're 
+-- | Articles are an example of an entity (a persistent data type with a unique identity). They're 
 -- | a critical, widely-used type in Conduit.
 -- |
 -- | We have two versions of the `Article` type: one with just some base fields and another with
