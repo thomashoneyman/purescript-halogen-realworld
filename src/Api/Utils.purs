@@ -104,7 +104,7 @@ decode decoder (Just json) = case decoder json of
 
 -- | This small utility is similar to the prior `decode` function, but it's designed to work with
 -- | decoders that require knowing the currently-authenticated user to work. For example, our 
--- | `Author` type depends on the currently-logged-in user (if there is one) to determine whether
+-- | `Profile` type depends on the currently-logged-in user (if there is one) to determine whether
 -- | you are the author, you follow the author, or you don't follow the author. This utility 
 -- | handles the mechanics of retrieving the current user and providing the username to the 
 -- | provided decoder.

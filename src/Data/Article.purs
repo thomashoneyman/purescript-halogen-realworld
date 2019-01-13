@@ -42,8 +42,8 @@ type ArticleRep row =
 -- | Next, we'll define another row containing the additional metadata which is sometimes included
 -- | with an article. These types are not generally editable by users and have crisper types. For
 -- | example, we expect a well-formed slug (not any string will do!), a precise datetime value,
--- | and a custom `Author` type. The `Author` type is interesting because it disallows some tricky
--- | invalid states in the type system. It's defined in `Conduit.Data.Author`.
+-- | and a custom `Profile` type. The `Profile` type is interesting because it disallows some tricky
+-- | invalid states in the type system. It's defined in `Conduit.Data.Profile`.
 type ArticleMetadataRep row =
   ( slug :: Slug 
   , createdAt :: PreciseDateTime

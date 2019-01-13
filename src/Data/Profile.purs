@@ -1,17 +1,18 @@
 -- | Profiles are an example of an entity (a persistent data type with a unique identity) and are
--- | widely used in the Conduit application, usually as part of a larger type like `Author`.
+-- | widely used in the Conduit application.
 -- |
 -- | We have two versions of the `Profile` type, as with the `Article` type: one with a few core 
 -- | fields about the user and another that also contains their email address. It's tedious and 
--- | error-prone to write out multiple variations of a type which all share the same core fields. 
--- | We'll use extensible to solve that problem.
+-- | error-prone to write out multiple variations of a type which all share the same core fields 
+-- | so we'll use extensible to solve that problem.
 -- |
 -- | The backend returns a `following` flag as part of a profile, but this can lead to invalid 
--- | states. See the `Conduit.Data.Author` module for the type-safe solution. 
+-- | states. What happens if you're viewing your own profile? There's no concept of following
+-- | yourself. We'll create a custom type to rule out invalid relationships like this. 
 -- | 
--- | This module also demonstrates creating lenses for record types; we'll use these lenses in
--- | our components to easily drill down from the larger types that contain a `Profile` to a field
--- | we care about in particular.
+-- | This module also demonstrates how to create lenses for record types. Optics, which include  
+-- | lenses, let you work with values within nested structures. We'll use optics to drill down from
+-- | large types like a component `State` to a particular field in a profile stored in that state.
 module Conduit.Data.Profile where
 
 import Prelude
@@ -28,6 +29,22 @@ import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
 
+-- | Let's start by defining a small helper data type before we move on to the larger `Profile` type.
+-- |
+-- | As far as our JSON is concerned, a user profile includes a username, avatar, biography, and
+-- | a unique field: whether the currently-authenticated user is following this profile. This 
+-- | value is true only when there is a current user and they follow the profile in question.
+-- | If there is no current user, or the requested profile belongs to the current user, or the 
+-- | current user isn't following the requested profile, then the value is `false`.
+-- |
+-- | Unfortunately, this tricky true/false flag can lead to invalid states in our UI. For example,
+-- | user profiles in the application can have a follow button on them. If you don't follow the user
+-- | then clicking this button should send a `followUser` request. If you do follow the user, then
+-- | it should send an `unfollowUser` request. And if you're viewing your own profile, there should
+-- | be no button at all.
+-- |
+-- | We need a better type: one that represents the *three* possibilities for how a given profile
+-- | relates to the (possible) current user. The `Relation` type captures these three cases nicely.
 data Relation
   = Following
   | NotFollowing
@@ -42,6 +59,41 @@ instance encodeJsonFollowStatus :: EncodeJson Relation where
   encodeJson Following = encodeJson true
   encodeJson _ = encodeJson false
 
+-- | Now, let's describe the fields of our main `Profile` type, which should also be shared with
+-- | the extendede `ProfileWithEmail` type.
+-- |
+-- | A user profile contains a mandatory username, a biography which is allowed to be empty, an 
+-- | optional avatar, and a relation to the current user, if there is one. We've already designed 
+-- | types that nicely capture the semantics of each field, so all we need to do here is assemble
+-- | them into a row that can be used to implement `Profile` and `ProfileWithEmail`. 
+type ProfileRep row =
+  ( username :: Username
+  , bio :: Maybe String
+  , avatar :: Maybe Avatar
+  , relation :: Relation
+  | row
+  )
+
+-- | The `Profile` type consists only of four core fields: the username, biography, avatar,
+-- | and relation.
+type Profile = { | ProfileRep () }
+
+-- | The `ProfileWithEmail` type extends the `Profile` fields with an additional `Email` type.
+type ProfileWithEmail = { | ProfileRep ( email :: Email) }
+
+-- | Unfortunately, we can't automatically encode and decode the `Profile` type from JSON for
+-- | two reasons.
+-- |
+-- | First, we already determined that the "following" boolean doesn't adequately cover the three
+-- | ways in which a given profile can relate to the person viewing it; to decode this boolean into
+-- | our better `Relation` type, we'll need to take the username of the current user (if there is
+-- | one) as an argument. Since the `decodeJson :: Json -> Either String a` function doesn't take 
+-- | any arguments besides the JSON to decode, we can't write a `DecodeJSON` instance (and 
+-- | therefore we certainly can't derive one automatically).
+-- |
+-- | Second, I've opted to rename the "following" field to the more apt "relation" and the "image"
+-- | field to "avatar". We can't automatically encode and decode when we're changing field names,
+-- | so we will fall back to a manual decoder.
 decodeProfile :: Maybe Username -> Json -> Either String Profile
 decodeProfile mbUsername json = do 
   obj <- decodeJson json
@@ -51,38 +103,42 @@ decodeProfile mbUsername json = do
   relation <- obj .: "following"
   let profile = { username, bio, avatar, relation }
   pure $ case mbUsername of
+    -- If the profile we're decoding from JSON has the same unique identifying username as the one
+    -- passed as an argument, then the profile we've decoded is in fact the current user's profile.
+    -- So we'll update the `relation` field to the `You` value.
     Just currentUsername | username == currentUsername -> profile { relation = You }
     _ -> profile
 
--- | Let's begin by describing the row shared by our main `Profile` type and the extended
--- | `ProfileWithEmail` type. A user profile contains a mandatory username and an optional
--- | biography and avatar. We usually need to know whether the person viewing a profile 
--- | follows that profile, but we capture that information in the `Data.Conduit.Author` type.
-type ProfileRep row =
-  ( username :: Username
-  , bio :: Maybe String
-  , avatar :: Maybe Avatar
-  , relation :: Relation
-  | row
-  )
-
--- | Our main `Profile` type consists only of the fields in this row, whereas our 
--- | `ProfileWithEmail` type extends the row with a new field.
-type Profile = { | ProfileRep () }
-type ProfileWithEmail = { | ProfileRep ( email :: Email) }
-
--- | The `Profile` type is usually a part of a larger type, like a `Maybe FollowedAuthor`. Without 
--- | helpers, it  would take several layers of unwrapping before we could finally access the 
--- | `username` field, for example. Sounds terrible!
--- |
--- | But nested structures aren't always a problem. We deal with nested records all the time, for
--- | example, but they're fairly easy to work with because of dot syntax. For example:
+-- | The `Profile` type is usually a part of a larger type, like a component's `State`. If you have
+-- | a `State` and want to get the username out of a profile stored in that state, you'll have to 
+-- | drill down several layers of structure. This is easy to do when the nested structure is made
+-- | entirely of records because of dot syntax. We do this all the time! For example:
 -- |
 -- | ```purescript
 -- | type MyRecord = { x :: { y :: { z :: Int } } }
 -- |
 -- | getZ :: MyRecord -> Int
--- | getZ rec = rec.x.y.z
+-- | getZ record = record.x.y.z
+-- | ```
+-- |
+-- | But there are many places where dot syntax (record accessors) fall short. Accessing a value
+-- | is convenient, but updating one is more verbose:
+-- |
+-- | ```purescript
+-- | updateZ :: Int -> MyRecord -> MyRecord
+-- | updateZ x record = record { x { y { z = x }}}
+-- | ```
+-- |
+-- | Worse, if you need to access or update a field inside a `Maybe` record, you're out of luck.
+-- | The special record syntax only helps when you have only records. For example:
+-- |
+-- | ```purescript
+-- | type MyRecordMaybe = { x :: Maybe { y :: Int } }
+-- | 
+-- | -- we can no longer use just record syntax and have to start mixing in functions that operate
+-- | -- on `Maybe` values as well.
+-- | getY :: MyRecordMaybe -> Maybe Int
+-- | getY record = _.y <$> record.x
 -- | ```
 -- |
 -- | Optics are far more powerful and flexible than dot syntax, but achieve a similar goal: access
@@ -101,7 +157,7 @@ type ProfileWithEmail = { | ProfileRep ( email :: Email) }
 -- | type MyVal = { x :: { y :: { z :: Int } } }
 -- | type MyValMaybe = { x :: Maybe { y :: Maybe { z :: Int } } }
 -- |
--- | -- _x, _y, and _z are optics for the "x", "y", and "z" fields in the record 
+-- | -- _x, _y, and _z are lenses (a type of optic) for the "x", "y", and "z" fields in the record.
 -- | _x = prop (SProxy :: SProxy "x")
 -- | _y = prop (SProxy :: SProxy "y")
 -- | _z = prop (SProxy :: SProxy "z")
