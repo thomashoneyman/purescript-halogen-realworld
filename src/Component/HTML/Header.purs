@@ -49,7 +49,7 @@ header currentUser route =
             navItem (Profile profile.username)
               [ HH.img 
                 [ css "user-pic" 
-                , HP.src $ Avatar.toStringWithDefault profile.image
+                , HP.src $ Avatar.toStringWithDefault profile.avatar
                 ]
               , HH.text $ Username.toString profile.username
               ]

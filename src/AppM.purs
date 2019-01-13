@@ -27,12 +27,11 @@ import Conduit.Capability.Resource.Comment (class ManageComment)
 import Conduit.Capability.Resource.Tag (class ManageTag)
 import Conduit.Capability.Resource.User (class ManageUser)
 import Conduit.Data.Article (decodeArticle, decodeArticles)
-import Conduit.Data.Author (decodeAuthor)
 import Conduit.Data.Comment (decodeComments)
 import Conduit.Data.Endpoint (Endpoint(..), noArticleParams)
 import Conduit.Data.Log (LogType(..))
 import Conduit.Data.Log as Log
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (Profile, decodeProfile)
 import Conduit.Data.Route as Route
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Encode (encodeJson)
@@ -220,18 +219,18 @@ instance manageUserAppM :: ManageUser AppM where
 
   getAuthor username = 
     mkRequest { endpoint: Profiles username, method: Get }
-      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
+      >>= decodeWithUser (\mbU -> decodeProfile mbU <=< decodeAt "profile")
 
   updateUser fields = 
     void $ mkAuthRequest { endpoint: User, method: Post (Just (encodeJson fields)) }
 
   followUser username = 
     mkAuthRequest { endpoint: Follow username, method: Post Nothing }
-      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
+      >>= decodeWithUser (\mbU -> decodeProfile mbU <=< decodeAt "profile")
   
   unfollowUser username =
     mkAuthRequest { endpoint: Follow username, method: Delete }
-      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
+      >>= decodeWithUser (\mbU -> decodeProfile mbU <=< decodeAt "profile")
 
 -- Our operations for managing tags
 instance manageTagAppM :: ManageTag AppM where 

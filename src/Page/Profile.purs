@@ -11,8 +11,6 @@ import Conduit.Component.HTML.Utils (css, maybeElem, safeHref, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
-import Conduit.Data.Author (Author)
-import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Endpoint (noArticleParams)
 import Conduit.Data.PaginatedArray (PaginatedArray)
@@ -41,7 +39,7 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 type State =
   { articles :: RemoteData String (PaginatedArray ArticleWithMetadata)
   , favorites :: RemoteData String (PaginatedArray ArticleWithMetadata)
-  , author :: RemoteData String Author
+  , author :: RemoteData String Profile
   , page :: Int
   , currentUser :: Maybe Profile
   , username :: Username
@@ -165,7 +163,7 @@ component =
         ArticlesTab -> LoadArticles a 
       pure a
   
-  _author :: Traversal' State Author
+  _author :: Traversal' State Profile
   _author = prop (SProxy :: SProxy "author") <<< _Success
 
   _article :: Int -> Traversal' State ArticleWithMetadata
@@ -203,11 +201,11 @@ component =
           [ css "col-xs-12 col-md-10 offset-md-1" ]
           [ HH.img 
             [ css "user-img" 
-            , HP.src $ Avatar.toStringWithDefault (_.image =<< profile)
+            , HP.src $ Avatar.toStringWithDefault (_.avatar =<< toMaybe state.author)
             ]
           , HH.h4_
             [ HH.text $ Username.toString state.username ]
-          , maybeElem (_.bio =<< profile) \str ->
+          , maybeElem (_.bio =<< toMaybe state.author) \str ->
               HH.p_
                 [ HH.text str ]
           , maybeElem (toMaybe state.author) (followButton FollowAuthor UnfollowAuthor)
@@ -215,9 +213,6 @@ component =
         ]
       ]
     ]
-    where
-    profile :: Maybe Profile
-    profile = pure <<< Author.profile =<< toMaybe state.author
 
 
   mainView :: forall i. State -> H.HTML i Query

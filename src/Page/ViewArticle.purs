@@ -13,12 +13,10 @@ import Conduit.Component.Part.FavoriteButton (ButtonSize(..), favorite, favorite
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Component.RawHTML as RawHTML
 import Conduit.Data.Article (ArticleWithMetadata)
-import Conduit.Data.Author (Author(..))
-import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.PreciseDateTime as PDT
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (Relation(..), Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Control.Monad.Reader (class MonadAsk, asks)
@@ -155,7 +153,7 @@ component =
       H.modify_ _ { comments = fromMaybe comments }
       pure a
   
-  _author :: Traversal' State Author
+  _author :: Traversal' State Profile
   _author = _article <<< prop (SProxy :: SProxy "author")
 
   _article :: Traversal' State ArticleWithMetadata
@@ -221,7 +219,7 @@ component =
                         [ css "card-footer" ]
                         [ HH.img 
                           [ css "comment-author-img" 
-                          , HP.src $ Avatar.toStringWithDefault profile.image
+                          , HP.src $ Avatar.toStringWithDefault profile.avatar
                           ]
                         , HH.button
                           [ css "btn btn-sm btn-primary" 
@@ -294,8 +292,8 @@ component =
                 ]
         ]
       where
-      username = Author.username article.author
-      avatar = (Author.profile article.author).image
+      username = article.author.username
+      avatar = article.author.avatar
 
     viewComment comment =
       HH.div
@@ -310,24 +308,24 @@ component =
           [ css "card-footer" ]
           [ HH.a
             [ css "comment-author" 
-            , safeHref $ Profile authorUsername
+            , safeHref $ Profile comment.author.username
             ]
             [ HH.img 
               [ css "comment-author-img" 
-              , HP.src $ Avatar.toStringWithDefault $ _.image $ Author.profile comment.author
+              , HP.src $ Avatar.toStringWithDefault comment.author.avatar
               ]
             ]
           , HH.text " "
           , HH.a
             [ css "comment-author" 
-            , safeHref $ Profile authorUsername
+            , safeHref $ Profile comment.author.username
             ]
-            [ HH.text $ Username.toString authorUsername ]
+            [ HH.text $ Username.toString comment.author.username ]
           , HH.text " "
           , HH.span
             [ css "date-posted" ]
             [ HH.text $ PDT.toDisplayMonthDayYear comment.createdAt ]
-          , whenElem (isAuthor comment.author) \_ ->
+          , whenElem (comment.author.relation == You) \_ ->
               HH.span
                 [ css "mod-options" ]
                 [ HH.i 
@@ -338,9 +336,3 @@ component =
                 ]
           ]
         ]
-      where
-      authorUsername = Author.username comment.author
-      isAuthor = case _ of
-        You _ -> true
-        _ -> false
-      

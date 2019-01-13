@@ -5,8 +5,8 @@ module Conduit.Data.Comment where
 
 import Prelude
 
-import Conduit.Data.Author (Author, decodeAuthor)
 import Conduit.Data.PreciseDateTime (PreciseDateTime)
+import Conduit.Data.Profile (Profile, decodeProfile)
 import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
@@ -40,7 +40,7 @@ type Comment =
   { id :: CommentId 
   , createdAt :: PreciseDateTime
   , body :: String
-  , author :: Author
+  , author :: Profile
   }
 
 -- | Most records can be generically encoded or decoded without us having to write anything 
@@ -56,7 +56,7 @@ decodeComments u = traverse (decodeComment u) <=< (_ .:  "comments") <=< decodeJ
 decodeComment :: Maybe Username -> Json -> Either String Comment
 decodeComment u json = do
   obj <- decodeJson json
-  author <- decodeAuthor u =<< obj .: "author"
+  author <- decodeProfile u =<< obj .: "author"
   body <- obj .: "body"
   id <- obj .: "id"
   createdAt <- obj .: "createdAt"

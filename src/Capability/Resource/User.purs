@@ -14,7 +14,6 @@ module Conduit.Capability.Resource.User where
 import Prelude
 
 import Conduit.Api.Request (AuthFieldsRep, LoginFields, RegisterFields)
-import Conduit.Data.Author (Author)
 import Conduit.Data.Profile (Profile, ProfileRep, ProfileWithEmail)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe)
@@ -36,10 +35,10 @@ class Monad m <= ManageUser m where
   loginUser :: LoginFields -> m (Maybe Profile)
   registerUser :: RegisterFields -> m (Maybe Profile)
   getCurrentUser :: m (Maybe ProfileWithEmail)
-  getAuthor :: Username -> m (Maybe Author)
+  getAuthor :: Username -> m (Maybe Profile)
   updateUser :: UpdateProfileFields -> m Unit
-  followUser :: Username -> m (Maybe Author)
-  unfollowUser :: Username -> m (Maybe Author)
+  followUser :: Username -> m (Maybe Profile)
+  unfollowUser :: Username -> m (Maybe Profile)
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
 instance manageUserHalogenM :: ManageUser m => ManageUser (HalogenM s f g p o m) where

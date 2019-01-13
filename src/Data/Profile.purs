@@ -14,13 +14,45 @@
 -- | we care about in particular.
 module Conduit.Data.Profile where
 
+import Prelude
+
 import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Username (Username)
+import Data.Argonaut.Core (Json)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Either (Either)
 import Data.Lens (Lens')
 import Data.Lens.Record (prop)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+
+data Relation
+  = Following
+  | NotFollowing
+  | You
+
+derive instance eqRelation :: Eq Relation
+
+instance decodeJsonFollowStatus :: DecodeJson Relation where
+  decodeJson = decodeJson >=> if _ then pure Following else pure NotFollowing 
+
+instance encodeJsonFollowStatus :: EncodeJson Relation where
+  encodeJson Following = encodeJson true
+  encodeJson _ = encodeJson false
+
+decodeProfile :: Maybe Username -> Json -> Either String Profile
+decodeProfile mbUsername json = do 
+  obj <- decodeJson json
+  username <- obj .: "username"
+  bio <- obj .: "bio"
+  avatar <- obj .: "image"
+  relation <- obj .: "following"
+  let profile = { username, bio, avatar, relation }
+  pure $ case mbUsername of
+    Just currentUsername | username == currentUsername -> profile { relation = You }
+    _ -> profile
 
 -- | Let's begin by describing the row shared by our main `Profile` type and the extended
 -- | `ProfileWithEmail` type. A user profile contains a mandatory username and an optional
@@ -29,7 +61,8 @@ import Data.Symbol (SProxy(..))
 type ProfileRep row =
   ( username :: Username
   , bio :: Maybe String
-  , image :: Maybe Avatar
+  , avatar :: Maybe Avatar
+  , relation :: Relation
   | row
   )
 
@@ -96,5 +129,9 @@ _bio :: forall r. Lens' { bio :: Maybe String | r } (Maybe String)
 _bio = prop (SProxy :: SProxy "bio")
 
 -- | A lens for an image field within a record
-_image :: forall r. Lens' { image :: Maybe Avatar | r } (Maybe Avatar)
-_image = prop (SProxy :: SProxy "image")
+_avatar :: forall r. Lens' { avatar :: Maybe Avatar | r } (Maybe Avatar)
+_avatar = prop (SProxy :: SProxy "avatar")
+
+-- | A lens for a following field within a record
+_relation :: forall r. Lens' { relation :: Relation | r } Relation
+_relation = prop (SProxy :: SProxy "relation")
