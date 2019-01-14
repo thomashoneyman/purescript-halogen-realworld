@@ -1,3 +1,5 @@
+-- | This module exports a pure HTML function to render lists of articles in various formats,
+-- | included paginated lists.
 module Conduit.Component.HTML.ArticleList where
 
 import Prelude

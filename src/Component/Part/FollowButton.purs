@@ -1,3 +1,7 @@
+-- | The follow buttons in Conduit don't have enough encapsulated state or behaviors to be a full
+-- | component, but do need to trigger certain actions in a parent component. To avoid writing the
+-- | same query handler over and over again, we'll export both the pure HTML function and a default
+-- | handle from this module.
 module Conduit.Component.Part.FollowButton 
   ( followButton
   , follow
@@ -18,11 +22,10 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 
--- Our follow button will have behavior that depends on the profile we are interacting
--- with. Since the profile's type already includes information about whether we
--- follow this profile, we can use that to control the behavior of this HTML with
--- the profile type and some embedded queries alone.
-
+-- | Our follow button will have behavior that depends on the profile we are interacting with. 
+-- | Since the profile's type already includes information about whether we follow this profile, we 
+-- | can use that to control the behavior of this HTML with the profile type and some embedded 
+-- | queries alone.
 followButton 
   :: forall i p
    . H.Action p
@@ -49,17 +52,16 @@ followButton followQuery unfollowQuery profile = case profile.relation of
   You -> HH.text ""
 
 
--- In addition to this pure HTML renderer, however, we'd also like to supply the logic 
--- that will work with the queries we've embedded. These two functions will take care
--- of everything we need in `eval` for a component which loads an profile and then
--- performs follow / unfollow actions on it.
---
--- In most cases I don't make assumptions about what is in state nor modify it, but 
--- in this case I'm willing to adopt the convention that somewhere in state is an
--- profile that can be modified.
---
--- The following two functions will handle safely making the request, logging errors,
--- and updating state with the result.
+-- | In addition to this pure HTML renderer, however, we'd also like to supply the logic that will 
+-- | work with the queries we've embedded. These two functions will take care of everything we need 
+-- | in `eval` for a component which loads an profile and then performs follow / unfollow actions 
+-- | on it.
+-- |
+-- | In most cases I don't make assumptions about what is in state nor modify it, but in this case 
+-- | I'm willing to adopt the convention that somewhere in state is an profile that can be modified.
+-- |
+-- | The following two functions will handle safely making the request, logging errors, and updating 
+-- | state with the result.
 
 follow  
   :: forall s f g p o m
@@ -75,8 +77,7 @@ unfollow
   -> H.HalogenM s f g p o m Unit
 unfollow _profile = act (eq Following <<< _.relation) unfollowUser _profile
 
--- This will be kept internal.
-
+-- | This will be kept internal, as it is only used to implement `follow` and `unfollow`.
 act  
   :: forall s f g p o m
    . ManageUser m
