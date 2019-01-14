@@ -27,7 +27,7 @@ import Conduit.Page.ViewArticle as ViewArticle
 import Control.Monad.Reader (class MonadAsk)
 import Data.Either.Nested (Either7)
 import Data.Functor.Coproduct.Nested (Coproduct7)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
 import Halogen as H
@@ -39,6 +39,9 @@ type State =
 
 data Query a
   = Navigate Route a
+
+type Input =
+  Maybe Route
 
 type ChildQuery = Coproduct7
   Home.Query
@@ -69,10 +72,10 @@ component
   => ManageArticle m
   => ManageComment m
   => ManageTag m
-  => H.Component HH.HTML Query Unit Void m
+  => H.Component HH.HTML Query Input Void m
 component =
   H.parentComponent
-    { initialState: \_ -> { route: Home } 
+    { initialState: \initialRoute -> { route: fromMaybe Home initialRoute } 
     , render
     , eval
     , receiver: const Nothing
