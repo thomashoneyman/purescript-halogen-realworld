@@ -1,3 +1,8 @@
+-- | The `Router` component is the root of our Halogen application. Every other component is a 
+-- | direct descendent of this component. We'll use the router to choose which component to render
+-- | given a particular `Route` and to manage the user's location in the application.
+-- |
+-- | See `Main` to understand how this component is used as the root of the application.
 module Conduit.Component.Router where
 
 import Prelude

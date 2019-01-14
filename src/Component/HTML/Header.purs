@@ -1,3 +1,4 @@
+-- | This module exports a pure HTML function to render a consistent header throughout the app.
 module Conduit.Component.HTML.Header where
 
 import Prelude
@@ -12,12 +13,10 @@ import Data.Monoid (guard)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 
--- Our header will be a pure render function, but we'll require a route as an 
--- argument so we can judge whether a link should display active or not. We'll 
--- allow for any profile record type so long as it has our core fields -- this 
--- makes the header reusable across other pages, like the settings page, which
--- use different variations on the profile record.
-
+-- | Our header will be a pure render function, but we'll require a route as an argument so we can 
+-- | judge whether a link should display active or not. We'll allow for any profile record type so 
+-- | long as it has our core fields -- this makes the header reusable across pages despite which 
+-- | variation on `Profile` they use.
 header :: forall i p r. Maybe { | ProfileRep r } -> Route -> HH.HTML i p
 header currentUser route =
   HH.nav
