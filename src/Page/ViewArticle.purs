@@ -1,3 +1,6 @@
+-- | Articles are stored as markdown strings, which is then rendered as HTMl. They also include
+-- | comments so users can read an article and then share what they thought about it. This component
+-- | supports viewing and interacting with articles in Conduit.
 module Conduit.Page.ViewArticle where
 
 import Prelude
@@ -13,12 +16,10 @@ import Conduit.Component.Part.FavoriteButton (ButtonSize(..), favorite, favorite
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Component.RawHTML as RawHTML
 import Conduit.Data.Article (ArticleWithMetadata)
-import Conduit.Data.Author (Author(..))
-import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.PreciseDateTime as PDT
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (Profile, Relation(..), Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Control.Monad.Reader (class MonadAsk, asks)
@@ -87,7 +88,6 @@ component =
     }
 
   where 
-
   initialState :: Input -> State
   initialState { slug } = 
     { article: NotAsked
@@ -121,7 +121,7 @@ component =
       st <- H.get
       when (st.myComment /= "") do
         for_ (preview _Success st.article) \article -> do
-          void $ createComment article.slug { body: st.myComment }
+          void $ createComment article.slug st.myComment
           comments <- getComments st.slug
           H.modify_ _ { comments = fromMaybe comments, myComment = "" }
       pure a
@@ -294,8 +294,8 @@ component =
                 ]
         ]
       where
-      username = Author.username article.author
-      avatar = (Author.profile article.author).image
+      username = article.author.username
+      avatar = article.author.image
 
     viewComment comment =
       HH.div
@@ -310,24 +310,24 @@ component =
           [ css "card-footer" ]
           [ HH.a
             [ css "comment-author" 
-            , safeHref $ Profile authorUsername
+            , safeHref $ Profile comment.author.username
             ]
             [ HH.img 
               [ css "comment-author-img" 
-              , HP.src $ Avatar.toStringWithDefault $ _.image $ Author.profile comment.author
+              , HP.src $ Avatar.toStringWithDefault comment.author.image
               ]
             ]
           , HH.text " "
           , HH.a
             [ css "comment-author" 
-            , safeHref $ Profile authorUsername
+            , safeHref $ Profile comment.author.username
             ]
-            [ HH.text $ Username.toString authorUsername ]
+            [ HH.text $ Username.toString comment.author.username ]
           , HH.text " "
           , HH.span
             [ css "date-posted" ]
             [ HH.text $ PDT.toDisplayMonthDayYear comment.createdAt ]
-          , whenElem (isAuthor comment.author) \_ ->
+          , whenElem (comment.author.relation == You) \_ ->
               HH.span
                 [ css "mod-options" ]
                 [ HH.i 
@@ -338,9 +338,3 @@ component =
                 ]
           ]
         ]
-      where
-      authorUsername = Author.username comment.author
-      isAuthor = case _ of
-        You _ -> true
-        _ -> false
-      
