@@ -7,11 +7,11 @@ module Main where
 import Prelude
 
 import Affjax (printResponseFormatError, request)
+import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.Api.Utils (decodeAt)
 import Conduit.AppM (Env, LogLevel(..), runAppM)
 import Conduit.Component.Router as Router
-import Conduit.Data.Endpoint (Endpoint(..))
 import Conduit.Data.Route (routeCodec)
 import Data.Bifunctor (lmap)
 import Data.Either (hush)

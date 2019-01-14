@@ -13,8 +13,8 @@ module Conduit.Capability.Resource.Article where
 
 import Prelude
 
+import Conduit.Api.Endpoint (ArticleParams, Pagination)
 import Conduit.Data.Article (Article, ArticleWithMetadata)
-import Conduit.Data.Endpoint (ArticleParams, Pagination)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Data.Maybe (Maybe)
 import Halogen (HalogenM, lift)

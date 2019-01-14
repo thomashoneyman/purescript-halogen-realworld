@@ -2,6 +2,7 @@ module Conduit.Page.Profile where
 
 import Prelude
 
+import Conduit.Api.Endpoint (noArticleParams)
 import Conduit.Capability.Resource.Article (class ManageArticle, getArticles)
 import Conduit.Capability.Resource.User (class ManageUser, getAuthor)
 import Conduit.Component.HTML.ArticleList (articleList, renderPagination)
@@ -12,7 +13,6 @@ import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Endpoint (noArticleParams)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))

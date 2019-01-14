@@ -10,9 +10,9 @@ module Conduit.Capability.LogMessages where
 import Prelude
 
 import Conduit.Capability.Now (class Now)
+import Conduit.Data.Log (Log, LogReason(..), mkLog)
 import Control.Monad.Trans.Class (lift)
 import Data.Either (Either(..))
-import Conduit.Data.Log (Log, LogType(..), mkLog)
 import Data.Maybe (Maybe(..))
 import Halogen (HalogenM)
 
@@ -33,12 +33,16 @@ instance logMessagesHalogenM :: LogMessages m => LogMessages (HalogenM s f g p o
 -- | so that we've got less to remember later on.
 
 -- | Log a message to given a particular `LogType` 
-log :: forall m. LogMessages m => Now m => LogType -> String -> m Unit
-log logType = logMessage <=< mkLog logType
+log :: forall m. LogMessages m => Now m => LogReason -> String -> m Unit
+log reason = logMessage <=< mkLog reason
 
 -- | Log a message for debugging purposes  
 logDebug :: forall m. LogMessages m => Now m => String -> m Unit
 logDebug = log Debug 
+
+-- | Log a message to convey non-error information
+logInfo :: forall m. LogMessages m =>  Now m =>String -> m Unit
+logInfo = log Info 
 
 -- | Log a message as a warning
 logWarn :: forall m. LogMessages m =>  Now m =>String -> m Unit
@@ -48,12 +52,13 @@ logWarn = log Warn
 logError :: forall m. LogMessages m => Now m => String -> m Unit
 logError = log Error 
 
--- | Hush a monadic action by logging the error
-logHush :: forall m a. LogMessages m => Now m => LogType -> m (Either String a) -> m (Maybe a)
-logHush logType action =
+-- | Hush a monadic action by logging the error, leaving it open why the error is being logged
+logHush :: forall m a. LogMessages m => Now m => LogReason -> m (Either String a) -> m (Maybe a)
+logHush reason action =
   action >>= case _ of
-    Left e -> case logType of
+    Left e -> case reason of
       Debug -> logDebug e *> pure Nothing
+      Info -> logInfo e *> pure Nothing
       Warn -> logWarn e *> pure Nothing
       Error -> logError e *> pure Nothing
     Right v -> pure $ Just v

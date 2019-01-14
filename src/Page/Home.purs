@@ -2,6 +2,7 @@ module Conduit.Page.Home where
 
 import Prelude
 
+import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Capability.Navigate (class Navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, getArticles, getCurrentUserFeed)
 import Conduit.Capability.Resource.Tag (class ManageTag, getAllTags)
@@ -12,7 +13,6 @@ import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
 import Conduit.Component.Utils (guardSession)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Data.Article (ArticleWithMetadata)
-import Conduit.Data.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))

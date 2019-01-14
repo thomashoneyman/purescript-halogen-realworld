@@ -28,8 +28,8 @@ import Affjax (Request, printResponseFormatError, request)
 import Affjax.RequestBody as RB
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
+import Conduit.Api.Endpoint (Endpoint(..), endpointCodec)
 import Conduit.Data.Email (Email)
-import Conduit.Data.Endpoint (Endpoint(..), endpointCodec)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
