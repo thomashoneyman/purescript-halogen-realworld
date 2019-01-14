@@ -1,3 +1,5 @@
+-- | Halogen does not support writing an HTML string to the DOM. This component allows us to do this
+-- | at a particular controlled HTML node.
 module Conduit.Component.RawHTML where
 
 import Prelude
@@ -13,6 +15,8 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Web.HTML (HTMLElement)
 
+-- | For an explanation of how to properly use the PureScript FFI with JavaScript, please see the 
+-- | `src/Foreign/Marked.js` file and the `Conduit.Foreign.Marked` module.
 foreign import unsafeSetInnerHTML :: HTMLElement -> RawHTML -> Effect Unit
 
 type State =

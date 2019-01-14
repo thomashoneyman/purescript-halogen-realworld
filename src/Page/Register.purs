@@ -1,12 +1,14 @@
+-- | The registration form allows new users to sign up to the Conduit service and authenticate
+-- | their session.
 module Conduit.Page.Register where
 
 import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.User (class ManageUser, registerUser)
-import Conduit.Capability.Utils (guardNoSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
+import Conduit.Component.Utils (guardNoSession)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
@@ -106,6 +108,9 @@ component =
 
 -----
 -- Form
+
+-- | See the Formless tutorial to learn how to build your own forms: 
+-- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype RegisterForm r f = RegisterForm (r
   ( username :: f V.FormError String Username

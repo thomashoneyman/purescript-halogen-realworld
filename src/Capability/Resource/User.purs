@@ -1,26 +1,36 @@
--- A capability that represents managing user resources, which include all variants
--- of the `Profile` data type as well as the `Author` type, as that's just a profile
--- augmented with information about the relationship between the current user and
--- the given profile.
-
+-- | A capability representing the ability to manage users in our system. That includes logging in,
+-- | registering, following / unfollowing, fetching an article's author, and more.
+-- | 
+-- | This capability lets us ignore the mechanics of managing a resource and focus on our
+-- | business logic. For now our app implements this capability with a REST API, but we could 
+-- | easily swap in a database, RPC, local filesystem, or something else without having to touch 
+-- | any application code besides the application monad, `Conduit.AppM`. In addition, we can test 
+-- | our business logic  by mocking responses in our test monad instead of hitting the server.
+-- |
+-- | To learn more about why we use capabilities and this architecture, please see the guide:
+-- | https://thomashoneyman.com/guides/real-world-halogen/push-effects-to-the-edges/
 module Conduit.Capability.Resource.User where
 
 import Prelude
 
 import Conduit.Api.Request (AuthFieldsRep, LoginFields, RegisterFields)
-import Conduit.Data.Author (Author)
-import Conduit.Data.Profile (Profile, ProfileRep, ProfileWithEmail)
+import Conduit.Data.Profile (Profile, ProfileRep, ProfileWithEmail, Author)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe)
 import Halogen (HalogenM, lift)
 import Type.Row (type (+))
 
--- A profile can be updated using any fields from a profile plus any of the auth
--- fields, with a password represented with `Maybe`.
+-- | This type is a record made up of two row types: the fields that make up a profile, plus the
+-- | fields used for authentication, like their email address and password. See the 
+-- | `Conduit.Data.Profile` module for more details.
 type UpdateProfileFields = { | ProfileRep + AuthFieldsRep Maybe () }
 
--- Our ManageUser type class will describe what operations we can perform to 
--- acquire, update, and delete users.
+-- | This capability represents the ability to manage users in our system. We support logging users
+-- | in, and registering them, as well as reading information about various users and who follows 
+-- | who.
+-- | 
+-- | We'll handle all the mechanics of making the request, decoding responses, handling errors, and 
+-- | so on in the implementation.
 class Monad m <= ManageUser m where
   loginUser :: LoginFields -> m (Maybe Profile)
   registerUser :: RegisterFields -> m (Maybe Profile)
@@ -30,6 +40,7 @@ class Monad m <= ManageUser m where
   followUser :: Username -> m (Maybe Author)
   unfollowUser :: Username -> m (Maybe Author)
 
+-- | This instance lets us avoid having to use `lift` when we use these functions in a component.
 instance manageUserHalogenM :: ManageUser m => ManageUser (HalogenM s f g p o m) where
   loginUser = lift <<< loginUser
   registerUser = lift <<< registerUser
