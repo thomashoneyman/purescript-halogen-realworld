@@ -1,3 +1,6 @@
+-- | User profiles display the articles they have written as well as the articles they have
+-- | favorited. It's also the main way users choose to follow one another. Users can view their
+-- | own profile.
 module Conduit.Page.Profile where
 
 import Prelude

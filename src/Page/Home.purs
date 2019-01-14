@@ -1,3 +1,5 @@
+-- | The Conduit homepage allows users to explore articles in several ways: in a personalized feed,
+-- | by tag, or by viewing all articles.
 module Conduit.Page.Home where
 
 import Prelude

@@ -1,3 +1,6 @@
+-- | Articles are stored as markdown strings, which is then rendered as HTMl. They also include
+-- | comments so users can read an article and then share what they thought about it. This component
+-- | supports viewing and interacting with articles in Conduit.
 module Conduit.Page.ViewArticle where
 
 import Prelude
@@ -85,7 +88,6 @@ component =
     }
 
   where 
-
   initialState :: Input -> State
   initialState { slug } = 
     { article: NotAsked

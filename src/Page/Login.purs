@@ -1,3 +1,5 @@
+-- | The login page supports a form users can submit to authenticate their session and gain access
+-- | to the application.
 module Conduit.Page.Login where
 
 import Prelude
@@ -97,7 +99,11 @@ component =
           ]
         ]
 
+-----
 -- Form
+
+-- | See the Formless tutorial to learn how to build your own forms: 
+-- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype LoginForm r f = LoginForm (r
   ( email :: f V.FormError String Email

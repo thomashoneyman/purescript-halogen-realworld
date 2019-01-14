@@ -1,6 +1,7 @@
 -- | This module provides small utilities for building form fields with Formless. They're not
 -- | necessary to use the library, but help alleviate a little boilerplate around handling 
--- | inputs. 
+-- | inputs. To read more about how to use the Formless library, see:
+-- | https://github.com/thomashoneyman/purescript-halogen-formless
 -- |
 -- | In a framework like React, little bundles of functionality like this might be individual 
 -- | components. In Halogen, they're simple pure functions which produce HTML. 

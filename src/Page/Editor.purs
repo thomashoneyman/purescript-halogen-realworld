@@ -1,3 +1,6 @@
+-- | The editor allows users to write new articles or edit existing ones. Users write markdown and
+-- | can include tags for their articles; when articles are displayed, the markdown is rendered as
+-- | HTML content.
 module Conduit.Page.Editor where
 
 import Prelude
@@ -131,6 +134,9 @@ component =
 
 -----
 -- Form
+
+-- | See the Formless tutorial to learn how to build your own forms: 
+-- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype EditorFields r f = EditorFields (r
   ( title :: f V.FormError String String
