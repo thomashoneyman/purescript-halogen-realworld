@@ -1,7 +1,3 @@
--- | The follow buttons in Conduit don't have enough encapsulated state or behaviors to be a full
--- | component, but do need to trigger certain actions in a parent component. To avoid writing the
--- | same query handler over and over again, we'll export both the pure HTML function and a default
--- | handle from this module.
 module Conduit.Component.Part.FollowButton 
   ( followButton
   , follow
@@ -12,34 +8,36 @@ import Prelude
 
 import Conduit.Capability.Resource.User (class ManageUser, followUser, unfollowUser)
 import Conduit.Component.HTML.Utils (css)
-import Conduit.Data.Profile (Author, Relation(..))
+import Conduit.Data.Author (Author, _Following)
+import Conduit.Data.Author as Author
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe, isJust, isNothing)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 
--- | Our follow button will have behavior that depends on the author we are interacting with. 
--- | Since the author's type already includes information about whether we follow this author, we 
--- | can use that to control the behavior of this HTML with the author type and some embedded 
--- | queries alone.
+-- Our follow button will have behavior that depends on the author we are interacting
+-- with. Since the author's type already includes information about whether we
+-- follow this author, we can use that to control the behavior of this HTML with
+-- the author type and some embedded queries alone.
+
 followButton 
   :: forall i p
    . H.Action p
   -> H.Action p
   -> Author 
   -> HH.HTML i (p Unit)
-followButton followQuery unfollowQuery author = case author.relation of
-  Following -> 
+followButton followQuery unfollowQuery author = case author of
+  Author.Following _ -> 
     HH.button
       [ css "btn btn-sm action-btn btn-secondary" 
       , HE.onClick $ HE.input_ unfollowQuery
       ]
-      [ HH.text $ " Unfollow " <> Username.toString author.username ]
-  NotFollowing -> 
+      [ HH.text $ " Unfollow " <> Username.toString (Author.username author) ]
+  Author.NotFollowing _ -> 
     HH.button
       [ css "btn btn-sm action-btn btn-outline-secondary" 
       , HE.onClick $ HE.input_ followQuery
@@ -47,37 +45,39 @@ followButton followQuery unfollowQuery author = case author.relation of
       [ HH.i 
         [ css "ion-plus-round"]
         []
-      , HH.text $ " Follow " <> Username.toString author.username
+      , HH.text $ " Follow " <> Username.toString (Author.username author)
       ]
-  You -> HH.text ""
+  Author.You _ -> HH.text ""
 
 
--- | In addition to this pure HTML renderer, however, we'd also like to supply the logic that will 
--- | work with the queries we've embedded. These two functions will take care of everything we need 
--- | in `eval` for a component which loads an author and then performs follow / unfollow actions 
--- | on it.
--- |
--- | In most cases I don't make assumptions about what is in state nor modify it, but in this case 
--- | I'm willing to adopt the convention that somewhere in state is an author that can be modified.
--- |
--- | The following two functions will handle safely making the request, logging errors, and updating 
--- | state with the result.
+-- In addition to this pure HTML renderer, however, we'd also like to supply the logic 
+-- that will work with the queries we've embedded. These two functions will take care
+-- of everything we need in `eval` for a component which loads an author and then
+-- performs follow / unfollow actions on it.
+--
+-- In most cases I don't make assumptions about what is in state nor modify it, but 
+-- in this case I'm willing to adopt the convention that somewhere in state is an
+-- author that can be modified.
+--
+-- The following two functions will handle safely making the request, logging errors,
+-- and updating state with the result.
 
 follow  
   :: forall s f g p o m
    . ManageUser m
   => Traversal' s Author
   -> H.HalogenM s f g p o m Unit
-follow _author = act (eq NotFollowing <<< _.relation) followUser _author
+follow _author = act (isNothing <<< preview _Following) followUser _author
 
 unfollow  
   :: forall s f g p o m
    . ManageUser m
   => Traversal' s Author
   -> H.HalogenM s f g p o m Unit
-unfollow _author = act (eq Following <<< _.relation) unfollowUser _author
+unfollow _author = act (isJust <<< preview _Following) unfollowUser _author
 
--- | This will be kept internal, as it is only used to implement `follow` and `unfollow`.
+-- This will be kept internal.
+
 act  
   :: forall s f g p o m
    . ManageUser m
@@ -89,5 +89,5 @@ act cond f _author = do
   st <- H.get
   for_ (preview _author st) \author -> do
     when (cond author) do
-      mbProfile <- H.lift $ f author.username
-      for_ mbProfile $ H.modify_ <<< set _author
+      mbAuthor <- H.lift $ f (Author.username author)
+      for_ mbAuthor $ H.modify_ <<< set _author

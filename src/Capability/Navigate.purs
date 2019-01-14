@@ -1,9 +1,7 @@
--- | A capability representing the ability to move the user from place to place in the application. 
--- | Currently, the production monad implements hash-based routing, but that could easily be replaced 
--- | with another method (pushState, for example) without breaking any code outside of `Main`.
--- |
--- | To learn more about why we use capabilities and this architecture, please see the guide:
--- | https://thomashoneyman.com/guides/real-world-halogen/push-effects-to-the-edges/
+-- | This module describes the capability to navigate from place to place in the 
+-- | application. Currently implemented with hashes, but could easily be swapped 
+-- | to another method (like pushState).
+
 module Conduit.Capability.Navigate where
 
 import Prelude
@@ -12,15 +10,15 @@ import Control.Monad.Trans.Class (lift)
 import Conduit.Data.Route (Route)
 import Halogen (HalogenM)
 
--- | This capability represents the ability to move around the application. The `navigate` function 
--- | should change the browser location, which will then notify our routing component. The `logout`
--- | function should clear any information associated with the user from the app and browser before
--- | redirecting them to the homepage.
+-- The ability to navigate around the application. Includes an instance for 
+-- HalogenM to make this class convenient to use in Halogen components. A 
+-- special case is given for logging out, as there is no route in our spec meant 
+-- to handle this case.
+
 class Monad m <= Navigate m where
   navigate :: Route -> m Unit
   logout :: m Unit
 
--- | This instance lets us avoid having to use `lift` when we use these functions in a component.
 instance navigateHalogenM :: Navigate m => Navigate (HalogenM s f g p o m) where
   navigate = lift <<< navigate
   logout = lift logout

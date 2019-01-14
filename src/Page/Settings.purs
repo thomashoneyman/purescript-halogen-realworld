@@ -1,12 +1,10 @@
--- | The settings page lets users change data about their account, like their email or password,
--- | as well as their publicly-viewable profile information.
 module Conduit.Page.Settings where
 
 import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, logout)
 import Conduit.Capability.Resource.User (class ManageUser, getCurrentUser, updateUser)
-import Conduit.Component.HTML.Header (header) 
+import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css)
 import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Avatar as Avatar
@@ -130,9 +128,6 @@ component =
 
 -----
 -- Form
-
--- | See the Formless tutorial to learn how to build your own forms: 
--- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype SettingsForm r f = SettingsForm (r
   ( image :: f V.FormError String (Maybe Avatar)

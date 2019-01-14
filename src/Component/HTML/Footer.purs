@@ -1,4 +1,3 @@
--- | This module exports a pure HTML function to render a consistent footer throughout the app.
 module Conduit.Component.HTML.Footer where
 
 import Halogen.HTML as HH

@@ -1,11 +1,7 @@
--- | User profiles display the articles they have written as well as the articles they have
--- | favorited. It's also the main way users choose to follow one another. Users can view their
--- | own profile.
 module Conduit.Page.Profile where
 
 import Prelude
 
-import Conduit.Api.Endpoint (noArticleParams)
 import Conduit.Capability.Resource.Article (class ManageArticle, getArticles)
 import Conduit.Capability.Resource.User (class ManageUser, getAuthor)
 import Conduit.Component.HTML.ArticleList (articleList, renderPagination)
@@ -15,9 +11,12 @@ import Conduit.Component.HTML.Utils (css, maybeElem, safeHref, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
+import Conduit.Data.Author (Author)
+import Conduit.Data.Author as Author
 import Conduit.Data.Avatar as Avatar
+import Conduit.Data.Endpoint (noArticleParams)
 import Conduit.Data.PaginatedArray (PaginatedArray)
-import Conduit.Data.Profile (Profile, Author)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
@@ -111,16 +110,11 @@ component =
         FavoritesTab -> eval $ LoadFavorites a
       pure a
     
-    Receive { tab, username } a -> do
-      st <- H.get
-      when (st.tab /= tab) do
-        H.modify_ _ { tab = tab }
-        void $ H.fork $ case st.tab of
-          ArticlesTab -> eval $ LoadArticles a
-          FavoritesTab -> eval $ LoadFavorites a
-      when (st.username /= username) do
-        H.modify_ _ { username = username }
-        void $ H.fork $ eval $ Initialize a
+    Receive { tab } a -> do
+      st <- H.modify _ { tab = tab }
+      void $ H.fork $ case st.tab of
+        ArticlesTab -> eval $ LoadArticles a
+        FavoritesTab -> eval $ LoadFavorites a
       pure a
 
     LoadArticles a -> do
@@ -209,11 +203,11 @@ component =
           [ css "col-xs-12 col-md-10 offset-md-1" ]
           [ HH.img 
             [ css "user-img" 
-            , HP.src $ Avatar.toStringWithDefault (_.image =<< toMaybe state.author)
+            , HP.src $ Avatar.toStringWithDefault (_.image =<< profile)
             ]
           , HH.h4_
             [ HH.text $ Username.toString state.username ]
-          , maybeElem (_.bio =<< toMaybe state.author) \str ->
+          , maybeElem (_.bio =<< profile) \str ->
               HH.p_
                 [ HH.text str ]
           , maybeElem (toMaybe state.author) (followButton FollowAuthor UnfollowAuthor)
@@ -221,6 +215,9 @@ component =
         ]
       ]
     ]
+    where
+    profile :: Maybe Profile
+    profile = pure <<< Author.profile =<< toMaybe state.author
 
 
   mainView :: forall i. State -> H.HTML i Query

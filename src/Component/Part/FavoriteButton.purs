@@ -1,10 +1,3 @@
--- | The favorite buttons in Conduit don't have enough encapsulated state or behaviors to be a full
--- | component, but do need to trigger certain actions in a parent component. To avoid writing the
--- | same query handler over and over again, we'll export both the pure HTML function and a default
--- | handle from this module.
--- | 
--- | For a more in-depth example of this pattern, see the `Conduit.Component.Part.FollowButton` 
--- | module.
 module Conduit.Component.Part.FavoriteButton 
   ( ButtonSize(..)
   , favoriteButton

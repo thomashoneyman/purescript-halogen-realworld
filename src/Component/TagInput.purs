@@ -1,6 +1,3 @@
--- | Conduit has little functionality to warrant encapsulated state, but the tag input is one.
--- | This component manages a text input that supports key events to manage a list of tags on
--- | an article.
 module Conduit.Component.TagInput where
 
 import Prelude
@@ -34,6 +31,9 @@ derive instance newtypeTag :: Newtype Tag _
 derive instance eqTag :: Eq Tag
 derive instance ordTag :: Ord Tag
 
+-- This component will notify when tags have been added or removed, which a parent
+-- can listen to and act on accordingly. In addition to the tag that has been added
+-- or removed, the component will also report the resulting tag list.
 data Message 
   = TagAdded Tag (Set Tag) 
   | TagRemoved Tag (Set Tag) 
