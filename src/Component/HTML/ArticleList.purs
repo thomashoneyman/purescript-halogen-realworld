@@ -1,5 +1,3 @@
--- | This module exports a pure HTML function to render lists of articles in various formats,
--- | included paginated lists.
 module Conduit.Component.HTML.ArticleList where
 
 import Prelude
@@ -7,6 +5,7 @@ import Prelude
 import Conduit.Component.HTML.Utils (css, safeHref, whenElem)
 import Conduit.Component.Part.FavoriteButton (favoriteButton, ButtonSize(..))
 import Conduit.Data.Article (ArticleWithMetadata)
+import Conduit.Data.Author (profile, username)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.PreciseDateTime as PDT
@@ -60,17 +59,17 @@ articlePreview favoriteQuery unfavoriteQuery ix article =
   [ HH.div
     [ css "article-meta" ]
     [ HH.a
-      [ safeHref $ Profile username ]
+      [ safeHref $ Profile uname ]
       [ HH.img
         [ HP.src $ Avatar.toStringWithDefault avatar
-        , HP.alt $ Username.toString username
+        , HP.alt $ Username.toString uname
         ]
       ]
     , HH.div
       [ css "info" ]
       [ HH.a
-        [ css "author", safeHref $ Profile username ]
-        [ HH.text $ Username.toString username ]
+        [ css "author", safeHref $ Profile uname ]
+        [ HH.text $ Username.toString uname ]
       , HH.span
         [ css "date" ]
         [ HH.text $ PDT.toDisplayWeekName article.createdAt ]
@@ -95,8 +94,8 @@ articlePreview favoriteQuery unfavoriteQuery ix article =
     ]
   ]
   where
-    username = article.author.username
-    avatar = article.author.image
+    uname = username article.author
+    avatar = (profile article.author).image
 
 renderTag :: forall i p. String -> HH.HTML i p
 renderTag tag =

@@ -1,17 +1,14 @@
--- | The editor allows users to write new articles or edit existing ones. Users write markdown and
--- | can include tags for their articles; when articles are displayed, the markdown is rendered as
--- | HTML content.
 module Conduit.Page.Editor where
 
 import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
+import Conduit.Capability.Utils (guardSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
-import Conduit.Component.Utils (guardSession)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
@@ -134,9 +131,6 @@ component =
 
 -----
 -- Form
-
--- | See the Formless tutorial to learn how to build your own forms: 
--- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype EditorFields r f = EditorFields (r
   ( title :: f V.FormError String String

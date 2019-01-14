@@ -1,107 +1,80 @@
--- | This module defines a type to represent well-formed logs which can be written to an external
--- | logging service. 
--- | 
--- | Our logs ought to have predictable metadata we can parse and use to gain insight into how our 
--- | service is being used and what failures have occurred. To ensure logs are always well-formed, 
--- | we'll enforce that only functions from this module can create the `Log` type by using the 
--- | smart constructor pattern. To learn more about this pattern, please see:
--- | https://thomashoneyman.com/guides/real-world-halogen/design-data-pure-functions/#restricting-the-domain-using-smart-constructors
--- |
--- | This module is rarely used in the rest of the application. It's a bit too low-level. In our
--- | business logic the critical thing is to report a particular error or message. We shouldn't have
--- | to care about how to format or gather metadata or the mechanics of sending the error to a
--- | particular reporting service. 
--- |
--- | The `Conduit.Capability.LogMessages` module describes the higher-level interface to log an
--- | error or message that is used throughout the rest of the application. I'd recommend reading
--- | through that module as well.
+-- | This module provides a data type that can be used to construct log messages
+-- | that conform to a particular format we require for our logging service to 
+-- | parse for information.
+
 module Conduit.Data.Log 
-  ( LogReason(..)
+  ( LogType(..)
   , message
-  , reason
-  , Log -- no constructors exported
+  , logType
+  , Log -- no constructors
   , mkLog
   ) where
 
 import Prelude
 
 import Conduit.Capability.Now (class Now, nowDateTime)
-import Data.DateTime (DateTime)
 import Data.Either (either)
 import Data.Formatter.DateTime (formatDateTime)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 
--- | Most of this module describes metadata that can be used to create a predictable logging 
--- | format that we can search later on or use to set filters in an external service like Splunk
--- | or Rollbar. Let's start with a piece of metadata to help us differentiate debugging messages,
--- | status information, warnings, and and errors.
-data LogReason = Debug | Info | Warn | Error
+-- We'll start with a helper data type, LogType, which will help us differentiate 
+-- the purpose of a given log.
+--
+--   Debug: useful for testing, but should not write in production
+--   Warn:  write to logging service in production, but not the console
+--   Error: write to logging service and the console in production
 
-derive instance genericLogReason :: Generic LogReason _
-derive instance eqLogReason :: Eq LogReason
-derive instance ordLogReason :: Ord LogReason
+data LogType = Debug | Warn | Error
 
-instance showLogReason :: Show LogReason where
+derive instance genericLogType :: Generic LogType _
+derive instance eqLogType :: Eq LogType
+derive instance ordLogType :: Ord LogType
+
+instance showLogType :: Show LogType where
   show = genericShow
 
--- | We can now write our `Log` type, which contains the metadata about a particular message along
--- | with the correctly-formatted message itself. It may seem redundant to include the metadata in
--- | the type when it has already been used to format the message, but doing so lets us use the
--- | metadata to make decisions about how to send the message. For example, perhaps debugging 
--- | messages should never be sent to an external service, and should only be written to the console  
--- | in a dev environment (never in production).
--- | 
--- | We have not created a newtype instance nor exported the `Log` constructor, so this type cannot
--- | be created except by using functions in this module.
-newtype Log = Log 
-  { reason :: LogReason 
-  , timestamp :: DateTime
-  , message :: String
-  }
+-- This type is used to distinguish any possible string from a string that has 
+-- specifically been formatted for our logging service to be able to parse. We 
+-- won't export its constructors, so it will be difficult to mistakenly write a 
+-- bad instance or different implementations in testing vs. our app monad.
+
+-- Not exported
+type LogMessage = String
+
+data Log = Log LogType LogMessage
 
 derive instance genericLog :: Generic Log _
 derive instance eqLog :: Eq Log
 
--- | We have been careful to prevent creation of the `Log` type outside this module, but we should 
--- | still be able to read the fields within. In other words, the type is read-only. 
--- | 
--- | This helper function retrieves the well-formed message from a `Log`.
+instance showLog :: Show Log where
+  show = genericShow
+
+-- We may still need to retrieve the message or log type from the log.
+
 message :: Log -> String
-message (Log { message: m }) = m
+message (Log _ msg) = msg
 
--- | This helper function retrieves the reason a log was produced from a `Log`.
-reason :: Log -> LogReason
-reason (Log { reason: r }) = r
+logType :: Log -> LogType
+logType (Log lt _) = lt
 
--- | This helper function retrieves the time a `Log` was produced.
-timestamp :: Log -> DateTime
-timestamp (Log { timestamp: t }) = t
+-- We want the core implementation of our logging function to be pure. When we 
+-- write our instance later on we'll re-use this function, but it can be tested 
+-- independently in other contexts like the `Writer` monad or by writing to a 
+-- golden test suite.
 
--- | Let's finally implement the function to create a `Log`. This will be a pure function that 
--- | relies on our `Now` capability to grab the current time and write it as an additional piece
--- | of metadata. Our application monad will retrieve the current time effectfully, but we'll 
--- | write our tests using a hard-coded time so they can be deterministic.
-mkLog :: ∀ m. Now m => LogReason -> String -> m Log
-mkLog logReason inputMessage = do
-  now <- nowDateTime
+mkLog :: ∀ m. Now m => LogType -> String -> m Log
+mkLog lt str = do
 
-  let 
-    -- Will produce a header like "{DEBUG: 2018-10-25 11:25:29 AM]\nMessage contents..."
-    headerWith start = 
-      "[" <> start <> ": " <> formatTimestamp now <> "]\n" <> inputMessage
-
-    -- Writes the header with the correct log reason  
-    formattedLog = case logReason of
-      Debug -> headerWith "DEBUG"
-      Info -> headerWith "INFO"
-      Warn -> headerWith "WARNING"
-      Error -> headerWith "ERROR"
-    
-  pure $ Log { reason: logReason, timestamp: now, message: formattedLog }
-
-  where
   -- Will format "2018-10-25 11:25:29 AM"
-  formatTimestamp = 
-    either (const "(Failed to assign time)") identity 
-    <<< formatDateTime "YYYY-DD-MM hh:mm:ss a"
+  eitherFmt <- formatDateTime "YYYY-DD-MM hh:mm:ss a" <$> nowDateTime
+
+  -- It's possible that we had a typo in our format string, so we'll need
+  -- to handle that case. We could use `unsafePartial <<< fromLeft` but I'd
+  -- like to be a little more careful by logging a failure message. We can
+  -- always test this in a pure context, like the Writer monad, to verify!
+  let timestamp = either (const "(Failed to assign time)") identity eitherFmt
+  pure $ Log lt $ case lt of
+    Debug -> "[DEBUG: " <> timestamp <> "]\n" <> str
+    Warn -> "[WARNING: " <> timestamp <> "]\n" <> str
+    Error -> "[ERROR: " <> timestamp <> "]\n" <> str

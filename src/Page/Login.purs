@@ -1,14 +1,12 @@
--- | The login page supports a form users can submit to authenticate their session and gain access
--- | to the application.
 module Conduit.Page.Login where
 
 import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.User (class ManageUser, loginUser)
+import Conduit.Capability.Utils (guardNoSession)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
-import Conduit.Component.Utils (guardNoSession)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
@@ -99,11 +97,7 @@ component =
           ]
         ]
 
------
 -- Form
-
--- | See the Formless tutorial to learn how to build your own forms: 
--- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype LoginForm r f = LoginForm (r
   ( email :: f V.FormError String Email

@@ -1,5 +1,3 @@
--- | Email addresses are used sparingly in Conduit, but it's still useful to be able to tell 
--- | at a glance that a string is not just a string -- it's an email address.
 module Conduit.Data.Email where
 
 import Prelude
@@ -10,8 +8,11 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Newtype (class Newtype)
 
--- | This type exists purely as an identifier to distinguish it from a normal `String`, so we'll
--- | create a simple newtype which can be freely wrapped or unwrapped.
+-- We'll newtype `Email` without putting any constraints on its value purely as an 
+-- identifier to distinguish it from strings. We'll assume emails are validated on
+-- the backend. For that reason, we finally see the `Newtype` class in action, and
+-- we don't need to write any toString / parse functions.
+
 newtype Email = Email String
 
 derive instance newtypeEmail :: Newtype Email _
