@@ -69,19 +69,20 @@ instance encodeJsonFollowStatus :: EncodeJson Relation where
 type ProfileRep row =
   ( username :: Username
   , bio :: Maybe String
-  , avatar :: Maybe Avatar
-  , relation :: Relation
+  , image :: Maybe Avatar
   | row
   )
 
--- | The `Profile` type consists only of four core fields: the username, biography, avatar,
--- | and relation.
+-- | The `Profile` type consists only of three core fields: the username, biography, and avatar.
 type Profile = { | ProfileRep () }
 
 -- | The `ProfileWithEmail` type extends the `Profile` fields with an additional `Email` type.
-type ProfileWithEmail = { | ProfileRep ( email :: Email) }
+type ProfileWithEmail = { | ProfileRep (email :: Email) }
 
--- | Unfortunately, we can't automatically encode and decode the `Profile` type from JSON for
+-- | The `Author` type extends the `Profile` fields with an additional `Relation` type.
+type Author = { | ProfileRep (relation :: Relation) }
+
+-- | Unfortunately, we can't automatically encode and decode the `Author` type from JSON for 
 -- | two reasons.
 -- |
 -- | First, we already determined that the "following" boolean doesn't adequately cover the three
@@ -91,17 +92,17 @@ type ProfileWithEmail = { | ProfileRep ( email :: Email) }
 -- | any arguments besides the JSON to decode, we can't write a `DecodeJSON` instance (and 
 -- | therefore we certainly can't derive one automatically).
 -- |
--- | Second, I've opted to rename the "following" field to the more apt "relation" and the "image"
--- | field to "avatar". We can't automatically encode and decode when we're changing field names,
--- | so we will fall back to a manual decoder.
-decodeProfile :: Maybe Username -> Json -> Either String Profile
-decodeProfile mbUsername json = do 
+-- | Second, I've opted to rename the "following" field to the more apt "relation". We can't 
+-- | automatically encode and decode when we're changing field names, so we will fall back to a 
+-- | manual decoder.
+decodeAuthor :: Maybe Username -> Json -> Either String Author
+decodeAuthor mbUsername json = do 
   obj <- decodeJson json
   username <- obj .: "username"
   bio <- obj .: "bio"
-  avatar <- obj .: "image"
+  image <- obj .: "image"
   relation <- obj .: "following"
-  let profile = { username, bio, avatar, relation }
+  let profile = { username, bio, image, relation }
   pure $ case mbUsername of
     -- If the profile we're decoding from JSON has the same unique identifying username as the one
     -- passed as an argument, then the profile we've decoded is in fact the current user's profile.

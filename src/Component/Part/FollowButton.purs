@@ -12,7 +12,7 @@ import Prelude
 
 import Conduit.Capability.Resource.User (class ManageUser, followUser, unfollowUser)
 import Conduit.Component.HTML.Utils (css)
-import Conduit.Data.Profile (Relation(..), Profile)
+import Conduit.Data.Profile (Author, Relation(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Data.Foldable (for_)
@@ -22,23 +22,23 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 
--- | Our follow button will have behavior that depends on the profile we are interacting with. 
--- | Since the profile's type already includes information about whether we follow this profile, we 
--- | can use that to control the behavior of this HTML with the profile type and some embedded 
+-- | Our follow button will have behavior that depends on the author we are interacting with. 
+-- | Since the author's type already includes information about whether we follow this author, we 
+-- | can use that to control the behavior of this HTML with the author type and some embedded 
 -- | queries alone.
 followButton 
   :: forall i p
    . H.Action p
   -> H.Action p
-  -> Profile 
+  -> Author 
   -> HH.HTML i (p Unit)
-followButton followQuery unfollowQuery profile = case profile.relation of
+followButton followQuery unfollowQuery author = case author.relation of
   Following -> 
     HH.button
       [ css "btn btn-sm action-btn btn-secondary" 
       , HE.onClick $ HE.input_ unfollowQuery
       ]
-      [ HH.text $ " Unfollow " <> Username.toString profile.username ]
+      [ HH.text $ " Unfollow " <> Username.toString author.username ]
   NotFollowing -> 
     HH.button
       [ css "btn btn-sm action-btn btn-outline-secondary" 
@@ -47,18 +47,18 @@ followButton followQuery unfollowQuery profile = case profile.relation of
       [ HH.i 
         [ css "ion-plus-round"]
         []
-      , HH.text $ " Follow " <> Username.toString profile.username
+      , HH.text $ " Follow " <> Username.toString author.username
       ]
   You -> HH.text ""
 
 
 -- | In addition to this pure HTML renderer, however, we'd also like to supply the logic that will 
 -- | work with the queries we've embedded. These two functions will take care of everything we need 
--- | in `eval` for a component which loads an profile and then performs follow / unfollow actions 
+-- | in `eval` for a component which loads an author and then performs follow / unfollow actions 
 -- | on it.
 -- |
 -- | In most cases I don't make assumptions about what is in state nor modify it, but in this case 
--- | I'm willing to adopt the convention that somewhere in state is an profile that can be modified.
+-- | I'm willing to adopt the convention that somewhere in state is an author that can be modified.
 -- |
 -- | The following two functions will handle safely making the request, logging errors, and updating 
 -- | state with the result.
@@ -66,28 +66,28 @@ followButton followQuery unfollowQuery profile = case profile.relation of
 follow  
   :: forall s f g p o m
    . ManageUser m
-  => Traversal' s Profile
+  => Traversal' s Author
   -> H.HalogenM s f g p o m Unit
-follow _profile = act (eq NotFollowing <<< _.relation) followUser _profile
+follow _author = act (eq NotFollowing <<< _.relation) followUser _author
 
 unfollow  
   :: forall s f g p o m
    . ManageUser m
-  => Traversal' s Profile
+  => Traversal' s Author
   -> H.HalogenM s f g p o m Unit
-unfollow _profile = act (eq Following <<< _.relation) unfollowUser _profile
+unfollow _author = act (eq Following <<< _.relation) unfollowUser _author
 
 -- | This will be kept internal, as it is only used to implement `follow` and `unfollow`.
 act  
   :: forall s f g p o m
    . ManageUser m
-  => (Profile -> Boolean)
-  -> (Username -> m (Maybe Profile))
-  -> Traversal' s Profile
+  => (Author -> Boolean)
+  -> (Username -> m (Maybe Author))
+  -> Traversal' s Author
   -> H.HalogenM s f g p o m Unit
-act cond f _profile = do
+act cond f _author = do
   st <- H.get
-  for_ (preview _profile st) \profile -> do
-    when (cond profile) do
-      mbProfile <- H.lift $ f profile.username
-      for_ mbProfile $ H.modify_ <<< set _profile
+  for_ (preview _author st) \author -> do
+    when (cond author) do
+      mbProfile <- H.lift $ f author.username
+      for_ mbProfile $ H.modify_ <<< set _author

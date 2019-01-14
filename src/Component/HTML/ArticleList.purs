@@ -96,7 +96,7 @@ articlePreview favoriteQuery unfavoriteQuery ix article =
   ]
   where
     username = article.author.username
-    avatar = article.author.avatar
+    avatar = article.author.image
 
 renderTag :: forall i p. String -> HH.HTML i p
 renderTag tag =

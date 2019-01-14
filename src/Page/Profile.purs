@@ -17,7 +17,7 @@ import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.PaginatedArray (PaginatedArray)
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (Profile, Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
@@ -42,7 +42,7 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 type State =
   { articles :: RemoteData String (PaginatedArray ArticleWithMetadata)
   , favorites :: RemoteData String (PaginatedArray ArticleWithMetadata)
-  , author :: RemoteData String Profile
+  , author :: RemoteData String Author
   , page :: Int
   , currentUser :: Maybe Profile
   , username :: Username
@@ -111,11 +111,16 @@ component =
         FavoritesTab -> eval $ LoadFavorites a
       pure a
     
-    Receive { tab } a -> do
-      st <- H.modify _ { tab = tab }
-      void $ H.fork $ case st.tab of
-        ArticlesTab -> eval $ LoadArticles a
-        FavoritesTab -> eval $ LoadFavorites a
+    Receive { tab, username } a -> do
+      st <- H.get
+      when (st.tab /= tab) do
+        H.modify_ _ { tab = tab }
+        void $ H.fork $ case st.tab of
+          ArticlesTab -> eval $ LoadArticles a
+          FavoritesTab -> eval $ LoadFavorites a
+      when (st.username /= username) do
+        H.modify_ _ { username = username }
+        void $ H.fork $ eval $ Initialize a
       pure a
 
     LoadArticles a -> do
@@ -166,7 +171,7 @@ component =
         ArticlesTab -> LoadArticles a 
       pure a
   
-  _author :: Traversal' State Profile
+  _author :: Traversal' State Author
   _author = prop (SProxy :: SProxy "author") <<< _Success
 
   _article :: Int -> Traversal' State ArticleWithMetadata
@@ -204,7 +209,7 @@ component =
           [ css "col-xs-12 col-md-10 offset-md-1" ]
           [ HH.img 
             [ css "user-img" 
-            , HP.src $ Avatar.toStringWithDefault (_.avatar =<< toMaybe state.author)
+            , HP.src $ Avatar.toStringWithDefault (_.image =<< toMaybe state.author)
             ]
           , HH.h4_
             [ HH.text $ Username.toString state.username ]

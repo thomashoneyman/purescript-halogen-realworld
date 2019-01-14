@@ -30,7 +30,7 @@ import Conduit.Capability.Resource.User (class ManageUser)
 import Conduit.Data.Article (decodeArticle, decodeArticles)
 import Conduit.Data.Comment (decodeComments)
 import Conduit.Data.Log as Log
-import Conduit.Data.Profile (Profile, decodeProfile)
+import Conduit.Data.Profile (Profile, decodeAuthor)
 import Conduit.Data.Route as Route
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Encode (encodeJson)
@@ -41,6 +41,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Effect.Now as Now
 import Effect.Ref (Ref)
+import Effect.Ref as Ref
 import Routing.Duplex (print)
 import Routing.Hash (setHash)
 import Type.Equality (class TypeEquals, from)
@@ -204,6 +205,7 @@ instance navigateAppM :: Navigate AppM where
     liftEffect <<< setHash <<< print Route.routeCodec 
 
   logout = do
+    liftEffect <<< Ref.write Nothing =<< asks _.currentUser
     liftEffect Request.removeToken 
     navigate Route.Home
 
@@ -225,18 +227,18 @@ instance manageUserAppM :: ManageUser AppM where
 
   getAuthor username = 
     mkRequest { endpoint: Profiles username, method: Get }
-      >>= decodeWithUser (\mbU -> decodeProfile mbU <=< decodeAt "profile")
+      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
 
   updateUser fields = 
     void $ mkAuthRequest { endpoint: User, method: Post (Just (encodeJson fields)) }
 
   followUser username = 
     mkAuthRequest { endpoint: Follow username, method: Post Nothing }
-      >>= decodeWithUser (\mbU -> decodeProfile mbU <=< decodeAt "profile")
+      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
   
   unfollowUser username =
     mkAuthRequest { endpoint: Follow username, method: Delete }
-      >>= decodeWithUser (\mbU -> decodeProfile mbU <=< decodeAt "profile")
+      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
 
 -- | Our operations for managing tags
 instance manageTagAppM :: ManageTag AppM where 

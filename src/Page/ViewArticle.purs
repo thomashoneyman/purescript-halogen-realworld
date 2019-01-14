@@ -19,7 +19,7 @@ import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.PreciseDateTime as PDT
-import Conduit.Data.Profile (Relation(..), Profile)
+import Conduit.Data.Profile (Profile, Relation(..), Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Control.Monad.Reader (class MonadAsk, asks)
@@ -155,7 +155,7 @@ component =
       H.modify_ _ { comments = fromMaybe comments }
       pure a
   
-  _author :: Traversal' State Profile
+  _author :: Traversal' State Author
   _author = _article <<< prop (SProxy :: SProxy "author")
 
   _article :: Traversal' State ArticleWithMetadata
@@ -221,7 +221,7 @@ component =
                         [ css "card-footer" ]
                         [ HH.img 
                           [ css "comment-author-img" 
-                          , HP.src $ Avatar.toStringWithDefault profile.avatar
+                          , HP.src $ Avatar.toStringWithDefault profile.image
                           ]
                         , HH.button
                           [ css "btn btn-sm btn-primary" 
@@ -295,7 +295,7 @@ component =
         ]
       where
       username = article.author.username
-      avatar = article.author.avatar
+      avatar = article.author.image
 
     viewComment comment =
       HH.div
@@ -314,7 +314,7 @@ component =
             ]
             [ HH.img 
               [ css "comment-author-img" 
-              , HP.src $ Avatar.toStringWithDefault comment.author.avatar
+              , HP.src $ Avatar.toStringWithDefault comment.author.image
               ]
             ]
           , HH.text " "

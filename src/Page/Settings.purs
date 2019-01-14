@@ -6,12 +6,12 @@ import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, logout)
 import Conduit.Capability.Resource.User (class ManageUser, getCurrentUser, updateUser)
-import Conduit.Component.HTML.Header (header)
+import Conduit.Component.HTML.Header (header) 
 import Conduit.Component.HTML.Utils (css)
 import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Email (Email)
-import Conduit.Data.Profile (ProfileWithEmail, Relation(..))
+import Conduit.Data.Profile (ProfileWithEmail)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
@@ -21,7 +21,6 @@ import Data.Lens (preview)
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.Newtype (class Newtype, unwrap)
-import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Formless as Formless
@@ -30,7 +29,6 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
-import Record as Record
 
 data Query a
   = Initialize a
@@ -73,7 +71,7 @@ component =
         Just profile -> do
           let 
             newInputs = F.wrapInputFields
-              { avatar: Maybe.fromMaybe "" $ Avatar.toString <$> profile.avatar
+              { image: Maybe.fromMaybe "" $ Avatar.toString <$> profile.image
               , username: Username.toString profile.username
               , bio: Maybe.fromMaybe "" profile.bio
               , email: unwrap profile.email
@@ -85,9 +83,7 @@ component =
 
     HandleForm msg a -> case msg of
       F.Submitted formOutputs -> do
-        updateUser 
-          $ Record.insert (SProxy :: SProxy "relation") You
-          $ F.unwrapOutputFields formOutputs
+        updateUser $ F.unwrapOutputFields formOutputs
         mbProfileWithEmail <- getCurrentUser
         H.modify_ _ { profile = fromMaybe mbProfileWithEmail }
         pure a
@@ -139,7 +135,7 @@ component =
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype SettingsForm r f = SettingsForm (r
-  ( avatar :: f V.FormError String (Maybe Avatar)
+  ( image :: f V.FormError String (Maybe Avatar)
   , username :: f V.FormError String Username
   , bio :: f Void String (Maybe String)
   , email :: f V.FormError String Email
@@ -155,7 +151,7 @@ proxies = F.mkSProxies formProxy
 
 validators :: forall m. Monad m => SettingsForm Record (F.Validation SettingsForm m)
 validators = SettingsForm
-  { avatar: V.toOptional V.avatarFormat
+  { image: V.toOptional V.avatarFormat
   , username: V.required >>> V.minLength 3 >>> V.maxLength 20 >>> V.usernameFormat
   , bio: F.hoistFn_ pure
   , email: V.required >>> V.minLength 3 >>> V.maxLength 50 >>> V.emailFormat
@@ -181,7 +177,7 @@ renderFormless mbProf fstate =
     ]
   where
   image =
-    Field.input proxies.avatar fstate.form
+    Field.input proxies.image fstate.form
       [ HP.placeholder "URL of profile picture", HP.type_ HP.InputText ]
 
   username = 

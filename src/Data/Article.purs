@@ -17,7 +17,7 @@ import Prelude
 import Conduit.Api.Utils (decodeAt)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.PreciseDateTime (PreciseDateTime)
-import Conduit.Data.Profile (Profile, decodeProfile)
+import Conduit.Data.Profile (Author, decodeAuthor)
 import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.:))
@@ -49,7 +49,7 @@ type ArticleMetadataRep row =
   , createdAt :: PreciseDateTime
   , favorited :: Boolean
   , favoritesCount :: Int
-  , author :: Profile
+  , author :: Author
   | row
   )
 
@@ -102,5 +102,5 @@ decodeArticleWithMetadata u json = do
   favorited <- obj .: "favorited"
   favoritesCount <- obj .: "favoritesCount"
   createdAt <- obj .: "createdAt" 
-  author <- decodeProfile u =<< obj .: "author"
+  author <- decodeAuthor u =<< obj .: "author"
   pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }
