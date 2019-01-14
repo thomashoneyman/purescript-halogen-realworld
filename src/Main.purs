@@ -12,7 +12,7 @@ import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, read
 import Conduit.Api.Utils (decodeAt)
 import Conduit.AppM (Env, LogLevel(..), runAppM)
 import Conduit.Component.Router as Router
-import Conduit.Data.Route (routeCodec)
+import Conduit.Data.Route (Route, routeCodec)
 import Data.Bifunctor (lmap)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
@@ -26,7 +26,7 @@ import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
 import Routing.Duplex (parse)
-import Routing.Hash (matchesWith)
+import Routing.Hash (getHash, matchesWith)
 
 -- | The `main` function is the first thing run in a PureScript application. In our case, that 
 -- | happens when a user loads our application in the browser. 
@@ -73,6 +73,11 @@ main = HA.runHalogenAff do
   -- since we don't yet have the user's profile.
   currentUser <- liftEffect $ Ref.new Nothing
 
+  -- We then get the landing page of the user. This will be passed as Input to the Router component,
+  -- ensuring people aren't always redirected to the Home page, and that shared links for articles
+  -- and other pages work as expected.
+  initialHash <- liftEffect $ getHash
+
   -- Finally, we'll attempt to fill the reference with the user profile associated with the token in
   -- local storage (if there is one). We'll read the token, request the user's profile if we can, and
   -- if we get a valid result, we'll write it to our mutable reference.
@@ -113,15 +118,20 @@ main = HA.runHalogenAff do
   --
   -- Let's put it all together. With `hoist`, `runAppM`, our environment, and our router component,
   -- we can produce a proper root component for Halogen to run.  
-    rootComponent :: H.Component HH.HTML Router.Query Unit Void Aff
+    rootComponent :: H.Component HH.HTML Router.Query Router.Input Void Aff
     rootComponent = H.hoist (runAppM environment) Router.component
+
+    -- We next need to parse the value from getHash into a Route as defined in our routeCodec. This will
+    -- give us the starting page component to show the user, in case of failure we'll render the Home page.
+    initialRoute :: Maybe Route
+    initialRoute = hush $ parse routeCodec initialHash
   
   -- Now we have the two things we need to run a Halogen application: a reference to an HTML element
   -- and the component to run there.
   --
   -- To run a Halogen application, use the `runUI` function. It accepts the component to run, arguments
-  -- to provide to the component (in our case, none), and the reference to an HTML element. It will
-  -- start the Halogen application and return a record with two fields: 
+  -- to provide to the component (in our case, the landing page), and the reference to an HTML element.
+  -- It will start the Halogen application and return a record with two fields:
   -- 
   -- `query`, which lets us send queries down to the root component 
   -- `subscribe`, which lets us listen and react to messages output by the root component
@@ -129,7 +139,7 @@ main = HA.runHalogenAff do
   -- Note: Since our root component is our router, the "queries" and "messages" above refer to the 
   -- `Query` and `Message` types defined in the `Conduit.Router` module. Only those queries and 
   -- messages can be used, or else you'll get a compiler error.
-  halogenIO <- runUI rootComponent unit body
+  halogenIO <- runUI rootComponent initialRoute body
 
   -- Fantastic! Our app is running and we're almost done. All that's left is to notify the router
   -- any time the location changes in the URL. 
