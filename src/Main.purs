@@ -156,6 +156,6 @@ main = HA.runHalogenAff do
   -- https://github.com/natefaubion/purescript-routing-duplex/blob/v0.2.0/README.md
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
     when (old /= Just new) do
-      launchAff_ $ halogenIO.query $ Router.Navigate new unit
+      launchAff_ $ halogenIO.query $ H.action $ Router.Navigate new
   
   pure unit
