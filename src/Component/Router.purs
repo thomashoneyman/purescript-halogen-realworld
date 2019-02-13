@@ -43,6 +43,12 @@ data Query a
 type Input =
   Maybe Route
 
+-- If you haven't seen nested `Coproduct` or `Either` before, or you haven't worked with multiple types of
+-- child component, then these types are probably confusing. They're a little tedious to define and are
+-- being removed in favor of a much nicer mechanism in Halogen 5, but are necessary in Halogen 4.
+-- 
+-- For a detailed explanation of what's going on here, please see this issue:
+-- https://github.com/thomashoneyman/purescript-halogen-realworld/issues/20
 type ChildQuery = Coproduct7
   Home.Query
   Login.Query
