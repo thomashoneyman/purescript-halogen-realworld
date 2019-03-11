@@ -21,7 +21,7 @@ import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:), (.:?))
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Either (Either)
 import Data.Lens (Lens')
@@ -76,8 +76,45 @@ type ProfileRep row =
 -- | The `Profile` type consists only of three core fields: the username, biography, and avatar.
 type Profile = { | ProfileRep () }
 
+-- | The Conduit backend specification for Profile objects is not fully precise.
+-- | It does not describe how undetermined `bio`s and `image`s should be included
+-- | in JSON objects returned to clients.
+-- |
+-- | Some backend implementations of Conduit (e.g., gothinkster/node-express-realworld-example-app)
+-- | refrain from including `bio` and `image` entries altogether.
+-- |
+-- | Unfortunately, because the generic `DecodeJson` instance for records requires entries for all
+-- | fields, even those of `Maybe a` type, this means that we can't rely on the default implementation
+-- | of `decodeJson` and must explicitly account for possibly absent key/value rows.
+decodeProfile :: Json -> Either String Profile
+decodeProfile json = do
+  obj <- decodeJson json
+  username <- obj .: "username"
+  bio <- obj .:? "bio"
+  image <- obj .:? "image"
+  pure { username, bio, image }
+
 -- | The `ProfileWithEmail` type extends the `Profile` fields with an additional `Email` type.
 type ProfileWithEmail = { | ProfileRep (email :: Email) }
+
+-- | The Conduit backend specification for Profile objects is not fully precise.
+-- | It does not describe how undetermined `bio`s and `image`s should be included
+-- | in JSON objects returned to clients.
+-- |
+-- | Some backend implementations of Conduit (e.g., gothinkster/node-express-realworld-example-app)
+-- | refrain from including `bio` and `image` entries altogether.
+-- |
+-- | Unfortunately, because the generic `DecodeJson` instance for records requires entries for all
+-- | fields, even those of `Maybe a` type, this means that we can't rely on the default implementation
+-- | of `decodeJson` and must explicitly account for possibly absent key/value rows.
+decodeProfileWithEmail :: Json -> Either String ProfileWithEmail
+decodeProfileWithEmail json = do
+  obj <- decodeJson json
+  username <- obj .: "username"
+  bio <- obj .:? "bio"
+  image <- obj .:? "image"
+  email <- obj .: "email"
+  pure { username, bio, image, email }
 
 -- | The `Author` type extends the `Profile` fields with an additional `Relation` type.
 type Author = { | ProfileRep (relation :: Relation) }

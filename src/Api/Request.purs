@@ -30,7 +30,7 @@ import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
 import Conduit.Api.Endpoint (Endpoint(..), endpointCodec)
 import Conduit.Data.Email (Email)
-import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile (Profile, decodeProfile)
 import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.:))
@@ -260,7 +260,7 @@ requestUser baseUrl opts = do
 decodeAuthProfile :: Json -> Either String (Tuple Token Profile)
 decodeAuthProfile json = do
   str <- decodeJson =<< (_ .: "token") =<< decodeJson json
-  prof <- decodeJson json
+  prof <- decodeProfile json
   pure $ Tuple (Token str) prof
 
 -- | The following functions deal with writing, reading, and deleting tokens in local storage at a 
