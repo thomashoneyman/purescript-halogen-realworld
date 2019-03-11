@@ -115,7 +115,7 @@ component =
       st <- H.get
       when (st.tab /= tab) do
         H.modify_ _ { tab = tab }
-        void $ H.fork $ case st.tab of
+        void $ H.fork $ case tab of
           ArticlesTab -> eval $ LoadArticles a
           FavoritesTab -> eval $ LoadFavorites a
       when (st.username /= username) do
@@ -267,4 +267,3 @@ component =
               ]
               [ HH.text "My Favorites" ]
       ]
-  
