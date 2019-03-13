@@ -91,7 +91,10 @@ authenticate req fields = do
 -- | decodeProfile = decodeAt "user"
 -- | ```
 decodeAt :: forall a. DecodeJson a => String -> Json -> Either String a
-decodeAt key = decodeJson <=< (_ .: key) <=< decodeJson
+decodeAt = decodeWithAt decodeJson
+
+decodeWithAt :: forall a. DecodeJson a => (Json -> Either String a) -> String -> Json -> Either String a
+decodeWithAt decoder key = decoder <=< (_ .: key) <=< decodeJson
 
 -- | This small utility decodes JSON and logs any failures that occurred, returning the parsed 
 -- | value only if decoding succeeded. This utility makes it easy to abstract the mechanices of 
