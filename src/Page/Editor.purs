@@ -12,22 +12,22 @@ import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
 import Conduit.Component.Utils (guardSession)
-import Conduit.Data.Article (ArticleWithMetadata)
+import Conduit.Data.Article (ArticleWithMetadata, Article)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
 import Control.Monad.Reader (class MonadAsk)
-import Data.Const (Const(..))
+import Data.Const (Const)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
+import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
 import Formless as F
-import Formless as Formless
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -37,8 +37,7 @@ import Slug (Slug)
 
 data Action
   = Initialize
-  | HandleForm EditorFields
-  | HandleTagInput TagInput.Message
+  | HandleEditor Article
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
@@ -50,7 +49,7 @@ type Input =
   { slug :: Maybe Slug }
 
 type ChildSlots =
-  ( formless :: F.Slot' EditorFields )
+  ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
 
 component 
   :: forall m r
@@ -82,38 +81,26 @@ component = H.mkComponent
         -- We'll pre-fill the form with values from the article being edited
         for_ mbArticle \{ title, description, body, tagList } -> do
           let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
-          H.query unit $ F.loadForm_ newFields
+          _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
+          pure unit
 
-    HandleForm msg -> case msg of
-      F.Submitted formOutputs -> do
-        let res = F.unwrapOutputFields formOutputs
-        st <- H.get
-        mbArticleWithMetadata <- case st.slug of
-          Nothing -> createArticle res
-          Just s -> updateArticle s res
-        let slug = _.slug <$> mbArticleWithMetadata
-        H.modify_ _ { article = fromMaybe mbArticleWithMetadata, slug = slug }
-        for_ slug (navigate <<< ViewArticle)       
-        pure a
-      _ -> pure a
+    HandleEditor article -> do
+      st <- H.get
+      mbArticleWithMetadata <- case st.slug of
+        Nothing -> createArticle article
+        Just s -> updateArticle s article
+      let 
+        slug = _.slug <$> mbArticleWithMetadata
+      H.modify_ _ { article = fromMaybe mbArticleWithMetadata, slug = slug }
+      for_ slug (navigate <<< ViewArticle)       
     
-    HandleTagInput msg a -> case msg of
-      TagInput.TagAdded _ set -> a <$ do
-        H.query unit $ F.set_ proxies.tagList (Set.toUnfoldable set)
-      TagInput.TagRemoved _ set -> a <$ do
-        H.query unit $ F.set_ proxies.tagList (Set.toUnfoldable set)
-    
-  render :: State -> H.ParentHTML Query (ChildQuery m) Unit m
+  render :: State -> H.ComponentHTML Action ChildSlots m
   render { currentUser, article } =
     container
-      [ HH.slot unit Formless.component 
-          { initialInputs: F.mkInputFields formProxy
-          , validators
-          , render: renderFormless (toMaybe article)
-          } 
-          (HE.input HandleForm)
-      ]
+      [ HH.slot F._formless unit formComponent formInput (Just <<< HandleEditor) ]
     where
+    formComponent = F.component $ formSpec $ toMaybe article
+
     container html =
       HH.div_
         [ header currentUser Editor
@@ -145,57 +132,84 @@ newtype EditorFields r f = EditorFields (r
   ))
 derive instance newtypeEditorFields :: Newtype (EditorFields r f) _
 
-formProxy :: F.FormProxy EditorFields
-formProxy = F.FormProxy
+type FormChildSlots = 
+  ( tagInput :: H.Slot (Const Void) TagInput.Message Unit )
 
-proxies :: F.SProxies EditorFields
-proxies = F.mkSProxies formProxy
+data FormAction 
+  = HandleTagInput TagInput.Message
 
-validators :: forall m. Monad m => EditorFields Record (F.Validation EditorFields m)
-validators = EditorFields
-  { title: V.required >>> V.minLength 1
-  , description: V.required >>> V.minLength 1
-  , body: V.required >>> V.minLength 3
-  , tagList: F.hoistFn_ (map unwrap)
+formInput :: forall m. Monad m => F.Input' EditorFields m
+formInput = 
+  { validators: EditorFields
+      { title: V.required >>> V.minLength 1
+      , description: V.required >>> V.minLength 1
+      , body: V.required >>> V.minLength 3
+      , tagList: F.hoistFn_ (map unwrap)
+      }
+  , initialInputs: Nothing 
   }
 
-renderFormless 
+formSpec 
   :: forall m
    . MonadAff m 
   => Maybe ArticleWithMetadata 
-  -> F.State EditorFields m 
-  -> F.HTML Query TagInput.Query Unit EditorFields m
-renderFormless mbArticle fstate =
-  HH.form_
-    [ HH.fieldset_
-      [ title
-      , description
-      , body
-      , HH.slot unit TagInput.component unit (HE.input $ F.raise <<< H.action <<< HandleTagInput)
-      , Field.submit $ if isJust mbArticle then "Commit changes" else "Publish"
-      ]
-    ]
+  -> F.Spec EditorFields () (Const Void) FormAction FormChildSlots Article m
+formSpec mbArticle = F.defaultSpec
+  { render = render 
+  , handleAction = handleAction 
+  , handleMessage = handleMessage
+  }
   where
-  title =
-    Field.input proxies.title fstate.form
-      [ HP.placeholder "Article Title", HP.type_ HP.InputText ]
+  proxies = F.mkSProxies $ F.FormProxy :: _ EditorFields
 
-  description = 
-    Field.input proxies.description fstate.form
-      [ HP.placeholder "What's this article about?", HP.type_ HP.InputText ]
+  handleMessage = case _ of
+    F.Submitted outputs -> H.raise (F.unwrapOutputFields outputs)
+    _ -> pure unit
 
-  body = 
-    HH.fieldset
-      [ css "form-group" ]
-      [ HH.textarea 
-        [ css "form-control form-control-lg"
-        , HP.placeholder "Write your article (in markdown)"
-        , HP.value $ F.getInput proxies.body fstate.form
-        , HP.rows 8
-        , HE.onValueInput $ HE.input $ F.setValidate proxies.body
+  handleAction = case _ of
+    HandleTagInput msg -> case msg of
+      TagInput.TagAdded _ set -> do
+        eval $ F.set proxies.tagList (Set.toUnfoldable set)
+        pure unit
+      TagInput.TagRemoved _ set -> do
+        eval $ F.set proxies.tagList (Set.toUnfoldable set)
+        pure unit
+    where
+    eval act = F.handleAction handleAction handleMessage act
+
+  render st@{ form } =
+    HH.form_
+      [ HH.fieldset_
+        [ title
+        , description
+        , body
+        , HH.slot (SProxy :: _ "tagInput") unit TagInput.component unit handler
+        , Field.submit $ if isJust mbArticle then "Commit changes" else "Publish"
         ]
-      , maybeElem (F.getError proxies.body fstate.form) \err ->
-        HH.div
-          [ css "error-messages" ]
-          [ HH.text $ errorToString err ]
-      ] 
+      ]
+    where
+    handler = Just <<< F.injAction <<< HandleTagInput
+
+    title =
+      Field.input proxies.title form
+        [ HP.placeholder "Article Title", HP.type_ HP.InputText ]
+
+    description = 
+      Field.input proxies.description form
+        [ HP.placeholder "What's this article about?", HP.type_ HP.InputText ]
+
+    body = 
+      HH.fieldset
+        [ css "form-group" ]
+        [ HH.textarea 
+            [ css "form-control form-control-lg"
+            , HP.placeholder "Write your article (in markdown)"
+            , HP.value $ F.getInput proxies.body form
+            , HP.rows 8
+            , HE.onValueInput $ Just <<< F.setValidate proxies.body
+            ]
+          , maybeElem (F.getError proxies.body form) \err ->
+              HH.div
+                [ css "error-messages" ]
+                [ HH.text $ errorToString err ]
+          ] 

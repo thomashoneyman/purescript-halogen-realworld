@@ -14,6 +14,7 @@ import Conduit.Capability.Resource.Article (class ManageArticle)
 import Conduit.Capability.Resource.Comment (class ManageComment)
 import Conduit.Capability.Resource.Tag (class ManageTag)
 import Conduit.Capability.Resource.User (class ManageUser)
+import Conduit.Component.Utils (OpaqueSlot)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Page.Editor as Editor
@@ -25,9 +26,8 @@ import Conduit.Page.Register as Register
 import Conduit.Page.Settings as Settings
 import Conduit.Page.ViewArticle as ViewArticle
 import Control.Monad.Reader (class MonadAsk)
-import Data.Either.Nested (Either7)
-import Data.Functor.Coproduct.Nested (Coproduct7)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
 import Halogen as H
@@ -43,13 +43,13 @@ type Input =
   Maybe Route
 
 type ChildSlots = 
-  ( home :: OpaqueSlot
-  , login :: OpaqueSlot
-  , register :: OpaqueSlot
-  , settings :: OpaqueSlot
-  , editor :: OpaqueSlot
-  , viewArticle :: OpaqueSlot
-  , profile :: OpaqueSlot
+  ( home :: OpaqueSlot Unit
+  , login :: OpaqueSlot Unit
+  , register :: OpaqueSlot Unit
+  , settings :: OpaqueSlot Unit
+  , editor :: OpaqueSlot Unit
+  , viewArticle :: OpaqueSlot Unit
+  , profile :: OpaqueSlot Unit
   )
 
 component
@@ -70,16 +70,16 @@ component = H.mkComponent
   , eval: H.mkEval $ H.defaultEval { handleQuery = handleQuery }
   }
   where 
-  handleQuery :: forall a. Query a -> H.HalogenM State Void ChildSlots Void m a
+  handleQuery :: forall a. Query a -> H.HalogenM State Void ChildSlots Void m (Maybe a)
   handleQuery = case _ of
     Navigate dest a -> do
       { route } <- H.get 
       when (route /= dest) do
         H.modify_ _ { route = dest }
-      pure a
+      pure (Just a)
 
   render :: State -> H.ComponentHTML Void ChildSlots m
-  render = case _.route of
+  render { route } = case route of
     Home -> 
       HH.slot (SProxy :: _ "home") unit Home.component unit absurd
     Login -> 
