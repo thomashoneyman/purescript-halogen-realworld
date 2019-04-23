@@ -7,31 +7,30 @@
     "output"
   ],
   "dependencies": {
-    "purescript-prelude": "^4.1.0",
+    "purescript-prelude": "^4.1.1",
     "purescript-console": "^4.2.0",
-    "purescript-effect": "^2.0.0",
-    "purescript-variant": "^5.2.0",
+    "purescript-effect": "^2.0.1",
+    "purescript-variant": "^6.0.0",
     "purescript-nonempty": "^5.0.0",
-    "purescript-aff": "^5.1.0",
-    "purescript-halogen": "^4.0.0",
-    "purescript-remotedata": "^4.0.0",
-    "purescript-routing": "^8.0.0",
-    "purescript-formatters": "^4.0.0",
-    "purescript-routing-duplex": "^0.2.0",
+    "purescript-aff": "^5.1.1",
+    "purescript-halogen": "^5.0.0-rc.4",
+    "purescript-remotedata": "^4.1.0",
+    "purescript-routing": "^9.0.0",
+    "purescript-formatters": "^4.0.1",
+    "purescript-routing-duplex": "^0.3.0",
     "purescript-now": "^4.0.0",
-    "purescript-behaviors": "^7.0.0",
-    "purescript-halogen-formless": "^0.5.2",
-    "purescript-affjax": "^7.0.0",
-    "purescript-slug": "^0.2.0",
+    "purescript-halogen-formless": "halogen-5",
+    "purescript-affjax": "^9.0.0",
+    "purescript-slug": "^1.0.0",
     "purescript-precise-datetime": "^5.1.1",
-    "purescript-typelevel-prelude": "^3.0.0",
-    "purescript-argonaut-codecs": "^5.1.0",
-    "purescript-argonaut-core": "^4.0.1"
+    "purescript-typelevel-prelude": "^4.0.0",
+    "purescript-argonaut-codecs": "^6.0.1",
+    "purescript-argonaut-core": "^5.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
-    "purescript-quickcheck": "^5.0.0",
-    "purescript-test-unit": "^14.0.0",
+    "purescript-quickcheck": "^6.1.0",
+    "purescript-test-unit": "^15.0.0",
     "purescript-debug": "^4.0.0"
   }
 }
