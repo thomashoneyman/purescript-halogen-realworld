@@ -25,6 +25,5 @@ class Monad m <= ManageTag m where
   getAllTags :: m (Maybe (Array String))
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance manageTagHalogenM :: ManageTag m => ManageTag (HalogenM s f g p o m) where
+instance manageTagHalogenM :: ManageTag m => ManageTag (HalogenM st act cs msg m) where
   getAllTags = lift getAllTags
-

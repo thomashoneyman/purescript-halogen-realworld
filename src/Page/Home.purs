@@ -12,13 +12,14 @@ import Conduit.Component.HTML.ArticleList (articleList, renderPagination)
 import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
-import Conduit.Component.Utils (guardSession)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
+import Conduit.Component.Utils (guardSession)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Control.Monad.Reader (class MonadAsk)
+import Data.Const (Const)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
@@ -34,6 +35,16 @@ import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
 import Web.Event.Event (preventDefault)
 import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
+
+data Action
+  = Initialize
+  | ShowTab Tab
+  | LoadFeed Pagination
+  | LoadArticles ArticleParams
+  | LoadTags
+  | FavoriteArticle Int
+  | UnfavoriteArticle Int
+  | SelectPage Int MouseEvent
 
 type State =
   { tags :: RemoteData String (Array String)
@@ -54,16 +65,6 @@ tabIsTag :: Tab -> Boolean
 tabIsTag (Tag _) = true
 tabIsTag _ = false
 
-data Query a
-  = Initialize a
-  | ShowTab Tab a
-  | LoadFeed Pagination a
-  | LoadArticles ArticleParams a
-  | LoadTags a
-  | FavoriteArticle Int a
-  | UnfavoriteArticle Int a
-  | SelectPage Int MouseEvent a
-
 component
   :: forall m r
    . MonadAff m
@@ -71,16 +72,15 @@ component
   => Navigate m
   => ManageTag m
   => ManageArticle m
-  => H.Component HH.HTML Query Unit Void m
-component =
-  H.lifecycleComponent
-    { initialState
-    , render
-    , eval
-    , receiver: const Nothing
-    , initializer: Just $ H.action Initialize
-    , finalizer: Nothing
-    }
+  => H.Component HH.HTML (Const Void) Unit Void m
+component = H.mkComponent
+  { initialState
+  , render
+  , eval: H.mkEval $ H.defaultEval 
+      { handleAction = handleAction 
+      , initialize = Just Initialize
+      }
+  }
   where 
   initialState :: Unit -> State
   initialState _ =
@@ -91,67 +91,61 @@ component =
     , page: 1
     }
 
-  eval :: Query ~> H.ComponentDSL State Query Void m
-  eval = case _ of
-    Initialize a -> do
-      void $ H.fork $ eval $ LoadTags a
+  handleAction :: Action -> H.HalogenM State Action () Void m Unit
+  handleAction = case _ of
+    Initialize -> do
+      void $ H.fork $ handleAction LoadTags
       guardSession >>= case _ of
         Nothing -> do 
-          void $ H.fork $ eval $ LoadArticles noArticleParams a
+          void $ H.fork $ handleAction $ LoadArticles noArticleParams
         profile -> do
-          void $ H.fork $ eval $ LoadFeed { limit: Just 20, offset: Nothing } a
+          void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
           H.modify_ _ { currentUser = profile, tab = Feed }
-      pure a
 
-    LoadTags a -> do
+    LoadTags -> do
       H.modify_ _ { tags = Loading}
       tags <- getAllTags
       H.modify_ _ { tags = fromMaybe tags }
-      pure a
 
-    LoadFeed params a -> do
+    LoadFeed params -> do
       st <- H.modify _ { articles = Loading }
       articles <- getCurrentUserFeed params
       H.modify_ _ { articles = fromMaybe articles }
-      pure a      
 
-    LoadArticles params a -> do
+    LoadArticles params -> do
       H.modify_ _ { articles = Loading }
       articles <- getArticles params
       H.modify_ _ { articles = fromMaybe articles }
-      pure a      
 
-    ShowTab thisTab a -> do
+    ShowTab thisTab -> do
       st <- H.get
       when (thisTab /= st.tab) do
         H.modify_ _ { tab = thisTab }
-        void $ H.fork $ eval case thisTab of 
+        void $ H.fork $ handleAction case thisTab of 
           Feed -> 
-            LoadFeed { limit: Just 20, offset: Nothing } a 
+            LoadFeed { limit: Just 20, offset: Nothing } 
           Global -> 
-            LoadArticles (noArticleParams { limit = Just 20 }) a
+            LoadArticles (noArticleParams { limit = Just 20 })
           Tag tag -> 
-            LoadArticles (noArticleParams { tag = Just tag, limit = Just 20 }) a
-      pure a
+            LoadArticles (noArticleParams { tag = Just tag, limit = Just 20 })
     
-    FavoriteArticle index a -> 
-      favorite (_article index) $> a
+    FavoriteArticle index -> 
+      favorite (_article index)
 
-    UnfavoriteArticle index a -> 
-      unfavorite (_article index) $> a
+    UnfavoriteArticle index -> 
+      unfavorite (_article index)
     
-    SelectPage index event a -> do
+    SelectPage index event -> do
       H.liftEffect $ preventDefault $ toEvent event
       st <- H.modify _ { page = index }
       let offset = Just (index * 20)
-      void $ H.fork $ eval case st.tab of 
+      void $ H.fork $ handleAction case st.tab of 
         Feed -> 
-          LoadFeed { limit: Just 20, offset } a 
+          LoadFeed { limit: Just 20, offset } 
         Global -> 
-          LoadArticles (noArticleParams { limit = Just 20, offset = offset }) a
+          LoadArticles (noArticleParams { limit = Just 20, offset = offset })
         Tag tag -> 
-          LoadArticles (noArticleParams { tag = Just tag, limit = Just 20, offset = offset }) a
-      pure a
+          LoadArticles (noArticleParams { tag = Just tag, limit = Just 20, offset = offset })
   
   _article :: Int -> Traversal' State ArticleWithMetadata
   _article i = 
@@ -160,7 +154,7 @@ component =
       <<< prop (SProxy :: SProxy "body") 
       <<< ix i
 
-  render :: State -> H.ComponentHTML Query
+  render :: State -> H.ComponentHTML Action () m
   render state@{ tags, articles, currentUser } =
     HH.div_
     [ header currentUser Home
@@ -187,48 +181,48 @@ component =
     , footer
     ]
 
-  mainView :: forall i. State -> H.HTML i Query
+  mainView :: forall props. State -> HH.HTML props Action
   mainView state =
     HH.div
-    [ css "col-md-9" ]
-    [ HH.div
-      [ css "feed-toggle" ]
-      [ HH.ul
-        [ css "nav nav-pills outline-active" ]
-        [ whenElem (isJust state.currentUser) \_ -> tab state Feed
-        , tab state Global
-        , whenElem (tabIsTag state.tab) \_ -> tab state state.tab
-        ]
+      [ css "col-md-9" ]
+      [ HH.div
+          [ css "feed-toggle" ]
+          [ HH.ul
+            [ css "nav nav-pills outline-active" ]
+            [ whenElem (isJust state.currentUser) \_ -> tab state Feed
+            , tab state Global
+            , whenElem (tabIsTag state.tab) \_ -> tab state state.tab
+            ]
+          ]
+      , articleList FavoriteArticle UnfavoriteArticle state.articles
+      , maybeElem (toMaybe state.articles) \paginated ->  
+          renderPagination SelectPage state.page paginated
       ]
-    , articleList FavoriteArticle UnfavoriteArticle state.articles
-    , maybeElem (toMaybe state.articles) \paginated ->  
-        renderPagination SelectPage state.page paginated
-    ]
   
-  banner :: forall i p. HH.HTML i p 
+  banner :: forall props act. HH.HTML props act
   banner =
     HH.div
-    [ css "banner" ]
-    [ HH.div
-      [ css "container" ]
-      [ HH.h1
-        [ css "logo-font" ]
-        [ HH.text "conduit" ]
-      , HH.p_ 
-        [ HH.text "A place to share your knowledge." ]
+      [ css "banner" ]
+      [ HH.div
+          [ css "container" ]
+          [ HH.h1
+              [ css "logo-font" ]
+              [ HH.text "conduit" ]
+          , HH.p_ 
+              [ HH.text "A place to share your knowledge." ]
+          ]
       ]
-    ]
 
-  tab :: forall i. State -> Tab -> H.HTML i Query
+  tab :: forall props. State -> Tab -> HH.HTML props Action
   tab st thisTab =
     HH.li
       [ css "nav-item" ]
       [ HH.a
-        [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
-        , HE.onClick $ HE.input_ $ ShowTab thisTab 
-        , HP.href "#/"
-        ]
-        htmlBody
+          [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
+          , HE.onClick \_ -> Just $ ShowTab thisTab 
+          , HP.href "#/"
+          ]
+          htmlBody
       ]
     where
     htmlBody = case thisTab of
@@ -243,7 +237,7 @@ component =
         , HH.text $ "\160" <> tag
         ]
   
-  renderTags :: forall i. RemoteData String (Array String) -> H.HTML i Query
+  renderTags :: forall props. RemoteData String (Array String) -> HH.HTML props Action
   renderTags = case _ of
     NotAsked ->  
       HH.div_ 
@@ -259,11 +253,11 @@ component =
         [ css "tag-list" ]
         (tags <#> renderTag)
 
-  renderTag :: forall p. String -> H.HTML p Query
+  renderTag :: forall props. String -> HH.HTML props Action
   renderTag tag =
     HH.a
-    [ css "tag-default tag-pill"
-    , HE.onClick $ HE.input_ $ ShowTab (Tag tag)
-    , HP.href "#/"
-    ]
-    [ HH.text tag ]
+      [ css "tag-default tag-pill"
+      , HE.onClick \_ -> Just $ ShowTab (Tag tag)
+      , HP.href "#/"
+      ]
+      [ HH.text tag ]

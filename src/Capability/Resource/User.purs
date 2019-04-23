@@ -41,7 +41,7 @@ class Monad m <= ManageUser m where
   unfollowUser :: Username -> m (Maybe Author)
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance manageUserHalogenM :: ManageUser m => ManageUser (HalogenM s f g p o m) where
+instance manageUserHalogenM :: ManageUser m => ManageUser (HalogenM st act slots msg m) where
   loginUser = lift <<< loginUser
   registerUser = lift <<< registerUser
   getCurrentUser = lift getCurrentUser

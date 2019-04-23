@@ -19,6 +19,7 @@ import Conduit.Form.Field as Field
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
 import Control.Monad.Reader (class MonadAsk)
+import Data.Const (Const(..))
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
@@ -34,10 +35,10 @@ import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Slug (Slug)
 
-data Query a
-  = Initialize a
-  | HandleForm (F.Message Query EditorFields) a
-  | HandleTagInput TagInput.Message a
+data Action
+  = Initialize
+  | HandleForm EditorFields
+  | HandleTagInput TagInput.Message
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
@@ -48,7 +49,8 @@ type State =
 type Input =
   { slug :: Maybe Slug }
 
-type ChildQuery m = F.Query Query TagInput.Query Unit EditorFields m
+type ChildSlots =
+  ( formless :: F.Slot' EditorFields )
 
 component 
   :: forall m r
@@ -56,24 +58,22 @@ component
   => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
   => ManageArticle m
-  => H.Component HH.HTML Query Input Void m
-component = 
-  H.lifecycleParentComponent
-    { initialState: \{ slug } -> { article: NotAsked, currentUser: Nothing, slug }
-    , render
-    , eval
-    , receiver: const Nothing
-    , initializer: Just $ H.action Initialize
-    , finalizer: Nothing
-    }
+  => H.Component HH.HTML (Const Void) Input Void m
+component = H.mkComponent
+  { initialState: \{ slug } -> { article: NotAsked, currentUser: Nothing, slug }
+  , render
+  , eval: H.mkEval $ H.defaultEval
+      { handleAction = handleAction 
+      , initialize = Just Initialize
+      }
+  }
   where
-  eval :: Query ~> H.ParentDSL State Query (ChildQuery m) Unit Void m
-  eval = case _ of
-    Initialize a ->  do
+  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
+  handleAction = case _ of
+    Initialize ->  do
       st <- H.get
       mbProfile <- guardSession
       H.modify_ _ { currentUser = mbProfile }
-
       for_ st.slug \slug -> do
         H.modify_ _ { article = Loading }
         mbArticle <- getArticle slug
@@ -83,9 +83,8 @@ component =
         for_ mbArticle \{ title, description, body, tagList } -> do
           let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
           H.query unit $ F.loadForm_ newFields
-      pure a
 
-    HandleForm msg a -> case msg of
+    HandleForm msg -> case msg of
       F.Submitted formOutputs -> do
         let res = F.unwrapOutputFields formOutputs
         st <- H.get

@@ -31,7 +31,6 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
 import Halogen as H
-import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
 
 type State =
@@ -43,29 +42,15 @@ data Query a
 type Input =
   Maybe Route
 
--- If you haven't seen nested `Coproduct` or `Either` before, or you haven't worked with multiple types of
--- child component, then these types are probably confusing. They're a little tedious to define and are
--- being removed in favor of a much nicer mechanism in Halogen 5, but are necessary in Halogen 4.
--- 
--- For a detailed explanation of what's going on here, please see this issue:
--- https://github.com/thomashoneyman/purescript-halogen-realworld/issues/20
-type ChildQuery = Coproduct7
-  Home.Query
-  Login.Query
-  Register.Query
-  Settings.Query
-  Editor.Query
-  ViewArticle.Query
-  Profile.Query
-
-type ChildSlot = Either7
-  Unit
-  Unit
-  Unit
-  Unit
-  Unit
-  Unit
-  Unit
+type ChildSlots = 
+  ( home :: OpaqueSlot
+  , login :: OpaqueSlot
+  , register :: OpaqueSlot
+  , settings :: OpaqueSlot
+  , editor :: OpaqueSlot
+  , viewArticle :: OpaqueSlot
+  , profile :: OpaqueSlot
+  )
 
 component
   :: forall m r
@@ -79,40 +64,37 @@ component
   => ManageComment m
   => ManageTag m
   => H.Component HH.HTML Query Input Void m
-component =
-  H.parentComponent
-    { initialState: \initialRoute -> { route: fromMaybe Home initialRoute } 
-    , render
-    , eval
-    , receiver: const Nothing
-    }
-
+component = H.mkComponent
+  { initialState: \initialRoute -> { route: fromMaybe Home initialRoute } 
+  , render
+  , eval: H.mkEval $ H.defaultEval { handleQuery = handleQuery }
+  }
   where 
+  handleQuery :: forall a. Query a -> H.HalogenM State Void ChildSlots Void m a
+  handleQuery = case _ of
+    Navigate dest a -> do
+      { route } <- H.get 
+      when (route /= dest) do
+        H.modify_ _ { route = dest }
+      pure a
 
-  eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void m
-  eval (Navigate dest a) = do
-    { route } <- H.get 
-    when (route /= dest) do
-      H.modify_ _ { route = dest }
-    pure a
-
-  render :: State -> H.ParentHTML Query ChildQuery ChildSlot m
-  render { route } = case route of
+  render :: State -> H.ComponentHTML Void ChildSlots m
+  render = case _.route of
     Home -> 
-      HH.slot' CP.cp1 unit Home.component unit absurd
+      HH.slot (SProxy :: _ "home") unit Home.component unit absurd
     Login -> 
-      HH.slot' CP.cp2 unit Login.component unit absurd
+      HH.slot (SProxy :: _ "login") unit Login.component unit absurd
     Register -> 
-      HH.slot' CP.cp3 unit Register.component unit absurd
+      HH.slot (SProxy :: _ "register") unit Register.component unit absurd
     Settings -> 
-      HH.slot' CP.cp4 unit Settings.component unit absurd
+      HH.slot (SProxy :: _ "settings") unit Settings.component unit absurd
     Editor -> 
-      HH.slot' CP.cp5 unit Editor.component { slug: Nothing } absurd
+      HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Nothing } absurd
     EditArticle slug -> 
-      HH.slot' CP.cp5 unit Editor.component { slug: Just slug } absurd
+      HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Just slug } absurd
     ViewArticle slug -> 
-      HH.slot' CP.cp6 unit ViewArticle.component { slug } absurd
+      HH.slot (SProxy :: _ "viewArticle") unit ViewArticle.component { slug } absurd
     Profile username -> 
-      HH.slot' CP.cp7 unit Profile.component { username, tab: ArticlesTab } absurd
+      HH.slot (SProxy :: _ "profile") unit Profile.component { username, tab: ArticlesTab } absurd
     Favorites username -> 
-      HH.slot' CP.cp7 unit Profile.component { username, tab: FavoritesTab } absurd
+      HH.slot (SProxy :: _ "profile") unit Profile.component { username, tab: FavoritesTab } absurd

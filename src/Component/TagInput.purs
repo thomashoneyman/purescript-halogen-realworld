@@ -6,6 +6,7 @@ module Conduit.Component.TagInput where
 import Prelude
 
 import Conduit.Component.HTML.Utils (css)
+import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set (Set)
@@ -18,10 +19,10 @@ import Halogen.HTML.Properties as HP
 import Web.Event.Event (preventDefault)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent, code, toEvent)
 
-data Query a
-  = HandleInput String a
-  | HandleKey KeyboardEvent a
-  | RemoveTag Tag a
+data Action
+  = HandleInput String
+  | HandleKey KeyboardEvent
+  | RemoveTag Tag
 
 type State =
   { text :: String
@@ -38,59 +39,55 @@ data Message
   = TagAdded Tag (Set Tag) 
   | TagRemoved Tag (Set Tag) 
 
-component :: forall m. MonadEffect m => H.Component HH.HTML Query Unit Message m
-component = 
-  H.component
-    { initialState: \_ -> { tags: Set.empty, text: "" }
-    , render
-    , eval
-    , receiver: const Nothing
-    }
+component :: forall m. MonadEffect m => H.Component HH.HTML (Const Void) Unit Message m
+component = H.mkComponent
+  { initialState: \_ -> { tags: Set.empty, text: "" }
+  , render
+  , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+  }
   where
-  render :: State -> H.ComponentHTML Query
+  handleAction :: Action -> H.HalogenM State Action () Message m Unit
+  handleAction = case _ of 
+    HandleInput str ->
+      H.modify_ _ { text = str }
+
+    HandleKey ev -> case code ev of
+      "Enter" -> do 
+        H.liftEffect $ preventDefault (toEvent ev)
+        st <- H.get
+        when (st.text /= "") do
+          newState <- H.modify _ { tags = Set.insert (Tag st.text) st.tags, text = "" }
+          H.raise $ TagAdded (Tag st.text) newState.tags
+      _ -> pure unit
+
+    RemoveTag tag -> do
+      st <- H.modify \s -> s { tags = Set.delete tag s.tags }
+      H.raise $ TagRemoved tag st.tags
+
+  render :: State -> H.ComponentHTML Action () m
   render { text, tags } =
     HH.fieldset
       [ css "form-group" ]
       [ HH.input 
-        [ css "form-control"
-        , HP.type_ HP.InputText 
-        , HP.placeholder "Enter tags"
-        , HP.value text
-        , HE.onValueInput $ HE.input HandleInput
-        , HE.onKeyDown $ HE.input HandleKey
-        ]
+          [ css "form-control"
+          , HP.type_ HP.InputText 
+          , HP.placeholder "Enter tags"
+          , HP.value text
+          , HE.onValueInput $ Just <<< HandleInput
+          , HE.onKeyDown $ Just <<< HandleKey
+          ]
       , HH.div
-        [ css "tag-list" ]
-        (map renderTag (Set.toUnfoldable tags))
+          [ css "tag-list" ]
+          (map renderTag (Set.toUnfoldable tags))
       ]
-  
-  renderTag :: Tag -> H.ComponentHTML Query
-  renderTag tag =
-    HH.span
-      [ css "tag-default tag-pill" ]
-      [ HH.i
-        [ css "ion-close-round" 
-        , HE.onClick $ HE.input_ $ RemoveTag tag
+    where
+    renderTag tag =
+      HH.span
+        [ css "tag-default tag-pill" ]
+        [ HH.i
+          [ css "ion-close-round" 
+          , HE.onClick \_ -> Just $ RemoveTag tag
+          ]
+          [ ]
+        , HH.text (unwrap tag)
         ]
-        [ ]
-      , HH.text (unwrap tag)
-      ]
-
-  eval :: Query ~> H.ComponentDSL State Query Message m
-  eval = case _ of 
-    HandleInput str a -> a <$ do
-      H.modify_ _ { text = str }
-
-    HandleKey ev a -> a <$ do
-      case code ev of
-        "Enter" -> do 
-          H.liftEffect $ preventDefault (toEvent ev)
-          st <- H.get
-          when (st.text /= "") do
-            newState <- H.modify _ { tags = Set.insert (Tag st.text) st.tags, text = "" }
-            H.raise $ TagAdded (Tag st.text) newState.tags
-        _ -> pure unit
-
-    RemoveTag tag a -> a <$ do
-      st <- H.modify \s -> s { tags = Set.delete tag s.tags }
-      H.raise $ TagRemoved tag st.tags

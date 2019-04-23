@@ -6,10 +6,17 @@ import Prelude
 import Conduit.Capability.Navigate (class Navigate, logout)
 import Conduit.Data.Profile (Profile)
 import Control.Monad.Reader (class MonadAsk, asks)
+import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
+import Halogen as H
+
+-- | When a component has no queries or messages, it has no public interface and can be
+-- | considered an "opaque" component. The only way for a parent to interact with the component
+-- | is by sending input.
+type OpaqueSlot = H.Slot (Const Void) Void
 
 -- | Several components verify that a current user exists and, if there is none in state, log the 
 -- | user out and redirect to the home page. This way, an inadvertent route to the settings page, 

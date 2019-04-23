@@ -13,6 +13,7 @@ import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
 import DOM.HTML.Indexed (HTMLinput)
+import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Data.Symbol (class IsSymbol, SProxy)
 import Data.Variant (Variant)
@@ -26,11 +27,11 @@ import Type.Row as Row
 -- | and return the successfully-parsed fields. We can create a small helper function that creates
 -- | a submit button with customizable text and the submit event triggered by a click. Since all 
 -- | submit buttons in the Conduit application look the same, we can jus use this throughout the app.
-submit :: forall pq cq cs form m. String -> F.HTML pq cq cs form m
+submit :: forall form act slots m. String -> F.ComponentHTML form act slots m
 submit buttonText =
   HH.button
     [ css "btn btn-lg btn-primary pull-xs-right"
-    , HE.onClick $ HE.input_ F.submit 
+    , HE.onClick \_ -> Just F.submit 
     ]
     [ HH.text buttonText ]
 
@@ -59,16 +60,16 @@ submit buttonText =
 -- | that an input field of the correct type exists in our form state at the key we provided as  
 -- | the function's first argument.
 input 
-  :: forall pq cq cs form m fields inputs sym o t0 t1
+  :: forall form act slots m sym fields inputs out t0 t1
    . IsSymbol sym
   => Newtype (form Record F.FormField) { | fields }
   => Newtype (form Variant F.InputFunction) (Variant inputs)
-  => Row.Cons sym (F.FormField V.FormError String o) t0 fields
-  => Row.Cons sym (F.InputFunction V.FormError String o) t1 inputs
+  => Row.Cons sym (F.FormField V.FormError String out) t0 fields
+  => Row.Cons sym (F.InputFunction V.FormError String out) t1 inputs
   => SProxy sym
   -> form Record F.FormField
-  -> Array (HH.IProp HTMLinput (F.Query pq cq cs form m Unit))
-  -> F.HTML pq cq cs form m
+  -> Array (HH.IProp HTMLinput (F.Action form act))
+  -> F.ComponentHTML form act slots m
 input sym form props =
   HH.fieldset
     [ css "form-group" ]
@@ -76,7 +77,7 @@ input sym form props =
       ( append
           [ css "form-control form-control-lg"
           , HP.value $ F.getInput sym form
-          , HE.onValueInput $ HE.input $ F.setValidate sym
+          , HE.onValueInput $ Just <<< F.setValidate sym
           ]
           props
       )
