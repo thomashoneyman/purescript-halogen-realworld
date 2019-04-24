@@ -13,7 +13,7 @@ import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
-import Conduit.Component.Utils (guardSession)
+import Conduit.Component.Utils (loadUserEnv)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
@@ -26,6 +26,7 @@ import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
+import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
 import Halogen as H
@@ -38,6 +39,7 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 data Action
   = Initialize
+  | HandleUserBus (Maybe Profile)
   | ShowTab Tab
   | LoadFeed Pagination
   | LoadArticles ArticleParams
@@ -68,7 +70,7 @@ tabIsTag _ = false
 component
   :: forall m r
    . MonadAff m
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+  => MonadAsk { currentUser :: Ref (Maybe Profile), userBus :: BusRW (Maybe Profile) | r } m
   => Navigate m
   => ManageTag m
   => ManageArticle m
@@ -93,14 +95,16 @@ component = H.mkComponent
 
   handleAction :: Action -> H.HalogenM State Action () Void m Unit
   handleAction = case _ of
-    Initialize -> do
-      void $ H.fork $ handleAction LoadTags
-      guardSession >>= case _ of
-        Nothing -> do 
+    Initialize ->
+      loadUserEnv HandleUserBus >>= case _ of
+        Nothing -> 
           void $ H.fork $ handleAction $ LoadArticles noArticleParams
         profile -> do
           void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
           H.modify_ _ { currentUser = profile, tab = Feed }
+      
+    HandleUserBus profile -> 
+      H.modify_ _ { currentUser = profile }
 
     LoadTags -> do
       H.modify_ _ { tags = Loading}

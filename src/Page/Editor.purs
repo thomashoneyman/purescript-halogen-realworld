@@ -11,7 +11,7 @@ import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
-import Conduit.Component.Utils (guardSession)
+import Conduit.Component.Utils (loadUserEnv)
 import Conduit.Data.Article (ArticleWithMetadata, Article)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
@@ -25,6 +25,7 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
+import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
 import Formless as F
@@ -37,6 +38,7 @@ import Slug (Slug)
 
 data Action
   = Initialize
+  | HandleUserBus (Maybe Profile)
   | HandleEditor Article
 
 type State =
@@ -54,7 +56,7 @@ type ChildSlots =
 component 
   :: forall m r
    . MonadAff m 
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+  => MonadAsk { currentUser :: Ref (Maybe Profile), userBus :: BusRW (Maybe Profile) | r } m
   => Navigate m
   => ManageArticle m
   => H.Component HH.HTML (Const Void) Input Void m
@@ -70,9 +72,8 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize ->  do
-      st <- H.get
-      mbProfile <- guardSession
-      H.modify_ _ { currentUser = mbProfile }
+      mbProfile <- loadUserEnv HandleUserBus
+      st <- H.modify _ { currentUser = mbProfile }
       for_ st.slug \slug -> do
         H.modify_ _ { article = Loading }
         mbArticle <- getArticle slug
@@ -83,6 +84,9 @@ component = H.mkComponent
           let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
+    
+    HandleUserBus mbProfile ->
+      H.modify_ _ { currentUser = mbProfile }
 
     HandleEditor article -> do
       st <- H.get

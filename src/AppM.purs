@@ -36,6 +36,7 @@ import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReader
 import Data.Argonaut.Encode (encodeJson)
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
+import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
@@ -81,9 +82,9 @@ type Env =
   { logLevel :: LogLevel 
   , baseUrl :: BaseURL
   , currentUser :: Ref (Maybe Profile)
+  , userBus :: BusRW (Maybe Profile)
   }
 
--- | A flag to control the environment for logging messages.
 data LogLevel = Dev | Prod
 
 derive instance eqLogLevel :: Eq LogLevel

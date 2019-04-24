@@ -9,20 +9,16 @@ import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.User (class ManageUser, loginUser)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
-import Conduit.Component.Utils (guardNoSession)
 import Conduit.Data.Email (Email)
-import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field (submit)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
 import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
@@ -39,37 +35,38 @@ newtype LoginForm r f = LoginForm (r
 derive instance newtypeLoginForm :: Newtype (LoginForm r f) _
 
 data Action
-  = Initialize
-  | HandleLoginForm LoginFields
+  = HandleLoginForm LoginFields
+
+-- Should this component redirect to home after login or not? If the login page is loaded
+-- at the login route, then yes; if not, then it is guarding another route and should not.
+type State = 
+  { redirect :: Boolean }
+
+type Input =
+  { redirect :: Boolean }
 
 type ChildSlots = 
   ( formless :: F.Slot LoginForm (Const Void) () LoginFields Unit )
 
 component 
-  :: forall m r
+  :: forall m
    . MonadAff m 
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML (Const Void) Unit Void m
+  => H.Component HH.HTML (Const Void) Input Void m
 component = H.mkComponent
   { initialState: identity
   , render
-  , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction 
-      , initialize = Just Initialize
-      }
+  , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
   }
   where
-  handleAction :: Action -> H.HalogenM Unit Action ChildSlots Void m Unit
+  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
-    Initialize -> 
-      guardNoSession
+    HandleLoginForm fields -> do
+      st <- H.get
+      loginUser fields >>= traverse_ (\_ -> when st.redirect $ navigate Home)
 
-    HandleLoginForm fields ->
-      loginUser fields >>= traverse_ (\_ -> navigate Home)
-
-  render :: Unit -> H.ComponentHTML Action ChildSlots m
+  render :: State -> H.ComponentHTML Action ChildSlots m
   render _ =
     container
       [ HH.h1

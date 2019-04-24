@@ -19,6 +19,7 @@ import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
+import Effect.Aff.Bus as Bus
 import Effect.Ref as Ref
 import Halogen (liftAff, liftEffect)
 import Halogen as H
@@ -73,6 +74,10 @@ main = HA.runHalogenAff do
   -- since we don't yet have the user's profile.
   currentUser <- liftEffect $ Ref.new Nothing
 
+  -- We'll also create a new bus to broadcast updates when the value of the current user changes;
+  -- that allows all subscribed components to stay in sync about this value.
+  userBus <- liftEffect Bus.make
+
   -- We then get the landing page of the user. This will be passed as Input to the Router component,
   -- ensuring people aren't always redirected to the Home page, and that shared links for articles
   -- and other pages work as expected.
@@ -97,7 +102,7 @@ main = HA.runHalogenAff do
   -- fields. If our environment type ever changes, we'll get a compiler error here.
   let 
     environment :: Env
-    environment = { currentUser, baseUrl, logLevel }
+    environment = { currentUser, baseUrl, logLevel, userBus }
 
   -- With our app environment ready to go, we can prepare the router to run as our root component.
   --
