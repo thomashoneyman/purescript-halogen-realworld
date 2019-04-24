@@ -3,18 +3,11 @@ module Conduit.Component.Utils where
 
 import Prelude
 
-import Conduit.Capability.Navigate (class Navigate)
-import Conduit.Data.Profile (Profile)
-import Control.Monad.Reader (class MonadAsk, ask)
 import Control.Monad.Rec.Class (forever)
 import Data.Const (Const)
-import Data.Maybe (Maybe)
 import Effect.Aff (error, forkAff, killFiber)
 import Effect.Aff.Bus as Bus
 import Effect.Aff.Class (class MonadAff)
-import Effect.Class (liftEffect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
 import Halogen as H
 import Halogen.Query.EventSource as ES
 
@@ -41,39 +34,16 @@ type OpaqueSlot = H.Slot (Const Void) Void
 -- | ```purescript
 -- | handleAction = case _ of 
 -- |   Initialize -> do
--- |     { bus } <- ask
--- |     subscribeWithAction HandleBus bus
+-- |     { currentUser, userBus } <- ask
+-- |     _ <- H.subscribe $ busEventSource $ HandleBus <$> userBus
+-- |     mbProfile <- liftEffect $ Ref.read currentUser
+-- |     ...
 -- |   
 -- |   HandleBus busMessage -> do
 -- |     ...
 -- | ```
-subscribeWithAction
-  :: forall busMsg st act slots msg m r
-   . MonadAff m 
-  => (busMsg -> act) 
-  -> Bus.BusR' r busMsg 
-  -> H.HalogenM st act slots msg m Unit
-subscribeWithAction handler bus =
-  void $ H.subscribe $ ES.affEventSource \emitter -> do
-    fiber <- forkAff $ forever $ ES.emit emitter <<< handler =<< Bus.read bus
+busEventSource :: forall m r act. MonadAff m => Bus.BusR' r act -> ES.EventSource m act
+busEventSource bus =
+  ES.affEventSource \emitter -> do
+    fiber <- forkAff $ forever $ ES.emit emitter =<< Bus.read bus
     pure (ES.Finalizer (killFiber (error "Event source closed") fiber))
-
--- | Some components need to retrieve the current value of the logged-in user from state and would
--- | also like to subscribe to further updates at the same time. This helper function bundles that
--- | behavior so you can both retrieve the value and subscribe to further changes at once.
--- |
--- | Note: It's not strictly necessary for any components in Conduit to subscribe to changes in the 
--- | logged-in user, because that only happens at login / logout; at these points, components are
--- | re-mounted anyway and will always be up-to-date with the latest state. Still, this is too 
--- | useful a pattern to leave out altogether!
-loadUserEnv
-  :: forall st act slots msg m r
-   . MonadAff m
-  => MonadAsk { currentUser :: Ref (Maybe Profile), userBus :: Bus.BusRW (Maybe Profile) | r } m
-  => Navigate m
-  => (Maybe Profile -> act)
-  -> H.HalogenM st act slots msg m (Maybe Profile)
-loadUserEnv handler = do 
-  { currentUser, userBus } <- ask
-  subscribeWithAction handler userBus 
-  liftEffect $ Ref.read currentUser

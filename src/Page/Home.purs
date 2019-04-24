@@ -13,12 +13,12 @@ import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
-import Conduit.Component.Utils (loadUserEnv)
+import Conduit.Component.Utils (busEventSource)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Control.Monad.Reader (class MonadAsk)
+import Control.Monad.Reader (class MonadAsk, ask)
 import Data.Const (Const)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
@@ -29,6 +29,8 @@ import Data.Symbol (SProxy(..))
 import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref (Ref)
+import Effect.Ref as Ref
+import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -95,8 +97,10 @@ component = H.mkComponent
 
   handleAction :: Action -> H.HalogenM State Action () Void m Unit
   handleAction = case _ of
-    Initialize ->
-      loadUserEnv HandleUserBus >>= case _ of
+    Initialize -> do
+      { currentUser, userBus } <- ask
+      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
+      liftEffect (Ref.read currentUser) >>= case _ of
         Nothing -> 
           void $ H.fork $ handleAction $ LoadArticles noArticleParams
         profile -> do
