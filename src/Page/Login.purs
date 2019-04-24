@@ -64,6 +64,8 @@ component = H.mkComponent
   handleAction = case _ of
     HandleLoginForm fields -> do
       st <- H.get
+      -- loginUser also handles broadcasting the user changes to subscribed components 
+      -- so they receive the up-to-date value (see AppM and the `authenticate` function.)
       loginUser fields >>= traverse_ (\_ -> when st.redirect $ navigate Home)
 
   render :: State -> H.ComponentHTML Action ChildSlots m

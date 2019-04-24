@@ -37,7 +37,8 @@ import Data.Argonaut.Encode (encodeJson)
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Bus (BusRW)
-import Effect.Aff.Class (class MonadAff)
+import Effect.Aff.Bus as Bus
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Effect.Now as Now
@@ -206,8 +207,12 @@ instance navigateAppM :: Navigate AppM where
     liftEffect <<< setHash <<< print Route.routeCodec 
 
   logout = do
-    liftEffect <<< Ref.write Nothing =<< asks _.currentUser
-    liftEffect Request.removeToken 
+    { currentUser, userBus } <- ask
+    liftEffect do 
+      Ref.write Nothing currentUser
+      Request.removeToken 
+    liftAff do
+      Bus.write Nothing userBus
     navigate Route.Home
 
 -- | Our first resource class describes what operations we have available to manage users. Logging 

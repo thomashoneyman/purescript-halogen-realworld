@@ -17,6 +17,8 @@ import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
+import Effect.Aff.Bus (BusRW)
+import Effect.Aff.Bus as Bus
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Ref (Ref)
@@ -53,23 +55,27 @@ mkAuthRequest opts = do
 
 -- | Logging in and registering share a lot of behavior, namely updating the application environment
 -- | and writing the auth token to local storage. This helper function makes it easy to layer those
--- | behaviors on top of the request.
+-- | behaviors on top of the request. This also performs the work of broadcasting changes in the
+-- | current user to all subscribed components.
 authenticate 
   :: forall m a r
    . MonadAff m
-  => MonadAsk { baseUrl :: BaseURL, currentUser :: Ref (Maybe Profile) | r } m
+  => MonadAsk { baseUrl :: BaseURL, currentUser :: Ref (Maybe Profile), userBus :: BusRW (Maybe Profile) | r } m
   => LogMessages m
   => Now m
   => (BaseURL -> a -> m (Either String (Tuple Token Profile))) 
   -> a 
   -> m (Maybe Profile)
 authenticate req fields = do 
-  { baseUrl, currentUser } <- ask
+  { baseUrl, currentUser, userBus  } <- ask
   req baseUrl fields >>= case _ of
     Left err -> logError err *> pure Nothing
     Right (Tuple token profile) -> do 
-      liftEffect $ writeToken token 
-      liftEffect $ Ref.write (Just profile) currentUser
+      liftEffect do 
+        writeToken token 
+        Ref.write (Just profile) currentUser
+      -- any time we write to the current user ref, we should also broadcast the change 
+      liftAff $ Bus.write (Just profile) userBus
       pure (Just profile)
 
 -- | We can decode records and primitive types automatically, and we've defined custom decoders for
