@@ -77,7 +77,11 @@ component
 component = H.mkComponent
   { initialState: \_ -> { route: Nothing, currentUser: Nothing } 
   , render
-  , eval: H.mkEval $ H.defaultEval { handleQuery = handleQuery }
+  , eval: H.mkEval $ H.defaultEval 
+      { handleQuery = handleQuery 
+      , handleAction = handleAction
+      , initialize = Just Initialize
+      }
   }
   where 
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
@@ -105,8 +109,9 @@ component = H.mkComponent
       when (route /= Just dest) do
         -- don't change routes if there is a logged-in user trying to access
         -- a route only meant to be accessible to a not-logged-in session
-        unless (isJust currentUser && dest `elem` [ Login, Register ]) do
-          H.modify_ _ { route = Just dest }
+        case (isJust currentUser && dest `elem` [ Login, Register ]) of
+          false -> H.modify_ _ { route = Just dest }
+          _ -> pure unit
       pure (Just a)
 
   -- Display the login page instead of the expected page if there is no current user; a simple 

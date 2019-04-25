@@ -90,7 +90,6 @@ main = HA.runHalogenAff do
     res <- liftAff $ request $ defaultRequest baseUrl (Just token) requestOptions
     let u = decodeAt "user" =<< lmap printResponseFormatError res.body
     liftEffect $ Ref.write (hush u) currentUser
-    pure unit
 
   -- We now have the three pieces of information necessary to configure our app. Let's create
   -- a record that matches the `Env` type our application requires by filling in these three

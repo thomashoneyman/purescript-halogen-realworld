@@ -100,6 +100,7 @@ component = H.mkComponent
     Initialize -> do
       { currentUser, userBus } <- ask
       _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
+      void $ H.fork $ handleAction LoadTags
       liftEffect (Ref.read currentUser) >>= case _ of
         Nothing -> 
           void $ H.fork $ handleAction $ LoadArticles noArticleParams
