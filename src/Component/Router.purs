@@ -17,6 +17,7 @@ import Conduit.Capability.Resource.User (class ManageUser)
 import Conduit.Component.Utils (OpaqueSlot, busEventSource)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..), routeCodec)
+import Conduit.Env (UserEnv)
 import Conduit.Page.Editor as Editor
 import Conduit.Page.Home as Home
 import Conduit.Page.Login as Login
@@ -25,14 +26,12 @@ import Conduit.Page.Profile as Profile
 import Conduit.Page.Register as Register
 import Conduit.Page.Settings as Settings
 import Conduit.Page.ViewArticle as ViewArticle
-import Control.Monad.Reader (class MonadAsk, ask)
+import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Either (hush)
 import Data.Foldable (elem)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Symbol (SProxy(..))
-import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Halogen (liftEffect)
 import Halogen as H
@@ -65,7 +64,7 @@ type ChildSlots =
 component
   :: forall m r
    . MonadAff m
-  => MonadAsk { currentUser :: Ref (Maybe Profile), userBus :: BusRW (Maybe Profile) | r } m
+  => MonadAsk { userEnv :: UserEnv | r } m
   => Now m
   => LogMessages m
   => Navigate m
@@ -89,7 +88,7 @@ component = H.mkComponent
     Initialize -> do
       -- first, we'll get the value of the current user and subscribe to updates any time the
       -- value changes
-      { currentUser, userBus } <- ask
+      { currentUser, userBus } <- asks _.userEnv
       _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
       mbProfile <- liftEffect (Ref.read currentUser) 
       H.modify_ _ { currentUser = mbProfile }

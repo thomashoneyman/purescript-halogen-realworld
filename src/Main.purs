@@ -10,9 +10,10 @@ import Affjax (printResponseFormatError, request)
 import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.Api.Utils (decodeAt)
-import Conduit.AppM (Env, LogLevel(..), runAppM)
+import Conduit.AppM (runAppM)
 import Conduit.Component.Router as Router
 import Conduit.Data.Route (routeCodec)
+import Conduit.Env (LogLevel(..), UserEnv, Env)
 import Data.Bifunctor (lmap)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
@@ -59,9 +60,10 @@ main = HA.runHalogenAff do
   -- Our router component requires some information about its environment in order to run, so let's
   -- get that handled before we do anything else. 
   
-  -- Our environment is a small record type, `Env`, defined in the `Conduit.AppM` module. It 
-  -- requires three fields: the profile of the currently-authenticated user (if there is one), the 
-  -- base URL of the application, and the log level. 
+  -- Our environment is a small record type, `Env`, defined in the `Conduit.Env` module. It 
+  -- requires four fields: the profile of the currently-authenticated user (if there is one), the 
+  -- base URL of the application, the log level, and the channel used to broadcast changes in the
+  -- value of the current user.
 
   -- This is a small MVP, so we'll just define pure values like our base URL and log level as 
   -- constants. But it's also common to read configuration like this from the build environment.
@@ -96,7 +98,10 @@ main = HA.runHalogenAff do
   -- fields. If our environment type ever changes, we'll get a compiler error here.
   let 
     environment :: Env
-    environment = { currentUser, baseUrl, logLevel, userBus }
+    environment = { baseUrl, logLevel, userEnv }
+      where
+      userEnv :: UserEnv
+      userEnv = { currentUser, userBus }
 
   -- With our app environment ready to go, we can prepare the router to run as our root component.
   --

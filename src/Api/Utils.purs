@@ -11,17 +11,16 @@ import Conduit.Capability.LogMessages (class LogMessages, logError)
 import Conduit.Capability.Now (class Now)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
+import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, ask, asks)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
-import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Bus as Bus
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 -- | This function performs a request that does not require authentication by pulling the base URL 
@@ -60,22 +59,22 @@ mkAuthRequest opts = do
 authenticate 
   :: forall m a r
    . MonadAff m
-  => MonadAsk { baseUrl :: BaseURL, currentUser :: Ref (Maybe Profile), userBus :: BusRW (Maybe Profile) | r } m
+  => MonadAsk { baseUrl :: BaseURL, userEnv :: UserEnv | r } m
   => LogMessages m
   => Now m
   => (BaseURL -> a -> m (Either String (Tuple Token Profile))) 
   -> a 
   -> m (Maybe Profile)
 authenticate req fields = do 
-  { baseUrl, currentUser, userBus  } <- ask
+  { baseUrl, userEnv } <- ask
   req baseUrl fields >>= case _ of
     Left err -> logError err *> pure Nothing
     Right (Tuple token profile) -> do 
       liftEffect do 
         writeToken token 
-        Ref.write (Just profile) currentUser
+        Ref.write (Just profile) userEnv.currentUser
       -- any time we write to the current user ref, we should also broadcast the change 
-      liftAff $ Bus.write (Just profile) userBus
+      liftAff $ Bus.write (Just profile) userEnv.userBus
       pure (Just profile)
 
 -- | We can decode records and primitive types automatically, and we've defined custom decoders for
@@ -120,12 +119,12 @@ decode decoder (Just json) = case decoder json of
 decodeWithUser 
   :: forall m a r
    . MonadEffect m
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+  => MonadAsk { userEnv :: UserEnv | r } m
   => LogMessages m 
   => Now m
   => (Maybe Username -> Json -> Either String a) 
   -> Maybe Json 
   -> m (Maybe a)
 decodeWithUser decoder json = do
-  maybeProfile <- (liftEffect <<< Ref.read) =<< asks _.currentUser
+  maybeProfile <- (liftEffect <<< Ref.read) =<< asks _.userEnv.currentUser
   decode (decoder (_.username <$> maybeProfile)) json

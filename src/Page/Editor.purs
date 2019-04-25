@@ -15,19 +15,18 @@ import Conduit.Component.Utils (busEventSource)
 import Conduit.Data.Article (ArticleWithMetadata, Article)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
+import Conduit.Env (UserEnv)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
-import Control.Monad.Reader (class MonadAsk, ask)
+import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Const (Const)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
-import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Formless as F
 import Halogen (liftEffect)
@@ -58,7 +57,7 @@ type ChildSlots =
 component 
   :: forall m r
    . MonadAff m 
-  => MonadAsk { currentUser :: Ref (Maybe Profile), userBus :: BusRW (Maybe Profile) | r } m
+  => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageArticle m
   => H.Component HH.HTML (Const Void) Input Void m
@@ -74,7 +73,7 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize ->  do
-      { currentUser, userBus } <- ask
+      { currentUser, userBus } <- asks _.userEnv
       _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
       mbProfile <- liftEffect $ Ref.read currentUser
       st <- H.modify _ { currentUser = mbProfile }

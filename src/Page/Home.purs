@@ -18,7 +18,8 @@ import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Control.Monad.Reader (class MonadAsk, ask)
+import Conduit.Env (UserEnv)
+import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Const (Const)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
@@ -26,9 +27,7 @@ import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
-import Effect.Aff.Bus (BusRW)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Halogen (liftEffect)
 import Halogen as H
@@ -72,7 +71,7 @@ tabIsTag _ = false
 component
   :: forall m r
    . MonadAff m
-  => MonadAsk { currentUser :: Ref (Maybe Profile), userBus :: BusRW (Maybe Profile) | r } m
+  => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageTag m
   => ManageArticle m
@@ -98,7 +97,7 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action () Void m Unit
   handleAction = case _ of
     Initialize -> do
-      { currentUser, userBus } <- ask
+      { currentUser, userBus } <- asks _.userEnv
       _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
       void $ H.fork $ handleAction LoadTags
       liftEffect (Ref.read currentUser) >>= case _ of
