@@ -1,4 +1,5 @@
 { name = "purescript-halogen-realworld"
+, packages = ./packages.dhall
 , dependencies =
     [ "prelude"
     , "console"
@@ -21,5 +22,4 @@
     , "argonaut-codecs"
     , "aff-bus"
     ]
-, packages = ./packages.dhall
 }
