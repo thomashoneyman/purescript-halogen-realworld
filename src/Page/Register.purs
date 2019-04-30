@@ -39,7 +39,7 @@ data Action
   = HandleRegisterForm RegisterFields
 
 type ChildSlots = 
-  ( formless :: F.Slot RegisterForm (Const Void) () RegisterFields Unit )
+  ( formless :: F.Slot' RegisterForm RegisterFields Unit )
 
 component 
   :: forall m

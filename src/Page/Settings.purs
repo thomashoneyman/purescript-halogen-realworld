@@ -53,7 +53,7 @@ type State =
   }
 
 type ChildSlots = 
-  ( formless :: F.Slot SettingsForm (Const Void) () UpdateProfileFields Unit )
+  ( formless :: F.Slot' SettingsForm UpdateProfileFields Unit )
 
 component 
   :: forall m
@@ -149,7 +149,8 @@ component = H.mkComponent
     formSpec :: F.Spec' SettingsForm UpdateProfileFields m
     formSpec = F.defaultSpec
       { render = renderForm 
-      , handleMessage = handleMessage }
+      , handleMessage = handleMessage 
+      }
       where
       handleMessage = case _ of
         F.Submitted outputs -> H.raise (F.unwrapOutputFields outputs)
