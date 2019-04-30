@@ -22,6 +22,7 @@ import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Profile (Profile, Relation(..), Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
+import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Control.Parallel (parTraverse_)
 import Data.Const (Const)
@@ -32,7 +33,6 @@ import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Halogen as H
 import Halogen.HTML as HH
@@ -75,7 +75,7 @@ component
   => ManageArticle m
   => ManageComment m
   => ManageUser m
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+  => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => H.Component HH.HTML (Const Void) Input Void m
 component = H.mkComponent
@@ -100,7 +100,7 @@ component = H.mkComponent
   handleAction = case _ of
     Initialize -> do
       parTraverse_ H.fork [ handleAction GetArticle, handleAction GetComments ]
-      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.currentUser
+      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.userEnv.currentUser
       H.modify_ _ { currentUser = mbProfile } 
 
     GetArticle -> do

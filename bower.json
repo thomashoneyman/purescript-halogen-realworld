@@ -25,7 +25,8 @@
     "purescript-precise-datetime": "^5.1.1",
     "purescript-typelevel-prelude": "^4.0.0",
     "purescript-argonaut-codecs": "^6.0.1",
-    "purescript-argonaut-core": "^5.0.0"
+    "purescript-argonaut-core": "^5.0.0",
+    "purescript-aff-bus": "^4.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
