@@ -11,15 +11,14 @@ import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
-import Conduit.Component.Utils (busEventSource)
+import Conduit.Component.Utils (guardSession)
 import Conduit.Data.Article (ArticleWithMetadata, Article)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Conduit.Env (UserEnv)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
-import Control.Monad.Reader (class MonadAsk, asks)
+import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
@@ -27,9 +26,8 @@ import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref as Ref
+import Effect.Ref (Ref)
 import Formless as F
-import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -39,7 +37,6 @@ import Slug (Slug)
 
 data Action
   = Initialize
-  | HandleUserBus (Maybe Profile)
   | HandleEditor Article
 
 type State =
@@ -57,7 +54,7 @@ type ChildSlots =
 component 
   :: forall m r
    . MonadAff m 
-  => MonadAsk { userEnv :: UserEnv | r } m
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
   => ManageArticle m
   => H.Component HH.HTML (Const Void) Input Void m
@@ -73,10 +70,9 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize ->  do
-      { currentUser, userBus } <- asks _.userEnv
-      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
-      mbProfile <- liftEffect $ Ref.read currentUser
-      st <- H.modify _ { currentUser = mbProfile }
+      st <- H.get
+      mbProfile <- guardSession
+      H.modify_ _ { currentUser = mbProfile }
       for_ st.slug \slug -> do
         H.modify_ _ { article = Loading }
         mbArticle <- getArticle slug
@@ -87,9 +83,6 @@ component = H.mkComponent
           let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
-    
-    HandleUserBus mbProfile ->
-      H.modify_ _ { currentUser = mbProfile }
 
     HandleEditor article -> do
       st <- H.get

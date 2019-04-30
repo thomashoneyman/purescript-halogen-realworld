@@ -21,7 +21,6 @@ import Conduit.Data.Profile (Profile, Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Const (Const)
 import Data.Lens (Traversal')
@@ -31,6 +30,7 @@ import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Halogen as H
 import Halogen.HTML as HH
@@ -75,7 +75,7 @@ derive instance eqTab :: Eq Tab
 component
   :: forall m r
    . MonadAff m
-  => MonadAsk { userEnv :: UserEnv | r } m
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => ManageUser m
   => ManageArticle m
   => H.Component HH.HTML (Const Void) Input Void m
@@ -103,7 +103,7 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action () Void m Unit
   handleAction = case _ of
     Initialize -> do
-      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.userEnv.currentUser
+      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.currentUser
       st <- H.modify _ { currentUser = mbProfile }
       void $ H.fork $ handleAction LoadAuthor
       void $ H.fork $ case st.tab of

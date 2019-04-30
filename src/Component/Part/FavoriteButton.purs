@@ -43,7 +43,7 @@ favoriteButton
 favoriteButton buttonSize favoriteAct unfavoriteAct article =
   HH.button
     [ css $ "btn btn-sm " <> if article.favorited then "btn-primary" else "btn-outline-primary"
-    , HE.onClick \_ -> Just if article.favorited then unfavoriteAct else favoriteAct
+    , HE.onClick \_ -> Just if article.favorited then favoriteAct else unfavoriteAct
     ]
     [ HH.i 
         [ css "ion-heart" ]

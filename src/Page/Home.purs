@@ -13,13 +13,12 @@ import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
-import Conduit.Component.Utils (busEventSource)
+import Conduit.Component.Utils (guardSession)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Conduit.Env (UserEnv)
-import Control.Monad.Reader (class MonadAsk, asks)
+import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
@@ -28,8 +27,7 @@ import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref as Ref
-import Halogen (liftEffect)
+import Effect.Ref (Ref)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -40,7 +38,6 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 data Action
   = Initialize
-  | HandleUserBus (Maybe Profile)
   | ShowTab Tab
   | LoadFeed Pagination
   | LoadArticles ArticleParams
@@ -71,7 +68,7 @@ tabIsTag _ = false
 component
   :: forall m r
    . MonadAff m
-  => MonadAsk { userEnv :: UserEnv | r } m
+  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Navigate m
   => ManageTag m
   => ManageArticle m
@@ -97,18 +94,13 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action () Void m Unit
   handleAction = case _ of
     Initialize -> do
-      { currentUser, userBus } <- asks _.userEnv
-      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
       void $ H.fork $ handleAction LoadTags
-      liftEffect (Ref.read currentUser) >>= case _ of
-        Nothing -> 
+      guardSession >>= case _ of
+        Nothing -> do 
           void $ H.fork $ handleAction $ LoadArticles noArticleParams
         profile -> do
           void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
           H.modify_ _ { currentUser = profile, tab = Feed }
-      
-    HandleUserBus profile -> 
-      H.modify_ _ { currentUser = profile }
 
     LoadTags -> do
       H.modify_ _ { tags = Loading}

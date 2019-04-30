@@ -10,17 +10,15 @@ import Affjax (printResponseFormatError, request)
 import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.Api.Utils (decodeAt)
-import Conduit.AppM (runAppM)
+import Conduit.AppM (Env, LogLevel(..), runAppM)
 import Conduit.Component.Router as Router
-import Conduit.Data.Route (routeCodec)
-import Conduit.Env (LogLevel(..), UserEnv, Env)
+import Conduit.Data.Route (Route, routeCodec)
 import Data.Bifunctor (lmap)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
-import Effect.Aff.Bus as Bus
 import Effect.Ref as Ref
 import Halogen (liftAff, liftEffect)
 import Halogen as H
@@ -28,7 +26,7 @@ import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
 import Routing.Duplex (parse)
-import Routing.Hash (matchesWith)
+import Routing.Hash (getHash, matchesWith)
 
 -- | The `main` function is the first thing run in a PureScript application. In our case, that 
 -- | happens when a user loads our application in the browser. 
@@ -60,10 +58,9 @@ main = HA.runHalogenAff do
   -- Our router component requires some information about its environment in order to run, so let's
   -- get that handled before we do anything else. 
   
-  -- Our environment is a small record type, `Env`, defined in the `Conduit.Env` module. It 
-  -- requires four fields: the profile of the currently-authenticated user (if there is one), the 
-  -- base URL of the application, the log level, and the channel used to broadcast changes in the
-  -- value of the current user.
+  -- Our environment is a small record type, `Env`, defined in the `Conduit.AppM` module. It 
+  -- requires three fields: the profile of the currently-authenticated user (if there is one), the 
+  -- base URL of the application, and the log level. 
 
   -- This is a small MVP, so we'll just define pure values like our base URL and log level as 
   -- constants. But it's also common to read configuration like this from the build environment.
@@ -76,9 +73,10 @@ main = HA.runHalogenAff do
   -- since we don't yet have the user's profile.
   currentUser <- liftEffect $ Ref.new Nothing
 
-  -- We'll also create a new bus to broadcast updates when the value of the current user changes;
-  -- that allows all subscribed components to stay in sync about this value.
-  userBus <- liftEffect Bus.make
+  -- We then get the landing page of the user. This will be passed as Input to the Router component,
+  -- ensuring people aren't always redirected to the Home page, and that shared links for articles
+  -- and other pages work as expected.
+  initialHash <- liftEffect $ getHash
 
   -- Finally, we'll attempt to fill the reference with the user profile associated with the token in
   -- local storage (if there is one). We'll read the token, request the user's profile if we can, and
@@ -92,16 +90,14 @@ main = HA.runHalogenAff do
     res <- liftAff $ request $ defaultRequest baseUrl (Just token) requestOptions
     let u = decodeAt "user" =<< lmap printResponseFormatError res.body
     liftEffect $ Ref.write (hush u) currentUser
+    pure unit
 
   -- We now have the three pieces of information necessary to configure our app. Let's create
   -- a record that matches the `Env` type our application requires by filling in these three
   -- fields. If our environment type ever changes, we'll get a compiler error here.
   let 
     environment :: Env
-    environment = { baseUrl, logLevel, userEnv }
-      where
-      userEnv :: UserEnv
-      userEnv = { currentUser, userBus }
+    environment = { currentUser, baseUrl, logLevel }
 
   -- With our app environment ready to go, we can prepare the router to run as our root component.
   --
@@ -122,9 +118,14 @@ main = HA.runHalogenAff do
   --
   -- Let's put it all together. With `hoist`, `runAppM`, our environment, and our router component,
   -- we can produce a proper root component for Halogen to run.  
-    rootComponent :: H.Component HH.HTML Router.Query Unit Void Aff
+    rootComponent :: H.Component HH.HTML Router.Query Router.Input Void Aff
     rootComponent = H.hoist (runAppM environment) Router.component
 
+    -- We next need to parse the value from getHash into a Route as defined in our routeCodec. This will
+    -- give us the starting page component to show the user, in case of failure we'll render the Home page.
+    initialRoute :: Maybe Route
+    initialRoute = hush $ parse routeCodec initialHash
+  
   -- Now we have the two things we need to run a Halogen application: a reference to an HTML element
   -- and the component to run there.
   --
@@ -138,7 +139,7 @@ main = HA.runHalogenAff do
   -- Note: Since our root component is our router, the "queries" and "messages" above refer to the 
   -- `Query` and `Message` types defined in the `Conduit.Router` module. Only those queries and 
   -- messages can be used, or else you'll get a compiler error.
-  halogenIO <- runUI rootComponent unit body
+  halogenIO <- runUI rootComponent initialRoute body
 
   -- Fantastic! Our app is running and we're almost done. All that's left is to notify the router
   -- any time the location changes in the URL. 

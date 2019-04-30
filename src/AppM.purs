@@ -17,7 +17,7 @@ module Conduit.AppM where
 import Prelude
 
 import Conduit.Api.Endpoint (Endpoint(..), noArticleParams)
-import Conduit.Api.Request (RequestMethod(..))
+import Conduit.Api.Request (BaseURL, RequestMethod(..))
 import Conduit.Api.Request as Request
 import Conduit.Api.Utils (authenticate, decode, decodeAt, decodeWithAt, decodeWithUser, mkAuthRequest, mkRequest)
 import Conduit.Capability.LogMessages (class LogMessages)
@@ -30,18 +30,17 @@ import Conduit.Capability.Resource.User (class ManageUser)
 import Conduit.Data.Article (decodeArticle, decodeArticles)
 import Conduit.Data.Comment (decodeComments)
 import Conduit.Data.Log as Log
-import Conduit.Data.Profile (decodeAuthor, decodeProfileWithEmail)
+import Conduit.Data.Profile (Profile, decodeAuthor, decodeProfileWithEmail)
 import Conduit.Data.Route as Route
-import Conduit.Env (Env, LogLevel(..))
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
-import Effect.Aff.Bus as Bus
-import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Effect.Now as Now
+import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Routing.Duplex (print)
 import Routing.Hash (setHash)
@@ -63,12 +62,38 @@ import Type.Equality (class TypeEquals, from)
 -- | This module implements a monad that can run all the abstract capabilities we've defined. This 
 -- | is our production monad. We'll implement the monad first, and then we'll provide concrete 
 -- | instances for each of our abstract cayabilities.
+
+-- | Let's start with some types necessary for the rest of the module.
 -- |
+-- | Our app monad will provide a globally-accessible, read-only environment with three fields. 
+-- | First, we'll use a `LogLevel` flag to indicate whether we'd like to log everything (`Dev`) or 
+-- | only critical messages (`Prod`). Next, we'll maintain a configurable base URL. Finally, we'll 
+-- | do something tricky: we'll maintain a mutable reference to the profile of the current user (if 
+-- | there is one).
+-- |
+-- | The PureScript type system can enforce that our environment is read-only, but our use of a 
+-- | mutable reference lets us implement a global mutable state anyway. That's because we can't 
+-- | modify the reference, but we can modify the data it points to. This should be used sparingly!
+-- |
+-- | In a moment I'll describe how to make this information available (without passing it as an 
+-- | argument) to any function running in `AppM`.
+type Env = 
+  { logLevel :: LogLevel 
+  , baseUrl :: BaseURL
+  , currentUser :: Ref (Maybe Profile)
+  }
+
+-- | A flag to control the environment for logging messages.
+data LogLevel = Dev | Prod
+
+derive instance eqLogLevel :: Eq LogLevel
+derive instance ordLogLevel :: Ord LogLevel
+
 -- | Our application monad is going to combine the abilities of the `Aff` (asynchronous effects)
 -- | and `Reader` (read-only environment) monads, and then we'll add several more abilities by 
 -- | writing instances for our various capabilities.
 -- |
--- | The `Reader` monad allows us to access some data (`Env`, in our case, as defined in `Env`) using 
+-- | The `Reader` monad allows us to access some data (`Env`, in our case, as defined above) using 
 -- | the `ask` function, without having passed the data as an argument. It will help us avoid 
 -- | tediously threading commonly-used information throughout the application.
 -- |
@@ -180,12 +205,8 @@ instance navigateAppM :: Navigate AppM where
     liftEffect <<< setHash <<< print Route.routeCodec 
 
   logout = do
-    { currentUser, userBus } <- asks _.userEnv
-    liftEffect do 
-      Ref.write Nothing currentUser
-      Request.removeToken 
-    liftAff do
-      Bus.write Nothing userBus
+    liftEffect <<< Ref.write Nothing =<< asks _.currentUser
+    liftEffect Request.removeToken 
     navigate Route.Home
 
 -- | Our first resource class describes what operations we have available to manage users. Logging 
