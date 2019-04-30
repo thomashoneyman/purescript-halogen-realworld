@@ -9,20 +9,16 @@ import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.User (class ManageUser, registerUser)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref)
-import Conduit.Component.Utils (guardNoSession)
 import Conduit.Data.Email (Email)
-import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
 import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
@@ -40,41 +36,29 @@ newtype RegisterForm r f = RegisterForm (r
 derive instance newtypeRegisterForm :: Newtype (RegisterForm r f) _
 
 data Action
-  = Initialize
-  | HandleRegisterForm RegisterFields
-
-type State =
-  { currentUser :: Maybe Profile
-  }
+  = HandleRegisterForm RegisterFields
 
 type ChildSlots = 
   ( formless :: F.Slot RegisterForm (Const Void) () RegisterFields Unit )
 
 component 
-  :: forall m r
+  :: forall m
    . MonadAff m 
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => ManageUser m
   => Navigate m
   => H.Component HH.HTML (Const Void) Unit Void m
 component = H.mkComponent
-  { initialState: \_ -> { currentUser: Nothing }
+  { initialState: const unit
   , render
-  , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction 
-      , initialize = Just Initialize
-      }
+  , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
   }
   where
-  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
+  handleAction :: Action -> H.HalogenM Unit Action ChildSlots Void m Unit
   handleAction = case _ of
-    Initialize ->
-      guardNoSession 
-
     HandleRegisterForm fields ->
       registerUser fields >>= traverse_ (\_ -> navigate Home)
 
-  render :: State -> H.ComponentHTML Action ChildSlots m
+  render :: Unit -> H.ComponentHTML Action ChildSlots m
   render _ =
     container
       [ HH.h1
