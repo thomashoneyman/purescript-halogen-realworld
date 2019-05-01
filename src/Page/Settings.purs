@@ -48,12 +48,8 @@ data Action
   | HandleForm UpdateProfileFields
   | LogUserOut
 
-type State =
-  { profile :: RemoteData String ProfileWithEmail 
-  }
-
-type ChildSlots = 
-  ( formless :: F.Slot' SettingsForm UpdateProfileFields Unit )
+type State = 
+  { profile :: RemoteData String ProfileWithEmail }
 
 component 
   :: forall m
@@ -70,7 +66,6 @@ component = H.mkComponent
       }
   }
   where
-  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize -> do
       H.modify_ _ { profile = Loading }
@@ -99,7 +94,6 @@ component = H.mkComponent
     
     LogUserOut -> logout
 
-  render :: State -> H.ComponentHTML Action ChildSlots m
   render { profile } =
     container
       [ HH.h1
@@ -143,19 +137,9 @@ component = H.mkComponent
       , initialInputs: Nothing
       }
 
-    proxies :: F.SProxies SettingsForm
-    proxies = F.mkSProxies $ F.FormProxy :: _ SettingsForm
-    
     formSpec :: F.Spec' SettingsForm UpdateProfileFields m
-    formSpec = F.defaultSpec
-      { render = renderForm 
-      , handleMessage = handleMessage 
-      }
+    formSpec = F.defaultSpec { render = renderForm, handleMessage = F.raiseResult } 
       where
-      handleMessage = case _ of
-        F.Submitted outputs -> H.raise (F.unwrapOutputFields outputs)
-        _ -> pure unit
-
       renderForm { form } =
         HH.form_
           [ HH.fieldset_
@@ -168,6 +152,8 @@ component = H.mkComponent
             ]
           ]
         where
+        proxies = F.mkSProxies $ F.FormProxy :: _ SettingsForm
+
         image =
           Field.input proxies.image form
             [ HP.placeholder "URL of profile picture", HP.type_ HP.InputText ]

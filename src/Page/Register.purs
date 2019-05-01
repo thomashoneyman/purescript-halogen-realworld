@@ -38,9 +38,6 @@ derive instance newtypeRegisterForm :: Newtype (RegisterForm r f) _
 data Action
   = HandleRegisterForm RegisterFields
 
-type ChildSlots = 
-  ( formless :: F.Slot' RegisterForm RegisterFields Unit )
-
 component 
   :: forall m
    . MonadAff m 
@@ -53,12 +50,10 @@ component = H.mkComponent
   , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
   }
   where
-  handleAction :: Action -> H.HalogenM Unit Action ChildSlots Void m Unit
   handleAction = case _ of
     HandleRegisterForm fields ->
       registerUser fields >>= traverse_ (\_ -> navigate Home)
 
-  render :: Unit -> H.ComponentHTML Action ChildSlots m
   render _ =
     container
       [ HH.h1
@@ -101,17 +96,8 @@ component = H.mkComponent
       }
     
     formSpec :: F.Spec' RegisterForm RegisterFields m
-    formSpec = F.defaultSpec
-      { render = renderForm 
-      , handleMessage = handleMessage 
-      }
+    formSpec = F.defaultSpec { render = renderForm, handleMessage = F.raiseResult } 
       where
-      handleMessage = case _ of
-        F.Submitted outputs -> H.raise (F.unwrapOutputFields outputs)
-        _ -> pure unit
-
-      proxies = F.mkSProxies $ F.FormProxy :: _ RegisterForm
-
       renderForm { form } =
         HH.form_
           [ HH.fieldset_
@@ -122,6 +108,8 @@ component = H.mkComponent
           , Field.submit "Sign up"
           ]
         where
+        proxies = F.mkSProxies $ F.FormProxy :: _ RegisterForm
+
         username = 
           Field.input proxies.username form 
             [ HP.placeholder "Username", HP.type_ HP.InputText ]

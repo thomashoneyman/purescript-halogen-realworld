@@ -122,14 +122,10 @@ formInput =
 formSpec :: forall m. F.Spec LoginForm (loginError :: Boolean) FormQuery Void () LoginFields m
 formSpec = F.defaultSpec
   { render = renderLogin 
-  , handleMessage = handleMessage
+  , handleMessage = F.raiseResult
   , handleQuery = handleQuery
   }
   where
-  handleMessage = case _ of
-    F.Submitted outputs -> H.raise (F.unwrapOutputFields outputs)
-    _ -> pure unit
-  
   handleQuery :: forall a. FormQuery a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = case _ of
     SetLoginError bool a -> do

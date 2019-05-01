@@ -164,14 +164,10 @@ formSpec
 formSpec mbArticle = F.defaultSpec
   { render = render 
   , handleAction = handleAction 
-  , handleMessage = handleMessage
+  , handleMessage = F.raiseResult
   }
   where
   proxies = F.mkSProxies $ F.FormProxy :: _ EditorFields
-
-  handleMessage = case _ of
-    F.Submitted outputs -> H.raise (F.unwrapOutputFields outputs)
-    _ -> pure unit
 
   handleAction = case _ of
     HandleTagInput msg -> case msg of
@@ -182,7 +178,7 @@ formSpec mbArticle = F.defaultSpec
         eval $ F.set proxies.tagList (Set.toUnfoldable set)
         pure unit
     where
-    eval act = F.handleAction handleAction handleMessage act
+    eval act = F.handleAction handleAction F.raiseResult act
 
   render st@{ form } =
     HH.form_
