@@ -10,12 +10,7 @@ let overrides =
       , halogen-vdom =
           upstream.halogen-vdom // { version = "v6.1.0" }
       , remotedata =
-              upstream.remotedata
-          //  { repo =
-                  "https://github.com/thomashoneyman/purescript-remotedata.git"
-              , version =
-                  "update-dependencies"
-              }
+          upstream.remotedata // { version = "v4.2.0" }
       }
 
 let additions =
