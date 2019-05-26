@@ -66,7 +66,7 @@ type Input =
   { slug :: Slug
   }
 
-type ChildSlots = 
+type ChildSlots =
   ( rawHtml :: H.Slot (Const Void) Void Unit )
 
 component
@@ -82,17 +82,17 @@ component = H.mkComponent
   { initialState
   , render
   , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction 
+      { handleAction = handleAction
       , initialize = Just Initialize
       }
   }
-  where 
+  where
   initialState :: Input -> State
-  initialState { slug } = 
+  initialState { slug } =
     { article: NotAsked
     , comments: NotAsked
     , myComment: ""
-    , currentUser: Nothing 
+    , currentUser: Nothing
     , slug
     }
 
@@ -101,7 +101,7 @@ component = H.mkComponent
     Initialize -> do
       parTraverse_ H.fork [ handleAction GetArticle, handleAction GetComments ]
       mbProfile <- H.liftEffect <<< Ref.read =<< asks _.userEnv.currentUser
-      H.modify_ _ { currentUser = mbProfile } 
+      H.modify_ _ { currentUser = mbProfile }
 
     GetArticle -> do
       st <- H.modify _ { article = Loading }
@@ -112,7 +112,7 @@ component = H.mkComponent
       st <- H.modify _ { comments = Loading }
       comments <- getComments st.slug
       H.modify_ _ { comments = fromMaybe comments }
-    
+
     AddComment -> do
       st <- H.get
       when (st.myComment /= "") do
@@ -124,29 +124,29 @@ component = H.mkComponent
     UpdateCommentText str ->
       H.modify_ _ { myComment = str }
 
-    FollowAuthor -> 
+    FollowAuthor ->
       follow _author
 
-    UnfollowAuthor -> 
+    UnfollowAuthor ->
       unfollow _author
 
-    FavoriteArticle -> 
+    FavoriteArticle ->
       favorite _article
 
-    UnfavoriteArticle -> 
+    UnfavoriteArticle ->
       unfavorite _article
 
     DeleteArticle -> do
       st <- H.get
-      for_ (preview _Success st.article) (deleteArticle <<< _.slug) 
+      for_ (preview _Success st.article) (deleteArticle <<< _.slug)
       navigate Home
-    
+
     DeleteComment commentId -> do
       st <- H.get
       deleteComment st.slug commentId
       comments <- getComments st.slug
       H.modify_ _ { comments = fromMaybe comments }
-  
+
   _author :: Traversal' State Author
   _author = _article <<< prop (SProxy :: SProxy "author")
 
@@ -166,12 +166,12 @@ component = H.mkComponent
     mbArticle = preview _Success state.article
     markdown = Maybe.fromMaybe "Failed to load article!" (_.body <$> mbArticle)
 
-    banner article = 
+    banner article =
       HH.div
         [ css "banner"]
-        [ HH.div 
+        [ HH.div
             [ css "container" ]
-            [ HH.h1_ 
+            [ HH.h1_
                 [ HH.text article.title ]
             , articleMeta article
             ]
@@ -182,8 +182,8 @@ component = H.mkComponent
         [ css "container page" ]
         [ HH.div
             [ css "col-xs-12" ]
-            [ HH.slot (SProxy :: _ "rawHtml") unit RawHTML.component { markdown } absurd 
-            , HH.ul  
+            [ HH.slot (SProxy :: _ "rawHtml") unit RawHTML.component { markdown } absurd
+            , HH.ul
                 [ css "tag-list" ]
                 (renderTag <$> article.tagList)
             , HH.hr_
@@ -194,36 +194,36 @@ component = H.mkComponent
                 [ css "row" ]
                 [ HH.div
                     [ css "col-xs-12 col-md-8 offset-md-2" ]
-                    ( append 
+                    ( append
                       [ maybeElem state.currentUser \profile ->
-                          HH.form 
+                          HH.form
                             [ css "card comment-form"
-                            , HE.onSubmit \_ -> Just AddComment 
+                            , HE.onSubmit \_ -> Just AddComment
                             ]
                             [ HH.div
                                 [ css "card-block" ]
-                                [ HH.textarea 
-                                    [ css "form-control" 
-                                    , HP.placeholder "Write a comment..." 
+                                [ HH.textarea
+                                    [ css "form-control"
+                                    , HP.placeholder "Write a comment..."
                                     , HP.rows 3
                                     , HE.onValueInput $ Just <<< UpdateCommentText
                                     ]
                                 ]
                             , HH.div
                                 [ css "card-footer" ]
-                                [ HH.img 
-                                    [ css "comment-author-img" 
+                                [ HH.img
+                                    [ css "comment-author-img"
                                     , HP.src $ Avatar.toStringWithDefault profile.image
                                     ]
                                 , HH.button
-                                    [ css "btn btn-sm btn-primary" 
-                                    , HP.type_ HP.ButtonSubmit 
+                                    [ css "btn btn-sm btn-primary"
+                                    , HP.type_ HP.ButtonSubmit
                                     ]
                                     [ HH.text "Post Comment" ]
                                 ]
                             ]
                       ]
-                      case preview _Success state.comments of 
+                      case preview _Success state.comments of
                         Nothing -> [ HH.text "" ]
                         Just arr -> viewComment <$> arr
                     )
@@ -231,23 +231,23 @@ component = H.mkComponent
             ]
         ]
       where
-      renderTag str = 
-        HH.li 
-          [ css "tag-default tag-pill tag-outline" ] 
+      renderTag str =
+        HH.li
+          [ css "tag-default tag-pill tag-outline" ]
           [ HH.text str ]
-    
+
     articleMeta article =
       HH.div
         [ css "article-meta" ]
-        [ HH.a 
+        [ HH.a
             [ safeHref $ Profile username ]
-            [ HH.img 
+            [ HH.img
               [ HP.src $ Avatar.toStringWithDefault avatar ]
             ]
         , HH.div
             [ css "info" ]
-            [ HH.a 
-                [ css "author" 
+            [ HH.a
+                [ css "author"
                 , safeHref $ Profile username
                 ]
                 [ HH.text $ Username.toString username ]
@@ -259,28 +259,28 @@ component = H.mkComponent
             Just profile | profile.username == username ->
               HH.span_
                 [ HH.a
-                    [ css "btn btn-outline-secondary btn-sm" 
+                    [ css "btn btn-outline-secondary btn-sm"
                     , safeHref $ EditArticle article.slug
                     ]
-                    [ HH.i 
+                    [ HH.i
                         [ css "ion-edit" ]
                         []
                     , HH.text " Edit Article"
                     ]
                 , HH.text " "
                 , HH.button
-                    [ css "btn btn-outline-danger btn-sm" 
+                    [ css "btn btn-outline-danger btn-sm"
                     , HE.onClick \_ -> Just DeleteArticle
                     ]
-                    [ HH.i 
+                    [ HH.i
                         [ css "ion-trash-a" ]
                         [ ]
                     , HH.text " Delete Article"
                     ]
                 ]
-            _ -> 
+            _ ->
               HH.span_
-                [ followButton FollowAuthor UnfollowAuthor article.author 
+                [ followButton FollowAuthor UnfollowAuthor article.author
                 , HH.text " "
                 , favoriteButton Medium FavoriteArticle UnfavoriteArticle article
                 ]
@@ -292,26 +292,26 @@ component = H.mkComponent
     viewComment comment =
       HH.div
         [ css "card" ]
-        [ HH.div 
+        [ HH.div
             [ css "card-block" ]
-            [ HH.p 
+            [ HH.p
                 [ css "card-text" ]
                 [ HH.text comment.body ]
             ]
         , HH.div
           [ css "card-footer" ]
           [ HH.a
-              [ css "comment-author" 
+              [ css "comment-author"
               , safeHref $ Profile comment.author.username
               ]
-              [ HH.img 
-                  [ css "comment-author-img" 
+              [ HH.img
+                  [ css "comment-author-img"
                   , HP.src $ Avatar.toStringWithDefault comment.author.image
                   ]
               ]
           , HH.text " "
           , HH.a
-              [ css "comment-author" 
+              [ css "comment-author"
               , safeHref $ Profile comment.author.username
               ]
               [ HH.text $ Username.toString comment.author.username ]
@@ -322,8 +322,8 @@ component = H.mkComponent
           , whenElem (comment.author.relation == You) \_ ->
               HH.span
                 [ css "mod-options" ]
-                [ HH.i 
-                    [ css "ion-trash-a" 
+                [ HH.i
+                    [ css "ion-trash-a"
                     , HE.onClick \_ -> Just $ DeleteComment comment.id
                     ]
                     []

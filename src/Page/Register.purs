@@ -24,7 +24,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 
--- | See the Formless tutorial to learn how to build your own forms: 
+-- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype RegisterForm r f = RegisterForm (r
@@ -38,9 +38,9 @@ derive instance newtypeRegisterForm :: Newtype (RegisterForm r f) _
 data Action
   = HandleRegisterForm RegisterFields
 
-component 
+component
   :: forall m
-   . MonadAff m 
+   . MonadAff m
   => ManageUser m
   => Navigate m
   => H.Component HH.HTML (Const Void) Unit Void m
@@ -61,7 +61,7 @@ component = H.mkComponent
           [ HH.text "Sign Up" ]
       , HH.p
           [ css "text-xs-center" ]
-          [ HH.a 
+          [ HH.a
               [ safeHref Login ]
               [ HH.text "Already have an account?" ]
         ]
@@ -94,9 +94,9 @@ component = H.mkComponent
           }
       , initialInputs: Nothing
       }
-    
+
     formSpec :: F.Spec' RegisterForm RegisterFields m
-    formSpec = F.defaultSpec { render = renderForm, handleMessage = F.raiseResult } 
+    formSpec = F.defaultSpec { render = renderForm, handleMessage = F.raiseResult }
       where
       renderForm { form } =
         HH.form_
@@ -110,14 +110,14 @@ component = H.mkComponent
         where
         proxies = F.mkSProxies $ F.FormProxy :: _ RegisterForm
 
-        username = 
-          Field.input proxies.username form 
+        username =
+          Field.input proxies.username form
             [ HP.placeholder "Username", HP.type_ HP.InputText ]
 
-        email = 
-          Field.input proxies.email form 
-            [ HP.placeholder "Email", HP.type_ HP.InputEmail ] 
+        email =
+          Field.input proxies.email form
+            [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
 
-        password = 
-          Field.input proxies.password form 
+        password =
+          Field.input proxies.password form
             [ HP.placeholder "Password" , HP.type_ HP.InputPassword ]

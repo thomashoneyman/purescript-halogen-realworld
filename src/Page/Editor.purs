@@ -45,7 +45,7 @@ data Action
 type State =
   { article :: RemoteData String ArticleWithMetadata
   , slug :: Maybe Slug
-  , currentUser :: Maybe Profile 
+  , currentUser :: Maybe Profile
   }
 
 type Input =
@@ -54,9 +54,9 @@ type Input =
 type ChildSlots =
   ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
 
-component 
+component
   :: forall m r
-   . MonadAff m 
+   . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageArticle m
@@ -65,7 +65,7 @@ component = H.mkComponent
   { initialState: \{ slug } -> { article: NotAsked, currentUser: Nothing, slug }
   , render
   , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction 
+      { handleAction = handleAction
       , initialize = Just Initialize
       }
   }
@@ -87,7 +87,7 @@ component = H.mkComponent
           let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
-    
+
     HandleUserBus mbProfile ->
       H.modify_ _ { currentUser = mbProfile }
 
@@ -96,11 +96,11 @@ component = H.mkComponent
       mbArticleWithMetadata <- case st.slug of
         Nothing -> createArticle article
         Just s -> updateArticle s article
-      let 
+      let
         slug = _.slug <$> mbArticleWithMetadata
       H.modify_ _ { article = fromMaybe mbArticleWithMetadata, slug = slug }
-      for_ slug (navigate <<< ViewArticle)       
-    
+      for_ slug (navigate <<< ViewArticle)
+
   render :: State -> H.ComponentHTML Action ChildSlots m
   render { currentUser, article } =
     container
@@ -128,7 +128,7 @@ component = H.mkComponent
 -----
 -- Form
 
--- | See the Formless tutorial to learn how to build your own forms: 
+-- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype EditorFields r f = EditorFields (r
@@ -139,31 +139,31 @@ newtype EditorFields r f = EditorFields (r
   ))
 derive instance newtypeEditorFields :: Newtype (EditorFields r f) _
 
-type FormChildSlots = 
+type FormChildSlots =
   ( tagInput :: H.Slot (Const Void) TagInput.Message Unit )
 
-data FormAction 
+data FormAction
   = HandleTagInput TagInput.Message
 
 formInput :: forall m. Monad m => F.Input' EditorFields m
-formInput = 
+formInput =
   { validators: EditorFields
       { title: V.required >>> V.minLength 1
       , description: V.required >>> V.minLength 1
       , body: V.required >>> V.minLength 3
       , tagList: F.hoistFn_ (map unwrap)
       }
-  , initialInputs: Nothing 
+  , initialInputs: Nothing
   }
 
-formSpec 
+formSpec
   :: forall m
-   . MonadAff m 
-  => Maybe ArticleWithMetadata 
+   . MonadAff m
+  => Maybe ArticleWithMetadata
   -> F.Spec EditorFields () (Const Void) FormAction FormChildSlots Article m
 formSpec mbArticle = F.defaultSpec
-  { render = render 
-  , handleAction = handleAction 
+  { render = render
+  , handleAction = handleAction
   , handleMessage = F.raiseResult
   }
   where
@@ -197,14 +197,14 @@ formSpec mbArticle = F.defaultSpec
       Field.input proxies.title form
         [ HP.placeholder "Article Title", HP.type_ HP.InputText ]
 
-    description = 
+    description =
       Field.input proxies.description form
         [ HP.placeholder "What's this article about?", HP.type_ HP.InputText ]
 
-    body = 
+    body =
       HH.fieldset
         [ css "form-group" ]
-        [ HH.textarea 
+        [ HH.textarea
             [ css "form-control form-control-lg"
             , HP.placeholder "Write your article (in markdown)"
             , HP.value $ F.getInput proxies.body form
@@ -215,4 +215,4 @@ formSpec mbArticle = F.defaultSpec
               HH.div
                 [ css "error-messages" ]
                 [ HH.text $ errorToString err ]
-          ] 
+          ]

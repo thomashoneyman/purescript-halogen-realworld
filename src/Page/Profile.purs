@@ -83,12 +83,12 @@ component = H.mkComponent
   { initialState
   , render
   , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction 
+      { handleAction = handleAction
       , receive = Just <<< Receive
       , initialize = Just Initialize
       }
   }
-  where 
+  where
   initialState :: Input -> State
   initialState { username, tab } =
     { articles: NotAsked
@@ -109,7 +109,7 @@ component = H.mkComponent
       void $ H.fork $ case st.tab of
         ArticlesTab -> handleAction LoadArticles
         FavoritesTab -> handleAction LoadFavorites
-    
+
     Receive { tab, username } -> do
       st <- H.get
       when (st.tab /= tab) do
@@ -123,9 +123,9 @@ component = H.mkComponent
 
     LoadArticles -> do
       st <- H.modify _ { articles = Loading }
-      let 
+      let
         params = noArticleParams
-          { author = Just st.username 
+          { author = Just st.username
           , offset = if st.page > 1 then Just (st.page * 20) else Nothing
           }
       articles <- getArticles params
@@ -133,9 +133,9 @@ component = H.mkComponent
 
     LoadFavorites -> do
       st <- H.modify _ { favorites = Loading}
-      let 
+      let
         params = noArticleParams
-          { favorited = Just st.username 
+          { favorited = Just st.username
           , offset = if st.page > 1 then Just (st.page * 20) else Nothing
           }
       favorites <- getArticles params
@@ -145,34 +145,34 @@ component = H.mkComponent
       st <- H.modify _ { author = Loading }
       author <- getAuthor st.username
       H.modify_ _ { author = fromMaybe author }
-    
-    FollowAuthor -> 
+
+    FollowAuthor ->
       follow _author
 
-    UnfollowAuthor -> 
+    UnfollowAuthor ->
       unfollow _author
 
-    FavoriteArticle index -> 
+    FavoriteArticle index ->
       favorite (_article index)
 
-    UnfavoriteArticle index -> 
+    UnfavoriteArticle index ->
       unfavorite (_article index)
-    
+
     SelectPage index event -> do
       H.liftEffect $ preventDefault $ toEvent event
       st <- H.modify _ { page = index }
-      void $ H.fork $ handleAction case st.tab of 
+      void $ H.fork $ handleAction case st.tab of
         FavoritesTab -> LoadFavorites
-        ArticlesTab -> LoadArticles 
-  
+        ArticlesTab -> LoadArticles
+
   _author :: Traversal' State Author
   _author = prop (SProxy :: SProxy "author") <<< _Success
 
   _article :: Int -> Traversal' State ArticleWithMetadata
-  _article i = 
-    prop (SProxy :: SProxy "articles") 
-      <<< _Success 
-      <<< prop (SProxy :: SProxy "body") 
+  _article i =
+    prop (SProxy :: SProxy "articles")
+      <<< _Success
+      <<< prop (SProxy :: SProxy "body")
       <<< ix i
 
   render :: State -> H.ComponentHTML Action () m
@@ -181,28 +181,28 @@ component = H.mkComponent
       [ header state.currentUser (Profile state.username)
       , HH.div
           [ css "profile-page" ]
-          [ userInfo state 
+          [ userInfo state
           , HH.div
-              [ css "container" ] 
+              [ css "container" ]
               [ HH.div
-                  [ css "row" ] 
+                  [ css "row" ]
                   [ mainView state ]
               ]
           ]
       , footer
       ]
-  
+
   userInfo state =
     HH.div
       [ css "user-info"]
-      [ HH.div 
+      [ HH.div
           [ css "container" ]
-          [ HH.div 
+          [ HH.div
               [ css "row" ]
               [ HH.div
                   [ css "col-xs-12 col-md-10 offset-md-1" ]
-                  [ HH.img 
-                      [ css "user-img" 
+                  [ HH.img
+                      [ css "user-img"
                       , HP.src $ Avatar.toStringWithDefault (_.image =<< toMaybe state.author)
                       ]
                   , HH.h4_
@@ -228,33 +228,33 @@ component = H.mkComponent
               ]
           ]
       , whenElem (state.tab == ArticlesTab) \_ ->
-          HH.div_ 
+          HH.div_
             [ articleList FavoriteArticle UnfavoriteArticle state.articles
-            , maybeElem (toMaybe state.articles) \paginated ->  
-                renderPagination SelectPage state.page paginated            
-            ] 
+            , maybeElem (toMaybe state.articles) \paginated ->
+                renderPagination SelectPage state.page paginated
+            ]
       , whenElem (state.tab == FavoritesTab) \_ ->
-          HH.div_ 
+          HH.div_
             [ articleList FavoriteArticle UnfavoriteArticle state.favorites
-            , maybeElem (toMaybe state.favorites) \paginated ->  
-                renderPagination SelectPage state.page paginated            
+            , maybeElem (toMaybe state.favorites) \paginated ->
+                renderPagination SelectPage state.page paginated
             ]
       ]
-  
+
   mkTab :: forall props. State -> Tab -> HH.HTML props Action
   mkTab st thisTab =
     HH.li
       [ css "nav-item" ]
       [ case thisTab of
-          ArticlesTab -> 
+          ArticlesTab ->
             HH.a
-              [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
+              [ css $ "nav-link" <> guard (st.tab == thisTab) " active"
               , safeHref $ Profile st.username
               ]
               [ HH.text "My Articles" ]
-          FavoritesTab -> 
+          FavoritesTab ->
             HH.a
-              [ css $ "nav-link" <> guard (st.tab == thisTab) " active" 
+              [ css $ "nav-link" <> guard (st.tab == thisTab) " active"
               , safeHref $ Favorites st.username
               ]
               [ HH.text "My Favorites" ]
