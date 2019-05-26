@@ -74,7 +74,7 @@ component = H.mkComponent
               [ safeHref Register ]
               [ HH.text "Need an account?" ]
         ]
-      , HH.slot F._formless unit (F.component formSpec) formInput (Just <<< HandleLoginForm)
+      , HH.slot F._formless unit formComponent unit (Just <<< HandleLoginForm)
       ]
     where
     container html =
@@ -109,23 +109,25 @@ data FormQuery a
 
 derive instance functorFormQuery :: Functor (FormQuery)
 
-formInput :: forall m. Monad m => F.Input LoginForm (loginError :: Boolean) m
-formInput =
-  { validators: LoginForm
-      { email: V.required >>> V.minLength 3 >>> V.emailFormat
-      , password: V.required >>> V.minLength 2 >>> V.maxLength 20
-      }
-  , initialInputs: Nothing
-  , loginError: false
-  }
-
-formSpec :: forall m. F.Spec LoginForm (loginError :: Boolean) FormQuery Void () LoginFields m
-formSpec = F.defaultSpec
+formComponent :: forall m. MonadAff m => F.Component LoginForm FormQuery () Unit LoginFields m
+formComponent = F.component formInput $ F.defaultSpec
   { render = renderLogin
-  , handleMessage = F.raiseResult
+  , handleEvent = handleEvent
   , handleQuery = handleQuery
   }
   where
+  formInput :: Unit -> F.Input LoginForm (loginError :: Boolean) m
+  formInput _ =
+    { validators: LoginForm
+        { email: V.required >>> V.minLength 3 >>> V.emailFormat
+        , password: V.required >>> V.minLength 2 >>> V.maxLength 20
+        }
+    , initialInputs: Nothing
+    , loginError: false
+    }
+
+  handleEvent = F.raiseResult
+
   handleQuery :: forall a. FormQuery a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = case _ of
     SetLoginError bool a -> do
