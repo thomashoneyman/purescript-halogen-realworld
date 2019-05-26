@@ -99,7 +99,7 @@ component = H.mkComponent
       [ HH.h1
           [ css "text-xs-center"]
           [ HH.text "Your Settings" ]
-      , HH.slot F._formless unit (F.component formSpec) formInput (Just <<< HandleForm)
+      , HH.slot F._formless unit formComponent unit (Just <<< HandleForm)
       , HH.hr_
       , HH.button
           [ css "btn btn-outline-danger"
@@ -125,21 +125,24 @@ component = H.mkComponent
             ]
         ]
 
-    formInput :: F.Input' SettingsForm m
-    formInput =
-      { validators: SettingsForm
-          { image: V.toOptional V.avatarFormat
-          , username: V.required >>> V.minLength 3 >>> V.maxLength 20 >>> V.usernameFormat
-          , bio: F.hoistFn_ pure
-          , email: V.required >>> V.minLength 3 >>> V.maxLength 50 >>> V.emailFormat
-          , password: V.toOptional $ V.minLength 3 >>> V.maxLength 20
-          }
-      , initialInputs: Nothing
+    formComponent :: F.Component SettingsForm (Const Void) () Unit UpdateProfileFields m
+    formComponent = F.component formInput $ F.defaultSpec
+      { render = renderForm
+      , handleEvent = F.raiseResult
       }
-
-    formSpec :: F.Spec' SettingsForm UpdateProfileFields m
-    formSpec = F.defaultSpec { render = renderForm, handleMessage = F.raiseResult }
       where
+      formInput :: Unit -> F.Input' SettingsForm m
+      formInput _ =
+        { validators: SettingsForm
+            { image: V.toOptional V.avatarFormat
+            , username: V.required >>> V.minLength 3 >>> V.maxLength 20 >>> V.usernameFormat
+            , bio: F.hoistFn_ pure
+            , email: V.required >>> V.minLength 3 >>> V.maxLength 50 >>> V.emailFormat
+            , password: V.toOptional $ V.minLength 3 >>> V.maxLength 20
+            }
+        , initialInputs: Nothing
+        }
+
       renderForm { form } =
         HH.form_
           [ HH.fieldset_
