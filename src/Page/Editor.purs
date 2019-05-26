@@ -103,27 +103,21 @@ component = H.mkComponent
 
   render :: State -> H.ComponentHTML Action ChildSlots m
   render { currentUser, article } =
-    container
-      [ HH.slot F._formless unit formComponent formInput (Just <<< HandleEditor) ]
-    where
-    formComponent = F.component $ formSpec $ toMaybe article
-
-    container html =
-      HH.div_
-        [ header currentUser Editor
-        , HH.div
-          [ css "editor-page" ]
-          [ HH.div
-              [ css "container page" ]
+    HH.div_
+      [ header currentUser Editor
+      , HH.div
+        [ css "editor-page" ]
+        [ HH.div
+            [ css "container page" ]
+            [ HH.div
+              [ css "row" ]
               [ HH.div
-                [ css "row" ]
-                [ HH.div
-                  [ css "col-md-10 offset-md-1 col-xs-12" ]
-                  html
-                ]
+                [ css "col-md-10 offset-md-1 col-xs-12" ]
+                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit (Just <<< HandleEditor) ]
               ]
-          ]
+            ]
         ]
+      ]
 
 -----
 -- Form
@@ -145,29 +139,30 @@ type FormChildSlots =
 data FormAction
   = HandleTagInput TagInput.Message
 
-formInput :: forall m. Monad m => F.Input' EditorFields m
-formInput =
-  { validators: EditorFields
-      { title: V.required >>> V.minLength 1
-      , description: V.required >>> V.minLength 1
-      , body: V.required >>> V.minLength 3
-      , tagList: F.hoistFn_ (map unwrap)
-      }
-  , initialInputs: Nothing
-  }
-
-formSpec
-  :: forall m
-   . MonadAff m
+formComponent
+  :: forall m. MonadAff m
   => Maybe ArticleWithMetadata
-  -> F.Spec EditorFields () (Const Void) FormAction FormChildSlots Article m
-formSpec mbArticle = F.defaultSpec
+  -> F.Component EditorFields (Const Void) FormChildSlots Unit Article m
+formComponent mbArticle = F.component formInput $ F.defaultSpec
   { render = render
   , handleAction = handleAction
-  , handleMessage = F.raiseResult
+  , handleEvent = handleEvent
   }
   where
+  formInput :: Unit -> F.Input' EditorFields m
+  formInput _ =
+    { validators: EditorFields
+        { title: V.required >>> V.minLength 1
+        , description: V.required >>> V.minLength 1
+        , body: V.required >>> V.minLength 3
+        , tagList: F.hoistFn_ (map unwrap)
+        }
+    , initialInputs: Nothing
+    }
+
   proxies = F.mkSProxies $ F.FormProxy :: _ EditorFields
+
+  handleEvent = F.raiseResult
 
   handleAction = case _ of
     HandleTagInput msg -> case msg of
@@ -178,7 +173,7 @@ formSpec mbArticle = F.defaultSpec
         eval $ F.set proxies.tagList (Set.toUnfoldable set)
         pure unit
     where
-    eval act = F.handleAction handleAction F.raiseResult act
+    eval act = F.handleAction handleAction handleEvent act
 
   render st@{ form } =
     HH.form_
