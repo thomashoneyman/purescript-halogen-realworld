@@ -65,7 +65,7 @@ component = H.mkComponent
               [ safeHref Login ]
               [ HH.text "Already have an account?" ]
         ]
-      , HH.slot F._formless unit (F.component formSpec) formInput (Just <<< HandleRegisterForm)
+      , HH.slot F._formless unit formComponent unit (Just <<< HandleRegisterForm)
       ]
     where
     container html =
@@ -85,19 +85,22 @@ component = H.mkComponent
             ]
         ]
 
-    formInput :: F.Input' RegisterForm m
-    formInput =
-      { validators: RegisterForm
-          { username: V.required >>> V.usernameFormat
-          , email: V.required >>> V.minLength 3 >>> V.emailFormat
-          , password: V.required >>> V.minLength 8 >>> V.maxLength 20
-          }
-      , initialInputs: Nothing
+    formComponent :: F.Component RegisterForm (Const Void) () Unit RegisterFields m
+    formComponent = F.component formInput $ F.defaultSpec
+      { render = renderForm
+      , handleEvent = F.raiseResult
       }
-
-    formSpec :: F.Spec' RegisterForm RegisterFields m
-    formSpec = F.defaultSpec { render = renderForm, handleMessage = F.raiseResult }
       where
+      formInput :: Unit -> F.Input' RegisterForm m
+      formInput _ =
+        { validators: RegisterForm
+            { username: V.required >>> V.usernameFormat
+            , email: V.required >>> V.minLength 3 >>> V.emailFormat
+            , password: V.required >>> V.minLength 8 >>> V.maxLength 20
+            }
+        , initialInputs: Nothing
+        }
+
       renderForm { form } =
         HH.form_
           [ HH.fieldset_
