@@ -22,8 +22,8 @@ let additions =
           , "generics-rep"
           , "profunctor-lenses"
           ]
-          "https://github.com/JordanMartinez/purescript-halogen-formless.git"
-          "exposeInput"
+          "https://github.com/thomashoneyman/purescript-halogen-formless.git"
+          "halogen-5"
       , slug =
           mkPackage
           [ "prelude"
