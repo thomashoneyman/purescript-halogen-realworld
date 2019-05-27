@@ -30,7 +30,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
 
--- | See the Formless tutorial to learn how to build your own forms: 
+-- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype SettingsForm r f = SettingsForm (r
@@ -48,12 +48,12 @@ data Action
   | HandleForm UpdateProfileFields
   | LogUserOut
 
-type State = 
+type State =
   { profile :: RemoteData String ProfileWithEmail }
 
-component 
+component
   :: forall m
-   . MonadAff m 
+   . MonadAff m
   => Navigate m
   => ManageUser m
   => H.Component HH.HTML (Const Void) Unit Void m
@@ -61,7 +61,7 @@ component = H.mkComponent
   { initialState: \_ -> { profile: NotAsked }
   , render
   , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction 
+      { handleAction = handleAction
       , initialize = Just Initialize
       }
   }
@@ -69,7 +69,7 @@ component = H.mkComponent
   handleAction = case _ of
     Initialize -> do
       H.modify_ _ { profile = Loading }
-      mbProfileWithEmail <- getCurrentUser 
+      mbProfileWithEmail <- getCurrentUser
       H.modify_ _ { profile = fromMaybe mbProfileWithEmail }
 
       -- if the profile couldn't be located then something horrible has gone wrong
@@ -77,7 +77,7 @@ component = H.mkComponent
       case mbProfileWithEmail of
         Nothing -> logout
         Just profile -> do
-          let 
+          let
             newInputs = F.wrapInputFields
               { image: Maybe.fromMaybe "" $ Avatar.toString <$> profile.image
               , username: Username.toString profile.username
@@ -85,13 +85,13 @@ component = H.mkComponent
               , email: unwrap profile.email
               , password: ""
               }
-          void $ H.query F._formless unit $ F.asQuery $ F.loadForm newInputs 
+          void $ H.query F._formless unit $ F.asQuery $ F.loadForm newInputs
 
     HandleForm fields -> do
       updateUser fields
       mbProfileWithEmail <- getCurrentUser
       H.modify_ _ { profile = fromMaybe mbProfileWithEmail }
-    
+
     LogUserOut -> logout
 
   render { profile } =
@@ -99,11 +99,11 @@ component = H.mkComponent
       [ HH.h1
           [ css "text-xs-center"]
           [ HH.text "Your Settings" ]
-      , HH.slot F._formless unit (F.component formSpec) formInput (Just <<< HandleForm) 
-      , HH.hr_  
+      , HH.slot F._formless unit formComponent unit (Just <<< HandleForm)
+      , HH.hr_
       , HH.button
-          [ css "btn btn-outline-danger" 
-          , HE.onClick \_ -> Just LogUserOut 
+          [ css "btn btn-outline-danger"
+          , HE.onClick \_ -> Just LogUserOut
           ]
           [ HH.text "Log out" ]
       ]
@@ -124,22 +124,25 @@ component = H.mkComponent
                 ]
             ]
         ]
-    
-    formInput :: F.Input' SettingsForm m
-    formInput =
-      { validators: SettingsForm
-          { image: V.toOptional V.avatarFormat
-          , username: V.required >>> V.minLength 3 >>> V.maxLength 20 >>> V.usernameFormat
-          , bio: F.hoistFn_ pure
-          , email: V.required >>> V.minLength 3 >>> V.maxLength 50 >>> V.emailFormat
-          , password: V.toOptional $ V.minLength 3 >>> V.maxLength 20
-          }
-      , initialInputs: Nothing
-      }
 
-    formSpec :: F.Spec' SettingsForm UpdateProfileFields m
-    formSpec = F.defaultSpec { render = renderForm, handleMessage = F.raiseResult } 
+    formComponent :: F.Component SettingsForm (Const Void) () Unit UpdateProfileFields m
+    formComponent = F.component formInput $ F.defaultSpec
+      { render = renderForm
+      , handleEvent = F.raiseResult
+      }
       where
+      formInput :: Unit -> F.Input' SettingsForm m
+      formInput _ =
+        { validators: SettingsForm
+            { image: V.toOptional V.avatarFormat
+            , username: V.required >>> V.minLength 3 >>> V.maxLength 20 >>> V.usernameFormat
+            , bio: F.hoistFn_ pure
+            , email: V.required >>> V.minLength 3 >>> V.maxLength 50 >>> V.emailFormat
+            , password: V.toOptional $ V.minLength 3 >>> V.maxLength 20
+            }
+        , initialInputs: Nothing
+        }
+
       renderForm { form } =
         HH.form_
           [ HH.fieldset_
@@ -158,27 +161,26 @@ component = H.mkComponent
           Field.input proxies.image form
             [ HP.placeholder "URL of profile picture", HP.type_ HP.InputText ]
 
-        username = 
+        username =
           Field.input proxies.username form
             [ HP.placeholder "Your name", HP.type_ HP.InputText ]
 
-        bio = 
+        bio =
           HH.fieldset
             [ css "form-group" ]
-            [ HH.textarea 
+            [ HH.textarea
                 [ css "form-control form-control-lg"
                 , HP.placeholder "Short bio about you"
                 , HP.rows 8
                 , HP.value $ F.getInput proxies.bio form
                 , HE.onValueInput $ Just <<< F.setValidate proxies.bio
                 ]
-            ] 
+            ]
 
-        email = 
+        email =
           Field.input proxies.email form
             [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
 
-        password = 
+        password =
           Field.input proxies.password form
             [ HP.placeholder "Password", HP.type_ HP.InputPassword ]
-        

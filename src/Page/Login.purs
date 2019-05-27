@@ -28,18 +28,18 @@ data Action
 
 -- Should this component redirect to home after login or not? If the login page is loaded
 -- at the login route, then yes; if not, then it is guarding another route and should not.
-type State = 
+type State =
   { redirect :: Boolean }
 
 type Input =
   { redirect :: Boolean }
 
-type ChildSlots = 
+type ChildSlots =
   ( formless :: F.Slot LoginForm FormQuery () LoginFields Unit )
 
-component 
+component
   :: forall m
-   . MonadAff m 
+   . MonadAff m
   => Navigate m
   => ManageUser m
   => H.Component HH.HTML (Const Void) Input Void m
@@ -52,10 +52,10 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     HandleLoginForm fields -> do
-      -- loginUser also handles broadcasting the user changes to subscribed components 
+      -- loginUser also handles broadcasting the user changes to subscribed components
       -- so they receive the up-to-date value (see AppM and the `authenticate` function.)
       loginUser fields >>= case _ of
-        Nothing -> 
+        Nothing ->
           void $ H.query F._formless unit $ F.injQuery $ SetLoginError true unit
         Just profile -> do
           void $ H.query F._formless unit $ F.injQuery $ SetLoginError false unit
@@ -70,11 +70,11 @@ component = H.mkComponent
           [ HH.text "Sign In" ]
       , HH.p
           [ css "text-xs-center" ]
-          [ HH.a 
+          [ HH.a
               [ safeHref Register ]
               [ HH.text "Need an account?" ]
         ]
-      , HH.slot F._formless unit (F.component formSpec) formInput (Just <<< HandleLoginForm) 
+      , HH.slot F._formless unit formComponent unit (Just <<< HandleLoginForm)
       ]
     where
     container html =
@@ -92,7 +92,7 @@ component = H.mkComponent
             ]
         ]
 
--- | See the Formless tutorial to learn how to build your own forms: 
+-- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype LoginForm r f = LoginForm (r
@@ -102,30 +102,32 @@ newtype LoginForm r f = LoginForm (r
 
 derive instance newtypeLoginForm :: Newtype (LoginForm r f) _
 
--- We can extend our form to receive more queries than it supports by default. Here, we'll 
+-- We can extend our form to receive more queries than it supports by default. Here, we'll
 -- set a login error from the parent.
 data FormQuery a
   = SetLoginError Boolean a
 
 derive instance functorFormQuery :: Functor (FormQuery)
 
-formInput :: forall m. Monad m => F.Input LoginForm (loginError :: Boolean) m
-formInput =
-  { validators: LoginForm
-      { email: V.required >>> V.minLength 3 >>> V.emailFormat 
-      , password: V.required >>> V.minLength 2 >>> V.maxLength 20
-      }
-  , initialInputs: Nothing
-  , loginError: false
-  }
-
-formSpec :: forall m. F.Spec LoginForm (loginError :: Boolean) FormQuery Void () LoginFields m
-formSpec = F.defaultSpec
-  { render = renderLogin 
-  , handleMessage = F.raiseResult
+formComponent :: forall m. MonadAff m => F.Component LoginForm FormQuery () Unit LoginFields m
+formComponent = F.component formInput $ F.defaultSpec
+  { render = renderLogin
+  , handleEvent = handleEvent
   , handleQuery = handleQuery
   }
   where
+  formInput :: Unit -> F.Input LoginForm (loginError :: Boolean) m
+  formInput _ =
+    { validators: LoginForm
+        { email: V.required >>> V.minLength 3 >>> V.emailFormat
+        , password: V.required >>> V.minLength 2 >>> V.maxLength 20
+        }
+    , initialInputs: Nothing
+    , loginError: false
+    }
+
+  handleEvent = F.raiseResult
+
   handleQuery :: forall a. FormQuery a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = case _ of
     SetLoginError bool a -> do
@@ -136,18 +138,18 @@ formSpec = F.defaultSpec
 
   renderLogin { form, loginError } =
     HH.form_
-      [ whenElem loginError \_ -> 
-          HH.div       
+      [ whenElem loginError \_ ->
+          HH.div
             [ css "error-messages" ]
-            [ HH.text "Email or password is invalid" ] 
+            [ HH.text "Email or password is invalid" ]
       , HH.fieldset_
-          [ Field.input proxies.email form 
+          [ Field.input proxies.email form
               [ HP.placeholder "Email"
-              , HP.type_ HP.InputEmail 
+              , HP.type_ HP.InputEmail
               ]
           , Field.input proxies.password form
               [ HP.placeholder "Password"
-              , HP.type_ HP.InputPassword 
+              , HP.type_ HP.InputPassword
               ]
           , submit "Log in"
           ]
