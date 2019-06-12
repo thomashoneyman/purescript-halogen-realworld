@@ -61,7 +61,7 @@ import Type.Equality (class TypeEquals, from)
 -- |
 -- | This module implements a monad that can run all the abstract capabilities we've defined. This 
 -- | is our production monad. We'll implement the monad first, and then we'll provide concrete 
--- | instances for each of our abstract cayabilities.
+-- | instances for each of our abstract capabilities.
 
 -- | Let's start with some types necessary for the rest of the module.
 -- |
@@ -247,7 +247,7 @@ instance manageTagAppM :: ManageTag AppM where
       >>= decode (decodeAt "tags")
 
 -- | Our operations for managing comments
-instance manageCommentAppm :: ManageComment AppM where
+instance manageCommentAppM :: ManageComment AppM where
   getComments slug =
     mkRequest { endpoint: Comments slug, method: Get }
       >>= decodeWithUser decodeComments
