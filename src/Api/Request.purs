@@ -91,7 +91,7 @@ data RequestMethod
   | Delete
 
 -- | The base url and token are necessary to make a request, but are low-level implementation
--- | details.When actually using the API, we generally worry about which endpoint we'd like to 
+-- | details. When actually using the API, we generally worry about which endpoint we'd like to 
 -- | access and what request method we'd like to use.
 -- |
 -- | The `RequestOptions` type below relies on the `Endpoint` data type (which captures the possible
