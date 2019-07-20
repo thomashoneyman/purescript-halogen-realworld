@@ -26,12 +26,23 @@
     "purescript-precise-datetime": "^5.1.1",
     "purescript-typelevel-prelude": "^3.0.0",
     "purescript-argonaut-codecs": "^5.1.0",
-    "purescript-argonaut-core": "^4.0.1"
+    "purescript-argonaut-core": "^4.0.1",
+    "purescript-tolerant-argonaut": "^1.0.0",
+    "purescript-struct": "^1.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
     "purescript-quickcheck": "^5.0.0",
     "purescript-test-unit": "^14.0.0",
     "purescript-debug": "^4.0.0"
+  },
+  "resolutions": {
+    "purescript-variant": "^6.0.0",
+    "purescript-typelevel-prelude": "^4.0.0",
+    "purescript-argonaut-codecs": "^6.0.0",
+    "purescript-argonaut-core": "^5.0.0",
+    "purescript-profunctor-lenses": "^6.2.0",
+    "purescript-record": "^2.0.0",
+    "purescript-foreign-object": "^2.0.0"
   }
 }

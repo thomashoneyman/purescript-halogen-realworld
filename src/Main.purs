@@ -9,10 +9,10 @@ import Prelude
 import Affjax (printResponseFormatError, request)
 import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
-import Conduit.Api.Utils (decodeAt)
 import Conduit.AppM (Env, LogLevel(..), runAppM)
 import Conduit.Component.Router as Router
 import Conduit.Data.Route (Route, routeCodec)
+import Conduit.Data.Utils (decodeAt)
 import Data.Bifunctor (lmap)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))

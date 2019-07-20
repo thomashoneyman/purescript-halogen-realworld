@@ -6,10 +6,11 @@ module Conduit.Data.Comment where
 import Prelude
 
 import Conduit.Data.PreciseDateTime (PreciseDateTime)
-import Conduit.Data.Profile (Author, decodeAuthor)
+import Conduit.Data.Profile (Author, decodeJsonWithAuthor)
 import Conduit.Data.Username (Username)
+import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
+import Data.Argonaut.Decode (class DecodeJson)
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (Either)
 import Data.Generic.Rep (class Generic)
@@ -47,17 +48,7 @@ type Comment =
 -- | manually. In this case, though, there is a field that can't be handled generically:
 -- | an author, which requires a username to be decoded.
 -- |
--- | So we'll go ahead and write these small instances manually. First, we'll write a decoder for
--- | an array of comments.
+-- | So we'll go ahead and write this decoder manually.
 decodeComments :: Maybe Username -> Json -> Either String (Array Comment)
-decodeComments u = traverse (decodeComment u) <=< (_ .:  "comments") <=< decodeJson
-
--- | This decoder operates on a single comment.
-decodeComment :: Maybe Username -> Json -> Either String Comment
-decodeComment u json = do
-  obj <- decodeJson json
-  author <- decodeAuthor u =<< obj .: "author"
-  body <- obj .: "body"
-  id <- obj .: "id"
-  createdAt <- obj .: "createdAt"
-  pure { id, createdAt, body, author }
+decodeComments u =
+  traverse (decodeJsonWithAuthor u) <=< decodeAt "comments"
