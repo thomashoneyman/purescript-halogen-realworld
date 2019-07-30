@@ -5,7 +5,7 @@
 
 [PureScript](https://github.com/purescript) is a delightful purely-functional language that offers powerful, pragmatic tools to manage complexity and help you design, build, and refactor reliable apps of any size. This repository demonstrates the principles I apply at work every day in more than 2,000 lines of thoroughly commented code and has an accompanying long-form [guide to building real-world Halogen applications](https://thomashoneyman.com/guides/real-world-halogen).
 
-> Using Halogen 4? Browse the repository at the [tag for Halogen 4]. Upgrading from Halogen 4 to Halogen 5? See the [PR which migrated this repository to Halogen 5](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/26).
+> Using Halogen 4? Browse the repository at the [tag for Halogen 4](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v1.0.0). Upgrading from Halogen 4 to Halogen 5? See the [PR which migrated this repository to Halogen 5](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/26).
 
 I’m a senior software engineer at [Awake Security](https://github.com/awakesecurity) (and previously at [CitizenNet](https://citizennet.com)). Both companies have large production PureScript applications that have remained reliable, understandable, and maintainable as they scale. I’m convinced PureScript is the best language available today for most single-page applications.
 
