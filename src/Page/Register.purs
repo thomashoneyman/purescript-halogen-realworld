@@ -111,7 +111,7 @@ component = H.mkComponent
           , Field.submit "Sign up"
           ]
         where
-        proxies = F.mkSProxies $ F.FormProxy :: _ RegisterForm
+        proxies = F.mkSProxies (F.FormProxy :: _ RegisterForm)
 
         username =
           Field.input proxies.username form

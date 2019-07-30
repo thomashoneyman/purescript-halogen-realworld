@@ -1,5 +1,9 @@
-{ name = "purescript-halogen-realworld"
-, packages = ./packages.dhall
+{ sources =
+    [ "src/**/*.purs", "test/**/*.purs" ]
+, name =
+    "purescript-halogen-realworld"
+, packages =
+    ./packages.dhall
 , dependencies =
     [ "prelude"
     , "console"

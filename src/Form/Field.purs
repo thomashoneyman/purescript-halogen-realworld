@@ -36,7 +36,7 @@ submit buttonText =
     [ HH.text buttonText ]
 
 -- | This helper function creates an input field hooked up with Formless, including styles,
--- | events, error handling, and more. The unction ensures at compile-time that the field we 
+-- | events, error handling, and more. The function ensures at compile-time that the field we 
 -- | want actually exists in the form, that the input, error, and output types of the field are 
 -- | compatible, that the only properties you attempt to set on the HTML are actual valid <input> 
 -- | properties, and more.

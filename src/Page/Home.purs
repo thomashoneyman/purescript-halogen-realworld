@@ -242,7 +242,7 @@ component = H.mkComponent
         [ HH.i
           [ css "ion-pound" ]
           []
-        , HH.text $ "\160" <> tag
+        , HH.text $ "\x160" <> tag
         ]
 
   renderTags :: forall props. RemoteData String (Array String) -> HH.HTML props Action
