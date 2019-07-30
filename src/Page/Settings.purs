@@ -155,7 +155,7 @@ component = H.mkComponent
             ]
           ]
         where
-        proxies = F.mkSProxies $ F.FormProxy :: _ SettingsForm
+        proxies = F.mkSProxies (F.FormProxy :: _ SettingsForm)
 
         image =
           Field.input proxies.image form

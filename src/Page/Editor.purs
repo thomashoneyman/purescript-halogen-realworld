@@ -160,7 +160,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     , initialInputs: Nothing
     }
 
-  proxies = F.mkSProxies $ F.FormProxy :: _ EditorFields
+  proxies = F.mkSProxies (F.FormProxy :: _ EditorFields)
 
   handleEvent = F.raiseResult
 

@@ -134,7 +134,7 @@ formComponent = F.component formInput $ F.defaultSpec
       H.modify_ _ { loginError = bool }
       pure (Just a)
 
-  proxies = F.mkSProxies $ F.FormProxy :: _ LoginForm
+  proxies = F.mkSProxies (F.FormProxy :: _ LoginForm)
 
   renderLogin { form, loginError } =
     HH.form_
