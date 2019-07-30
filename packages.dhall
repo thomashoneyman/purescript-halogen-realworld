@@ -10,8 +10,6 @@ let overrides =
           upstream.halogen // { version = "v5.0.0-rc.5" }
       , halogen-vdom =
           upstream.halogen-vdom // { version = "v6.1.0" }
-      , remotedata =
-          upstream.remotedata // { version = "v4.2.0" }
       }
 
 let additions =
