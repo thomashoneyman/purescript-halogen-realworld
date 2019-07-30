@@ -12,6 +12,9 @@ node_modules
 .psc-ide-port
 .cache
 
+# IDE files
+*.code-workspace
+
 # Generated
 output
 dce-output
