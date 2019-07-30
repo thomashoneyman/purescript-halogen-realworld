@@ -25,7 +25,7 @@ class Monad m <= Now m where
   nowDateTime :: m DateTime
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance nowHalogenM :: Now m => Now (HalogenM s f g p o m) where
+instance nowHalogenM :: Now m => Now (HalogenM st act slots msg m) where
   now = lift now
   nowDate = lift nowDate
   nowTime = lift nowTime
