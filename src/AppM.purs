@@ -60,10 +60,11 @@ import Type.Equality (class TypeEquals, from)
 -- | using another. For example, our production code might use a REST API, but our test code might
 -- | just provide mock JSON responses.
 -- |
+
 -- | This module implements a monad that can run all the abstract capabilities we've defined. This
 -- | is our production monad. We'll implement the monad first, and then we'll provide concrete
 -- | instances for each of our abstract capabilities.
-
+-- |
 -- | Our application monad is going to combine the abilities of the `Aff` (asynchronous effects)
 -- | and `Reader` (read-only environment) monads, and then we'll add several more abilities by
 -- | writing instances for our various capabilities.
