@@ -1,0 +1,52 @@
+version: 2
+
+defaults: &defaults
+  working_directory: ~/realworld
+  docker:
+    - image: circleci/node:10.15-browsers
+  environment:
+    RTS_ARGS: +RTS -N2 -RTS
+
+jobs:
+  test:
+    <<: *defaults
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v0.1-yarn-cache-{{ .Branch }}-{{ checksum "package.json" }}
+            - v0.1-yarn-cache-{{ .Branch }}
+
+      - restore_cache:
+          keys:
+            - v0.1-spago-cache-{{ .Branch }}-{{ checksum "packages.dhall" }}
+            - v0.1-spago-cache-{{ .Branch }}
+
+      - run:
+          name: Install PureScript and NPM dependencies
+          command: yarn # postinstall runs Spago
+
+      - run:
+          name: Verify the project builds successfully
+          command: yarn run build
+
+      - run:
+          name: Verify the project bundles successfully
+          command: yarn run bundle
+
+      - save_cache:
+          key: v0.1-yarn-cache-{{ .Branch }}-{{ checksum "package.json" }}
+          paths:
+            - ~/realworld/node_modules
+
+      - save_cache:
+          key: v0.1-spago-cache-{{ .Branch }}-{{ checksum "packages.dhall" }}
+          paths:
+            - ~/realworld/.spago
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - test
