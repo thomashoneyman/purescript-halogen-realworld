@@ -11,17 +11,28 @@ jobs:
   test:
     <<: *defaults
     steps:
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+
       - checkout
+
+      - save_cache:
+          key: source-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ".git"
 
       - restore_cache:
           keys:
             - v0.1-yarn-cache-{{ .Branch }}-{{ checksum "package.json" }}
             - v0.1-yarn-cache-{{ .Branch }}
+            - v0.1-yarn-cache-
 
       - restore_cache:
           keys:
             - v0.1-spago-cache-{{ .Branch }}-{{ checksum "packages.dhall" }}
             - v0.1-spago-cache-{{ .Branch }}
+            - v0.1-spago-cache-
 
       - run:
           name: Install PureScript and NPM dependencies
@@ -30,10 +41,6 @@ jobs:
       - run:
           name: Verify the project builds successfully
           command: yarn run build
-
-      - run:
-          name: Verify the project bundles successfully
-          command: yarn run bundle
 
       - save_cache:
           key: v0.1-yarn-cache-{{ .Branch }}-{{ checksum "package.json" }}
