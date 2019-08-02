@@ -7,7 +7,7 @@
     "clean": "rm -rf node_modules output .spago dist/* *.lock",
     "build": "spago build",
     "watch": "spago build --watch",
-    "bundle": "spago bundle --main Main --to dist/app.js && parcel build assets/index.html",
+    "bundle": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.html",
     "serve": "yarn bundle && http-server dist",
     "test": "spago test"
   },
@@ -29,7 +29,7 @@
   "devDependencies": {
     "parcel-bundler": "^1.12.3",
     "purescript": "0.13.2",
-    "spago": "^0.8.5"
+    "spago": "0.8.5"
   },
   "dependencies": {
     "decimal.js": "^10.1.1",

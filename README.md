@@ -1,6 +1,7 @@
 # Real World Halogen
 
 [![RealWorld Frontend](https://camo.githubusercontent.com/b507ac8f2ec6427bbef518193567c4ec6060c780/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f7265616c776f726c642d66726f6e74656e642d2532333738333537382e737667)](http://realworld.io)
+[![CircleCI](https://circleci.com/gh/thomashoneyman/purescript-halogen-realworld/tree/master.svg?style=shield)](https://circleci.com/gh/thomashoneyman/purescript-halogen-realworld/tree/master)
 [![Maintainer: thomashoneyman](https://img.shields.io/badge/maintainer-thomashoneyman-lightgrey.svg)](http://github.com/thomashoneyman)
 
 [PureScript](https://github.com/purescript) is a delightful purely-functional language that offers powerful, pragmatic tools to manage complexity and help you design, build, and refactor reliable apps of any size. This repository demonstrates the principles I apply at work every day in more than 2,000 lines of thoroughly commented code and has an accompanying long-form [guide to building real-world Halogen applications](https://thomashoneyman.com/guides/real-world-halogen).
