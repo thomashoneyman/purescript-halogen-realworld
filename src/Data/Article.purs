@@ -89,7 +89,7 @@ type ArticleWithMetadata = { | ArticleRep + ArticleMetadataRep () }
 -- | decodeArticles u =
 -- |    decodeJsonWith { articles: decodeArticles' <=< decodeJson }
 -- |  where
--- |  decodeArticles' = sequence <<< filter isRight <<< map (decodeArticle' u)
+-- |  decodeArticles' = sequence <<< filter isRight <<< map (decodeJsonWithAuthor u)
 -- | ```
 -- |
 -- | 2. manually decoding every field (shown below)
@@ -109,7 +109,7 @@ type ArticleWithMetadata = { | ArticleRep + ArticleMetadataRep () }
 -- |       , articlesCount: SProxy :: SProxy "total"
 -- |       }
 -- |   decode = decodeJsonWith { articles: decodeArticles' <=< decodeJson }
--- |   decodeArticles' = sequence <<< filter isRight <<< map (decodeArticle' u)
+-- |   decodeArticles' = sequence <<< filter isRight <<< map (decodeJsonWithAuthor u)
 -- | ```
 -- |
 -- | Because `PaginatedArray ArticleWithMetadata` is a relatively simple type, we opt for the
@@ -121,13 +121,9 @@ decodeArticles u json = do
   total <- obj .: "articlesCount"
   -- For now, we'll drop out malformed articles. The server shouldn't send us bad data, and we
   -- could have a more sophisticated response, but this will do for our MVP.
-  filteredArr <- sequence $ filter isRight $ map (decodeArticle' u) arr
+  filteredArr <- sequence $ filter isRight $ map (decodeJsonWithAuthor u) arr
   pure { body: filteredArr, total }
 
 -- | This helper function decodes a single `ArticleWithMetadata` at the key "article".
 decodeArticle :: Maybe Username -> Json -> Either String ArticleWithMetadata
-decodeArticle u = decodeArticle' u <=< decodeAt "article"
-
--- | This helper function decodes a single `ArticleWithMetadata`.
-decodeArticle' :: Maybe Username -> Json -> Either String ArticleWithMetadata
-decodeArticle' u = decodeJsonWithAuthor u
+decodeArticle u = decodeJsonWithAuthor u <=< decodeAt "article"

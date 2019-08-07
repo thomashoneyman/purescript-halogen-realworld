@@ -216,7 +216,7 @@ instance manageUserAppM :: ManageUser AppM where
   followUser username =
     mkAuthRequest { endpoint: Follow username, method: Post Nothing }
       >>= decodeWithUser decodeProfileAuthor
-  
+
   unfollowUser username =
     mkAuthRequest { endpoint: Follow username, method: Delete }
       >>= decodeWithUser decodeProfileAuthor

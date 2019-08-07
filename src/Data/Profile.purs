@@ -119,8 +119,8 @@ getRelation mbUsername json record = case mbUsername of
 -- | any record type with an 'author' field so long as every other field of the type can be
 -- | generically derived.
 -- |
--- | An example of its use can be found in 'Conduit.Data.Article', where `decodeArticle'` delegates
--- | to `decodeJsonWithAuthor` to determine an `ArticleWithMetadata` value with an `Author` component.
+-- | An example of its use can be found in 'Conduit.Data.Article', where `decodeArticles` delegates
+-- | to `decodeJsonWithAuthor` to determine an array of `ArticleWithMetadata` values.
 decodeJsonWithAuthor
   :: forall l r
    . GDecodeJson Builder (Either String) Record Nil () l r
