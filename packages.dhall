@@ -57,6 +57,70 @@ let additions =
           ]
           "https://github.com/awakesecurity/purescript-precise-datetime.git"
           "v5.1.1"
+      , higher-order =
+          mkPackage
+            [ "catenable-lists"
+            , "const"
+            , "effect"
+            , "errors"
+            , "generics-rep"
+            , "lists"
+            , "ordered-collections"
+            , "orders"
+            , "profunctor"
+            ]
+            "https://github.com/matthew-hilty/purescript-higher-order.git"
+            "v0.2.0"
+      , proxying =
+          mkPackage
+            [ "console"
+            , "effect"
+            , "generics-rep"
+            , "prelude"
+            , "test-unit"
+            , "typelevel-prelude"
+            ]
+            "https://github.com/matthew-hilty/purescript-proxying.git"
+            "v1.1.0"
+      , struct =
+          mkPackage
+            [ "argonaut"
+            , "argonaut-codecs"
+            , "console"
+            , "effect"
+            , "proxying"
+            , "record"
+            , "record-extra"
+            , "subcategory"
+            , "test-unit"
+            , "variant"
+            ]
+            "https://github.com/matthew-hilty/purescript-struct.git"
+            "v1.1.0"
+      , subcategory =
+          mkPackage
+            [ "prelude"
+            , "profunctor"
+            , "record"
+            ]
+            "https://github.com/matthew-hilty/purescript-subcategory.git"
+            "v0.2.0"
+      , tolerant-argonaut =
+          mkPackage
+            [ "argonaut-codecs"
+            , "argonaut-core"
+            , "arrays"
+            , "console"
+            , "effect"
+            , "higher-order"
+            , "lists"
+            , "psci-support"
+            , "record"
+            , "struct"
+            , "typelevel-prelude"
+            ]
+            "https://github.com/matthew-hilty/purescript-tolerant-argonaut.git"
+            "v1.1.0"
       }
 
 in  upstream // overrides // additions

@@ -33,7 +33,8 @@ import Data.Maybe (Maybe(..))
 import Data.Struct.RenameMany (rrenameMany)
 import Data.Symbol (SProxy(..))
 import Record.Builder (Builder)
-import Type.Row (class Lacks, class RowToList, Nil)
+import Type.Row (class Lacks)
+import Type.RowList (class RowToList, Nil)
 
 -- | Let's start by defining a small helper data type before we move on to the larger `Profile` type.
 -- |

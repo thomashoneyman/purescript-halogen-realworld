@@ -25,5 +25,7 @@
     , "argonaut-core"
     , "argonaut-codecs"
     , "aff-bus"
+    , "struct"
+    , "tolerant-argonaut"
     ]
 }
