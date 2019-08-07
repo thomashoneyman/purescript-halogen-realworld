@@ -11,14 +11,15 @@ import Conduit.Capability.LogMessages (class LogMessages, logError)
 import Conduit.Capability.Now (class Now)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
+import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, ask, asks)
 import Data.Argonaut.Core (Json)
 import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
+import Effect.Aff.Bus as Bus
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Ref (Ref)
 import Effect.Ref as Ref
 
 -- | This function performs a request that does not require authentication by pulling the base URL 
@@ -52,23 +53,27 @@ mkAuthRequest opts = do
 
 -- | Logging in and registering share a lot of behavior, namely updating the application environment
 -- | and writing the auth token to local storage. This helper function makes it easy to layer those
--- | behaviors on top of the request.
+-- | behaviors on top of the request. This also performs the work of broadcasting changes in the
+-- | current user to all subscribed components.
 authenticate 
   :: forall m a r
    . MonadAff m
-  => MonadAsk { baseUrl :: BaseURL, currentUser :: Ref (Maybe Profile) | r } m
+  => MonadAsk { baseUrl :: BaseURL, userEnv :: UserEnv | r } m
   => LogMessages m
   => Now m
   => (BaseURL -> a -> m (Either String (Tuple Token Profile))) 
   -> a 
   -> m (Maybe Profile)
 authenticate req fields = do 
-  { baseUrl, currentUser } <- ask
+  { baseUrl, userEnv } <- ask
   req baseUrl fields >>= case _ of
     Left err -> logError err *> pure Nothing
     Right (Tuple token profile) -> do 
-      liftEffect $ writeToken token 
-      liftEffect $ Ref.write (Just profile) currentUser
+      liftEffect do 
+        writeToken token 
+        Ref.write (Just profile) userEnv.currentUser
+      -- any time we write to the current user ref, we should also broadcast the change 
+      liftAff $ Bus.write (Just profile) userEnv.userBus
       pure (Just profile)
 
 -- | This small utility decodes JSON and logs any failures that occurred, returning the parsed 
@@ -89,12 +94,12 @@ decode decoder (Just json) = case decoder json of
 decodeWithUser 
   :: forall m a r
    . MonadEffect m
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+  => MonadAsk { userEnv :: UserEnv | r } m
   => LogMessages m 
   => Now m
   => (Maybe Username -> Json -> Either String a) 
   -> Maybe Json 
   -> m (Maybe a)
 decodeWithUser decoder json = do
-  maybeProfile <- (liftEffect <<< Ref.read) =<< asks _.currentUser
+  maybeProfile <- (liftEffect <<< Ref.read) =<< asks _.userEnv.currentUser
   decode (decoder (_.username <$> maybeProfile)) json

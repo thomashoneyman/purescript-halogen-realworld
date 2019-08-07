@@ -4,12 +4,16 @@ bower_components
 node_modules
 
 # Dot files
+.spago
 .psci
 .pulp-cache
 .purs-repl
 .package-lock
 .psc-ide-port
 .cache
+
+# IDE files
+*.code-workspace
 
 # Generated
 output

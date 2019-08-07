@@ -21,6 +21,6 @@ class Monad m <= Navigate m where
   logout :: m Unit
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance navigateHalogenM :: Navigate m => Navigate (HalogenM s f g p o m) where
+instance navigateHalogenM :: Navigate m => Navigate (HalogenM st act slots msg m) where
   navigate = lift <<< navigate
   logout = lift logout

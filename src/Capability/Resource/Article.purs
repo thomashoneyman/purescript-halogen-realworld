@@ -37,7 +37,7 @@ class Monad m <= ManageArticle m where
   getCurrentUserFeed :: Pagination -> m (Maybe (PaginatedArray ArticleWithMetadata))
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance manageArticleHalogenM :: ManageArticle m => ManageArticle (HalogenM s f g p o m) where
+instance manageArticleHalogenM :: ManageArticle m => ManageArticle (HalogenM st act slots msg m) where
   getArticle = lift <<< getArticle
   getArticles = lift <<< getArticles
   createArticle = lift <<< createArticle

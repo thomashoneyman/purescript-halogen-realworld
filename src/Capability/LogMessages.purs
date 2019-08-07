@@ -25,7 +25,7 @@ class Monad m <= LogMessages m where
   logMessage :: Log -> m Unit
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance logMessagesHalogenM :: LogMessages m => LogMessages (HalogenM s f g p o m) where
+instance logMessagesHalogenM :: LogMessages m => LogMessages (HalogenM st act slots msg m) where
   logMessage = lift <<< logMessage
 
 -- | Next, we'll provide a few helper functions to help users easily create and dispatch logs

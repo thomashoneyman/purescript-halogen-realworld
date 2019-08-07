@@ -5,13 +5,13 @@ module Conduit.Component.RawHTML where
 import Prelude
 
 import Conduit.Foreign.Marked (RawHTML, marked)
+import Data.Const (Const)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Web.HTML (HTMLElement)
 
@@ -27,36 +27,33 @@ type State =
 type Input =
   { markdown :: String }
 
-data Query a
-  = SetInnerHTML a
-  | Receive Input a
+data Action
+  = SetInnerHTML
+  | Receive Input
 
-component :: forall m. MonadAff m => H.Component HH.HTML Query Input Void m
-component = H.lifecycleComponent
+component :: forall m. MonadAff m => H.Component HH.HTML (Const Void) Input Void m
+component = H.mkComponent
   { initialState: \{ markdown } -> { elemRef: H.RefLabel "markdown", markdown } 
   , render
-  , eval
-  , receiver: HE.input Receive
-  , initializer: Just $ H.action SetInnerHTML
-  , finalizer: Nothing
+  , eval: H.mkEval $ H.defaultEval
+      { handleAction = handleAction 
+      , receive = Just <<< Receive 
+      , initialize = Just SetInnerHTML
+      }
   }
   where
-  render :: State -> H.ComponentHTML Query
-  render state = 
-    HH.div 
-      [ HP.ref state.elemRef ] 
-      []
-
-  eval :: Query ~> H.ComponentDSL State Query Void m
-  eval = case _ of
-    SetInnerHTML a -> do
+  handleAction :: Action -> H.HalogenM State Action () Void m Unit
+  handleAction = case _ of
+    SetInnerHTML -> do
       { elemRef } <- H.get
       mbElem <- H.getHTMLElementRef elemRef
       for_ mbElem \el -> do  
         { markdown } <- H.get
         H.liftEffect $ unsafeSetInnerHTML el $ marked markdown
-      pure a
     
-    Receive { markdown } a -> do
+    Receive { markdown } -> do
       H.modify_ _ { markdown = markdown }
-      eval $ SetInnerHTML a
+      handleAction SetInnerHTML
+
+  render :: State -> H.ComponentHTML Action () m
+  render state = HH.div [ HP.ref state.elemRef ] []

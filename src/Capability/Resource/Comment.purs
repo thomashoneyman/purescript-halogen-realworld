@@ -30,8 +30,7 @@ class Monad m <= ManageComment m where
   deleteComment :: Slug -> CommentId -> m Unit
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance manageCommentHalogenM :: ManageComment m => ManageComment (HalogenM s f g p o m) where
+instance manageCommentHalogenM :: ManageComment m => ManageComment (HalogenM st act cs msg m) where
   getComments = lift <<< getComments
   createComment s = lift <<< createComment s
   deleteComment s = lift <<< deleteComment s
-

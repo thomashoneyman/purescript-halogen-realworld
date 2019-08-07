@@ -4,84 +4,77 @@ module Conduit.Page.Login where
 
 import Prelude
 
+import Conduit.Api.Request (LoginFields)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.User (class ManageUser, loginUser)
 import Conduit.Component.HTML.Header (header)
-import Conduit.Component.HTML.Utils (css, safeHref)
-import Conduit.Component.Utils (guardNoSession)
+import Conduit.Component.HTML.Utils (css, safeHref, whenElem)
 import Conduit.Data.Email (Email)
-import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field (submit)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Control.Monad.Reader (class MonadAsk)
-import Data.Foldable (traverse_)
+import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
 import Formless as F
-import Formless as Formless
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
-data Query a
-  = Initialize a
-  | HandleForm (F.Message' LoginForm) a
+data Action
+  = HandleLoginForm LoginFields
 
-type ChildQuery m = F.Query' LoginForm m
+-- Should this component redirect to home after login or not? If the login page is loaded
+-- at the login route, then yes; if not, then it is guarding another route and should not.
+type State =
+  { redirect :: Boolean }
 
-component 
-  :: forall m r
-   . MonadAff m 
-  => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
+type Input =
+  { redirect :: Boolean }
+
+type ChildSlots =
+  ( formless :: F.Slot LoginForm FormQuery () LoginFields Unit )
+
+component
+  :: forall m
+   . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML Query Unit Void m
-component = 
-  H.lifecycleParentComponent
-    { initialState: identity
-    , render
-    , eval
-    , receiver: const Nothing
-    , initializer: Just $ H.action Initialize
-    , finalizer: Nothing
-    }
+  => H.Component HH.HTML (Const Void) Input Void m
+component = H.mkComponent
+  { initialState: identity
+  , render
+  , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+  }
   where
-  eval :: Query ~> H.ParentDSL Unit Query (ChildQuery m) Unit Void m
-  eval = case _ of
-    Initialize a -> do
-      guardNoSession
-      pure a
+  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
+  handleAction = case _ of
+    HandleLoginForm fields -> do
+      -- loginUser also handles broadcasting the user changes to subscribed components
+      -- so they receive the up-to-date value (see AppM and the `authenticate` function.)
+      loginUser fields >>= case _ of
+        Nothing ->
+          void $ H.query F._formless unit $ F.injQuery $ SetLoginError true unit
+        Just profile -> do
+          void $ H.query F._formless unit $ F.injQuery $ SetLoginError false unit
+          st <- H.get
+          when st.redirect (navigate Home)
 
-    HandleForm msg a -> case msg of
-      F.Submitted formOutputs -> do
-        mbUser <- loginUser $ F.unwrapOutputFields formOutputs
-        traverse_ (\_ -> navigate Home) mbUser
-        pure a
-      _ -> pure a
-
-  render :: Unit -> H.ParentHTML Query (ChildQuery m) Unit m
+  render :: State -> H.ComponentHTML Action ChildSlots m
   render _ =
     container
       [ HH.h1
-        [ css "text-xs-center"]
-        [ HH.text "Sign In" ]
+          [ css "text-xs-center"]
+          [ HH.text "Sign In" ]
       , HH.p
-        [ css "text-xs-center" ]
-        [ HH.a 
-          [ safeHref Register ]
-          [ HH.text "Need an account?" ]
+          [ css "text-xs-center" ]
+          [ HH.a
+              [ safeHref Register ]
+              [ HH.text "Need an account?" ]
         ]
-      , HH.slot unit Formless.component 
-          { initialInputs: F.mkInputFields formProxy
-          , validators
-          , render: renderFormless 
-          } 
-          (HE.input HandleForm)
+      , HH.slot F._formless unit formComponent unit (Just <<< HandleLoginForm)
       ]
     where
     container html =
@@ -89,20 +82,17 @@ component =
         [ css "auth-page" ]
         [ header Nothing Login
         , HH.div
-          [ css "container page" ]
-          [ HH.div
-            [ css "row" ]
+            [ css "container page" ]
             [ HH.div
-              [ css "col-md-6 offset-md-3 col-xs12" ]
-              html
+                [ css "row" ]
+                [ HH.div
+                    [ css "col-md-6 offset-md-3 col-xs12" ]
+                    html
+                ]
             ]
-          ]
         ]
 
------
--- Form
-
--- | See the Formless tutorial to learn how to build your own forms: 
+-- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
 newtype LoginForm r f = LoginForm (r
@@ -112,32 +102,55 @@ newtype LoginForm r f = LoginForm (r
 
 derive instance newtypeLoginForm :: Newtype (LoginForm r f) _
 
-formProxy :: F.FormProxy LoginForm
-formProxy = F.FormProxy
+-- We can extend our form to receive more queries than it supports by default. Here, we'll
+-- set a login error from the parent.
+data FormQuery a
+  = SetLoginError Boolean a
 
-proxies :: F.SProxies LoginForm
-proxies = F.mkSProxies formProxy
+derive instance functorFormQuery :: Functor (FormQuery)
 
-validators :: forall form m. Monad m => LoginForm Record (F.Validation form m)
-validators = LoginForm
-  { email: V.required >>> V.minLength 3 >>> V.emailFormat 
-  , password: V.required >>> V.minLength 2 >>> V.maxLength 20
+formComponent :: forall m. MonadAff m => F.Component LoginForm FormQuery () Unit LoginFields m
+formComponent = F.component formInput $ F.defaultSpec
+  { render = renderLogin
+  , handleEvent = handleEvent
+  , handleQuery = handleQuery
   }
-
-renderFormless :: forall m. MonadAff m => F.State LoginForm m -> F.HTML' LoginForm m
-renderFormless fstate =
-  HH.form_
-    [ HH.fieldset_
-      [ email
-      , password
-      , submit "Log in"
-      ]
-    ]
   where
-  email = 
-    Field.input proxies.email fstate.form 
-      [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
+  formInput :: Unit -> F.Input LoginForm (loginError :: Boolean) m
+  formInput _ =
+    { validators: LoginForm
+        { email: V.required >>> V.minLength 3 >>> V.emailFormat
+        , password: V.required >>> V.minLength 2 >>> V.maxLength 20
+        }
+    , initialInputs: Nothing
+    , loginError: false
+    }
 
-  password = 
-    Field.input proxies.password fstate.form 
-      [ HP.placeholder "Password", HP.type_ HP.InputPassword ]
+  handleEvent = F.raiseResult
+
+  handleQuery :: forall a. FormQuery a -> H.HalogenM _ _ _ _ _ (Maybe a)
+  handleQuery = case _ of
+    SetLoginError bool a -> do
+      H.modify_ _ { loginError = bool }
+      pure (Just a)
+
+  proxies = F.mkSProxies (F.FormProxy :: _ LoginForm)
+
+  renderLogin { form, loginError } =
+    HH.form_
+      [ whenElem loginError \_ ->
+          HH.div
+            [ css "error-messages" ]
+            [ HH.text "Email or password is invalid" ]
+      , HH.fieldset_
+          [ Field.input proxies.email form
+              [ HP.placeholder "Email"
+              , HP.type_ HP.InputEmail
+              ]
+          , Field.input proxies.password form
+              [ HP.placeholder "Password"
+              , HP.type_ HP.InputPassword
+              ]
+          , submit "Log in"
+          ]
+      ]

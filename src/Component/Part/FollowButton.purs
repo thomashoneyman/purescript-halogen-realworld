@@ -17,7 +17,7 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -26,31 +26,25 @@ import Halogen.HTML.Events as HE
 -- | Since the author's type already includes information about whether we follow this author, we 
 -- | can use that to control the behavior of this HTML with the author type and some embedded 
 -- | queries alone.
-followButton 
-  :: forall i p
-   . H.Action p
-  -> H.Action p
-  -> Author 
-  -> HH.HTML i (p Unit)
-followButton followQuery unfollowQuery author = case author.relation of
+followButton :: forall props act. act -> act -> Author -> HH.HTML props act
+followButton followAct unfollowAct author = case author.relation of
   Following -> 
     HH.button
       [ css "btn btn-sm action-btn btn-secondary" 
-      , HE.onClick $ HE.input_ unfollowQuery
+      , HE.onClick \_ -> Just unfollowAct
       ]
       [ HH.text $ " Unfollow " <> Username.toString author.username ]
   NotFollowing -> 
     HH.button
       [ css "btn btn-sm action-btn btn-outline-secondary" 
-      , HE.onClick $ HE.input_ followQuery
+      , HE.onClick \_ -> Just followAct
       ]
       [ HH.i 
-        [ css "ion-plus-round"]
-        []
+          [ css "ion-plus-round"]
+          []
       , HH.text $ " Follow " <> Username.toString author.username
       ]
   You -> HH.text ""
-
 
 -- | In addition to this pure HTML renderer, however, we'd also like to supply the logic that will 
 -- | work with the queries we've embedded. These two functions will take care of everything we need 
@@ -64,27 +58,27 @@ followButton followQuery unfollowQuery author = case author.relation of
 -- | state with the result.
 
 follow  
-  :: forall s f g p o m
+  :: forall st act slots msg m
    . ManageUser m
-  => Traversal' s Author
-  -> H.HalogenM s f g p o m Unit
+  => Traversal' st Author
+  -> H.HalogenM st act slots msg m Unit
 follow _author = act (eq NotFollowing <<< _.relation) followUser _author
 
 unfollow  
-  :: forall s f g p o m
+  :: forall st act slots msg m
    . ManageUser m
-  => Traversal' s Author
-  -> H.HalogenM s f g p o m Unit
+  => Traversal' st Author
+  -> H.HalogenM st act slots msg m Unit
 unfollow _author = act (eq Following <<< _.relation) unfollowUser _author
 
 -- | This will be kept internal, as it is only used to implement `follow` and `unfollow`.
 act  
-  :: forall s f g p o m
+  :: forall st act slots msg m
    . ManageUser m
   => (Author -> Boolean)
   -> (Username -> m (Maybe Author))
-  -> Traversal' s Author
-  -> H.HalogenM s f g p o m Unit
+  -> Traversal' st Author
+  -> H.HalogenM st act slots msg m Unit
 act cond f _author = do
   st <- H.get
   for_ (preview _author st) \author -> do

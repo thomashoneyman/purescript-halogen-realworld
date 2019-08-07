@@ -3,9 +3,11 @@
 [![RealWorld Frontend](https://camo.githubusercontent.com/b507ac8f2ec6427bbef518193567c4ec6060c780/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f7265616c776f726c642d66726f6e74656e642d2532333738333537382e737667)](http://realworld.io)
 [![Maintainer: thomashoneyman](https://img.shields.io/badge/maintainer-thomashoneyman-lightgrey.svg)](http://github.com/thomashoneyman)
 
-[PureScript](https://github.com/purescript) is a delightful purely-functional language that offers powerful, pragmatic tools to manage complexity and help you design, build, and refactor reliable apps of any size. This repository demonstrates the principles I apply at work every day in more than 2,000 lines of thoroughly commented code.
+[PureScript](https://github.com/purescript) is a delightful purely-functional language that offers powerful, pragmatic tools to manage complexity and help you design, build, and refactor reliable apps of any size. This repository demonstrates the principles I apply at work every day in more than 2,000 lines of thoroughly commented code and has an accompanying long-form [guide to building real-world Halogen applications](https://thomashoneyman.com/guides/real-world-halogen).
 
-I’m a senior software engineer at [Awake Security](https://github.com/awakesecurity) (and previously at [CitizenNet](https://citizennet.com)). Both companies have large production PureScript applications that have remained reliable, understandable, and maintainable as they scale. I’m convinced PureScript is the best language for single-page applications available today.
+> Using Halogen 4? Browse the repository at the [tag for Halogen 4](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v1.0.0). Upgrading from Halogen 4 to Halogen 5? See the [PR which migrated this repository to Halogen 5](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/26).
+
+I’m a senior software engineer at [Awake Security](https://github.com/awakesecurity) (and previously at [CitizenNet](https://citizennet.com)). Both companies have large production PureScript applications that have remained reliable, understandable, and maintainable as they scale. I’m convinced PureScript is the best language available today for most single-page applications.
 
 This repository follows the [RealWorld](https://github.com/gothinkster/realworld) spec to implement a Medium clone called Conduit using [Halogen](https://github.com/slamdata/purescript-halogen). It’s large enough to demonstrate real world examples (CRUD, state management, scalable architecture, type classes, components, etc.) but not so large as to be overwhelming.
 

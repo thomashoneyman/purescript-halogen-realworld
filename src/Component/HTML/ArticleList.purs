@@ -15,8 +15,8 @@ import Conduit.Data.Username as Username
 import Data.Array (mapWithIndex)
 import Data.Enum (enumFromTo)
 import Data.Foldable (length)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
-import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -24,12 +24,12 @@ import Network.RemoteData (RemoteData(..))
 import Web.UIEvent.MouseEvent (MouseEvent)
 
 articleList 
-  :: forall i p
-   . (Int -> H.Action p)
-  -> (Int -> H.Action p)
+  :: forall props act
+   . (Int -> act)
+  -> (Int -> act)
   -> RemoteData String (PaginatedArray ArticleWithMetadata) 
-  -> HH.HTML i (p Unit)
-articleList favoriteQuery unfavoriteQuery = case _ of
+  -> HH.HTML props act
+articleList favoriteAct unfavoriteAct = case _ of
   NotAsked -> 
     text "Articles not yet loaded"
   Loading -> 
@@ -40,7 +40,7 @@ articleList favoriteQuery unfavoriteQuery = case _ of
     text "No articles are here...yet!"
   Success articles -> 
     HH.div_ 
-      (articlePreview favoriteQuery unfavoriteQuery `mapWithIndex` articles.body)
+      (articlePreview favoriteAct unfavoriteAct `mapWithIndex` articles.body)
   where
   text str = 
     HH.div
@@ -48,79 +48,89 @@ articleList favoriteQuery unfavoriteQuery = case _ of
       [ HH.text str ]
 
 articlePreview 
-  :: forall i p
-   . (Int -> H.Action p)
-  -> (Int -> H.Action p)
+  :: forall props act
+   . (Int -> act)
+  -> (Int -> act)
   -> Int
   -> ArticleWithMetadata 
-  -> HH.HTML i (p Unit)
-articlePreview favoriteQuery unfavoriteQuery ix article =
+  -> HH.HTML props act
+articlePreview favoriteAct unfavoriteAct ix article =
   HH.div
-  [ css "article-preview" ]
-  [ HH.div
-    [ css "article-meta" ]
-    [ HH.a
-      [ safeHref $ Profile username ]
-      [ HH.img
-        [ HP.src $ Avatar.toStringWithDefault avatar
-        , HP.alt $ Username.toString username
+    [ css "article-preview" ]
+    [ HH.div
+        [ css "article-meta" ]
+        [ HH.a
+            [ safeHref $ Profile username ]
+            [ HH.img
+                [ HP.src $ Avatar.toStringWithDefault avatar
+                , HP.alt $ Username.toString username
+                ]
+            ]
+        , HH.div
+            [ css "info" ]
+            [ HH.a
+                [ css "author", safeHref $ Profile username ]
+                [ HH.text $ Username.toString username ]
+            , HH.span
+                [ css "date" ]
+                [ HH.text $ PDT.toDisplayWeekName article.createdAt ]
+            ]
+        , HH.div
+            [ css "pull-xs-right" ]
+            [ favoriteButton Icon (favoriteAct ix) (unfavoriteAct ix) article ]
         ]
-      ]
-    , HH.div
-      [ css "info" ]
-      [ HH.a
-        [ css "author", safeHref $ Profile username ]
-        [ HH.text $ Username.toString username ]
-      , HH.span
-        [ css "date" ]
-        [ HH.text $ PDT.toDisplayWeekName article.createdAt ]
-      ]
-    , HH.div
-      [ css "pull-xs-right" ]
-      [ favoriteButton Icon (favoriteQuery ix) (unfavoriteQuery ix) article ]
+    , HH.a
+        [ css "preview-link" 
+        , safeHref $ ViewArticle article.slug
+        ]
+        [ HH.h1_ 
+            [ HH.text article.title ]
+        , HH.p_ 
+            [ HH.text article.description ]
+        , HH.span_ 
+            [ HH.text "Read more..." ]
+        , HH.ul
+            [ css "tag-list" ]
+            (article.tagList <#> renderTag)
+        ]
     ]
-  , HH.a
-    [ css "preview-link" 
-    , safeHref $ ViewArticle article.slug
-    ]
-    [ HH.h1_ 
-        [ HH.text article.title ]
-    , HH.p_ 
-        [ HH.text article.description ]
-    , HH.span_ 
-        [ HH.text "Read more..." ]
-    , HH.ul
-        [ css "tag-list" ]
-        (article.tagList <#> renderTag)
-    ]
-  ]
   where
-    username = article.author.username
-    avatar = article.author.image
+  username = article.author.username
+  avatar = article.author.image
 
-renderTag :: forall i p. String -> HH.HTML i p
+renderTag :: forall props act. String -> HH.HTML props act
 renderTag tag =
   HH.li
-  [ css "tag-default tag-pill tag-outline" ]
-  [ HH.text tag ]
+    [ css "tag-default tag-pill tag-outline" ]
+    [ HH.text tag ]
 
 -- Pagination
 
-renderPagination :: forall i p. (Int -> MouseEvent -> H.Action p) -> Int -> PaginatedArray ArticleWithMetadata -> HH.HTML i (p Unit)
-renderPagination query currentIndex { body, total } =
+renderPagination 
+  :: forall props act
+   . (Int -> MouseEvent -> act) 
+  -> Int 
+  -> PaginatedArray ArticleWithMetadata 
+  -> HH.HTML props act
+renderPagination act currentIndex { body, total } =
   whenElem (total > 20) \_ ->
     HH.ul  
       [ css "pagination" ]
-      (renderPageLink query currentIndex <$> enumFromTo 1 (total / 20))
+      (renderPageLink act currentIndex <$> enumFromTo 1 (total / 20))
 
-renderPageLink :: forall i p. (Int -> MouseEvent -> H.Action p) -> Int -> Int -> HH.HTML i (p Unit)
-renderPageLink query activeIndex index =
+renderPageLink 
+  :: forall props act
+   . (Int -> MouseEvent -> act) 
+  -> Int 
+  -> Int 
+  -> HH.HTML props act
+renderPageLink act activeIndex index =
   HH.li
     [ css $ "page-item" <> guard (activeIndex == index) " active" ]
     [ HH.a 
-      [ css "page-link"
-      , HP.href "" -- needed for realworld css; remember to prevent default! 
-      , HE.onClick $ HE.input $ query index
-      ]
-      [ HH.text $ show index ]
+        [ css "page-link"
+        , HP.href "" -- needed for realworld css; remember to prevent default! 
+        , HE.onClick $ Just <<< act index
+        ]
+        [ HH.text $ show index ]
     ]
