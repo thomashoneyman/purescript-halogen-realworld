@@ -5,7 +5,7 @@ import Prelude
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Struct.Tolerant ((.::))
-import Data.Argonaut.Decode.Struct.Tolerant (class DecodeJson) as Tol
+import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
 import Data.Either (Either)
 
 -- | We can decode records and primitive types automatically, and we've defined custom decoders for
@@ -27,5 +27,5 @@ import Data.Either (Either)
 -- | decodeProfile = decodeAt "user"
 -- | ```
 
-decodeAt :: forall a. Tol.DecodeJson a => String -> Json -> Either String a
-decodeAt key json = ((_ .:: key) <=< decodeJson) json
+decodeAt :: forall a. Tolerant.DecodeJson a => String -> Json -> Either String a
+decodeAt key = (_ .:: key) <=< decodeJson

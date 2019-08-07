@@ -34,7 +34,7 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
 import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode.Struct.Tolerant (decodeJson) as Tolerantly
+import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
 import Data.Argonaut.Encode (encodeJson)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
@@ -262,7 +262,7 @@ decodeAuthProfile :: Json -> Either String (Tuple Token Profile)
 decodeAuthProfile =
   decodeParts
     (map Token <<< decodeAt "token")
-    Tolerantly.decodeJson
+    Tolerant.decodeJson
 
 decodeParts :: forall a b c f. Apply f => (a -> f b) -> (a -> f c) -> a -> f (Tuple b c)
 decodeParts decoder1 decoder2 value =

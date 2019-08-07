@@ -23,7 +23,7 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
-import Data.Argonaut.Decode.Struct.Tolerant (decodeJsonPer, decodeJsonWith) as Tolerantly
+import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
 import Data.Argonaut.Decode.Struct.Tolerant.GDecodeJson (class GDecodeJson)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Either (Either)
@@ -105,7 +105,7 @@ type Author = { | ProfileRep (relation :: Relation) }
 decodeAuthor :: Maybe Username -> Json -> Either String Author
 decodeAuthor mbUsername =
   map (rrenameMany { following: SProxy :: SProxy "relation" })
-    <<< Tolerantly.decodeJsonWith { following: getRelation mbUsername }
+    <<< Tolerant.decodeJsonWith { following: getRelation mbUsername }
 
 -- | If the profile we're decoding from JSON has the same unique identifying username as the one
 -- | passed as an argument, then the profile we've decoded is in fact the current user's profile.
@@ -130,7 +130,7 @@ decodeJsonWithAuthor
   -> Json
   -> Either String { author :: Author | r }
 decodeJsonWithAuthor u =
-  Tolerantly.decodeJsonPer { author: decodeAuthor u }
+  Tolerant.decodeJsonPer { author: decodeAuthor u }
 
 decodeProfileAuthor :: Maybe Username -> Json -> Either String Author
 decodeProfileAuthor u = decodeAuthor u <=< decodeAt "profile"

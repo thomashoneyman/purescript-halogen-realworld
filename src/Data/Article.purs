@@ -103,9 +103,11 @@ type ArticleWithMetadata = { | ArticleRep + ArticleMetadataRep () }
 -- | decodeArticles :: Maybe Username -> Json -> Either String (PaginatedArray ArticleWithMetadata)
 -- | decodeArticles u = map renameFields <<< decode
 -- |   where
--- |   renameFields = rrenameMany { articles: SProxy :: SProxy "body"
--- |                              , articlesCount: SProxy :: SProxy "total"
--- |                              }
+-- |   renameFields =
+-- |     rrenameMany
+-- |       { articles: SProxy :: SProxy "body"
+-- |       , articlesCount: SProxy :: SProxy "total"
+-- |       }
 -- |   decode = decodeJsonWith { articles: decodeArticles' <=< decodeJson }
 -- |   decodeArticles' = sequence <<< filter isRight <<< map (decodeArticle' u)
 -- | ```
