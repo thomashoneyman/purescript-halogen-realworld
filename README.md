@@ -21,7 +21,7 @@ git clone https://github.com/thomashoneyman/purescript-halogen-realworld
 cd purescript-halogen-realworld
 ```
 
-In order to install the JavaScript dependencies:
+To install the JavaScript and PureScript dependencies:
 
 ```sh
 yarn install
