@@ -14,21 +14,33 @@ This repository follows the [RealWorld](https://github.com/gothinkster/realworld
 
 ## Installation
 
-You can install and build the project with:
+First, clone the repository:
 
 ```sh
-# clone the repository
 git clone https://github.com/thomashoneyman/purescript-halogen-realworld
 cd purescript-halogen-realworld
-
-# install dependencies
-yarn install
-
-# build the project and run the local server
-yarn build-serve
 ```
 
-If you are doing local development, I'd recommend running `yarn watch-dev` while working, and only use `yarn watch-serve` when you need to view how your changes reflect in the application (Parcel takes some time to run).
+Install the JavaScript and PureScript dependencies:
+
+```sh
+yarn install
+```
+
+Next, build the project (this command will run `spago build`; see the [`package.json`](package.json) file to see
+all helper scripts for the project):
+
+```sh
+yarn build
+```
+
+Finally, bundle the JS and run a local server (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
+
+```sh
+yarn serve
+```
+
+You can also run `yarn bundle` to create a distribution-ready bundle of JavaScript without starting a server.
 
 ## Learning PureScript
 
@@ -45,6 +57,6 @@ The PureScript community is overwhelmingly warm and helpful. If you would like s
 3. The (warning: currently in rough draft form) [handbook which explains the theory & principles at work in this application in-depth](https://thomashoneyman.com/guides/real-world-halogen), which will be useful to help take you from advanced beginner to advanced intermediate in the language.
 4. The [official Halogen guide](https://github.com/slamdata/purescript-halogen), which will teach you how to use the Halogen framework to write components.
 
-# Contributing
+## Contributing
 
 PRs are welcome! Any functional changes will need to remain compliant with the [RealWorld](https://github.com/gothinkster/realworld) spec, and I may re-word documentation changes to fit with the voice used throughout the repository.
