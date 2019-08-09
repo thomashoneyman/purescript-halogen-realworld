@@ -30,10 +30,11 @@ import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
 import Conduit.Api.Endpoint (Endpoint(..), endpointCodec)
 import Conduit.Data.Email (Email)
-import Conduit.Data.Profile (Profile, decodeProfile)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
+import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson, (.:))
+import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
 import Data.Argonaut.Encode (encodeJson)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
@@ -252,16 +253,20 @@ register baseUrl fields =
 requestUser :: forall m. MonadAff m => BaseURL -> RequestOptions -> m (Either String (Tuple Token Profile))
 requestUser baseUrl opts = do
   res <- liftAff $ request $ defaultRequest baseUrl Nothing opts
-  pure $ decodeAuthProfile =<< (_ .: "user") =<< decodeJson =<< lmap printResponseFormatError res.body
+  pure $ decodeAuthProfile =<< decodeAt "user" =<< lmap printResponseFormatError res.body
 
 -- | This JSON decoder is defined in this module because it manipulates a token. First, we'll decode
 -- | only the token field from the payload, and then we'll decode everything else separately into 
 -- | the user's profile.
 decodeAuthProfile :: Json -> Either String (Tuple Token Profile)
-decodeAuthProfile json = do
-  str <- decodeJson =<< (_ .: "token") =<< decodeJson json
-  prof <- decodeProfile json
-  pure $ Tuple (Token str) prof
+decodeAuthProfile =
+  decodeParts
+    (map Token <<< decodeAt "token")
+    Tolerant.decodeJson
+
+decodeParts :: forall a b c f. Apply f => (a -> f b) -> (a -> f c) -> a -> f (Tuple b c)
+decodeParts decoder1 decoder2 value =
+  Tuple <$> decoder1 value <*> decoder2 value
 
 -- | The following functions deal with writing, reading, and deleting tokens in local storage at a 
 -- | particular key. They'll be used as part of our production monad, `Conduit.AppM`.

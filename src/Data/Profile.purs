@@ -20,14 +20,21 @@ import Prelude
 import Conduit.Data.Avatar (Avatar)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Username (Username)
+import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:), (.:?))
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
+import Data.Argonaut.Decode.Struct.Tolerant.GDecodeJson (class GDecodeJson)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Either (Either)
 import Data.Lens (Lens')
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
+import Data.Struct.RenameMany (rrenameMany)
 import Data.Symbol (SProxy(..))
+import Record.Builder (Builder)
+import Type.Row (class Lacks)
+import Type.RowList (class RowToList, Nil)
 
 -- | Let's start by defining a small helper data type before we move on to the larger `Profile` type.
 -- |
@@ -60,7 +67,7 @@ instance encodeJsonFollowStatus :: EncodeJson Relation where
   encodeJson _ = encodeJson false
 
 -- | Now, let's describe the fields of our main `Profile` type, which should also be shared with
--- | the extendede `ProfileWithEmail` type.
+-- | the extended `ProfileWithEmail` type.
 -- |
 -- | A user profile contains a mandatory username, a biography which is allowed to be empty, an 
 -- | optional avatar, and a relation to the current user, if there is one. We've already designed 
@@ -76,45 +83,8 @@ type ProfileRep row =
 -- | The `Profile` type consists only of three core fields: the username, biography, and avatar.
 type Profile = { | ProfileRep () }
 
--- | The Conduit backend specification for Profile objects is not fully precise.
--- | It does not describe how undetermined `bio`s and `image`s should be included
--- | in JSON objects returned to clients.
--- |
--- | Some backend implementations of Conduit (e.g., gothinkster/node-express-realworld-example-app)
--- | refrain from including `bio` and `image` entries altogether.
--- |
--- | Unfortunately, because the generic `DecodeJson` instance for records requires entries for all
--- | fields, even those of `Maybe a` type, this means that we can't rely on the default implementation
--- | of `decodeJson` and must explicitly account for possibly absent key/value rows.
-decodeProfile :: Json -> Either String Profile
-decodeProfile json = do
-  obj <- decodeJson json
-  username <- obj .: "username"
-  bio <- obj .:? "bio"
-  image <- obj .:? "image"
-  pure { username, bio, image }
-
 -- | The `ProfileWithEmail` type extends the `Profile` fields with an additional `Email` type.
 type ProfileWithEmail = { | ProfileRep (email :: Email) }
-
--- | The Conduit backend specification for Profile objects is not fully precise.
--- | It does not describe how undetermined `bio`s and `image`s should be included
--- | in JSON objects returned to clients.
--- |
--- | Some backend implementations of Conduit (e.g., gothinkster/node-express-realworld-example-app)
--- | refrain from including `bio` and `image` entries altogether.
--- |
--- | Unfortunately, because the generic `DecodeJson` instance for records requires entries for all
--- | fields, even those of `Maybe a` type, this means that we can't rely on the default implementation
--- | of `decodeJson` and must explicitly account for possibly absent key/value rows.
-decodeProfileWithEmail :: Json -> Either String ProfileWithEmail
-decodeProfileWithEmail json = do
-  obj <- decodeJson json
-  username <- obj .: "username"
-  bio <- obj .:? "bio"
-  image <- obj .:? "image"
-  email <- obj .: "email"
-  pure { username, bio, image, email }
 
 -- | The `Author` type extends the `Profile` fields with an additional `Relation` type.
 type Author = { | ProfileRep (relation :: Relation) }
@@ -133,19 +103,37 @@ type Author = { | ProfileRep (relation :: Relation) }
 -- | automatically encode and decode when we're changing field names, so we will fall back to a 
 -- | manual decoder.
 decodeAuthor :: Maybe Username -> Json -> Either String Author
-decodeAuthor mbUsername json = do 
-  obj <- decodeJson json
-  username <- obj .: "username"
-  bio <- obj .: "bio"
-  image <- obj .: "image"
-  relation <- obj .: "following"
-  let profile = { username, bio, image, relation }
-  pure $ case mbUsername of
-    -- If the profile we're decoding from JSON has the same unique identifying username as the one
-    -- passed as an argument, then the profile we've decoded is in fact the current user's profile.
-    -- So we'll update the `relation` field to the `You` value.
-    Just currentUsername | username == currentUsername -> profile { relation = You }
-    _ -> profile
+decodeAuthor mbUsername =
+  map (rrenameMany { following: SProxy :: SProxy "relation" })
+    <<< Tolerant.decodeJsonWith { following: getRelation mbUsername }
+
+-- | If the profile we're decoding from JSON has the same unique identifying username as the one
+-- | passed as an argument, then the profile we've decoded is in fact the current user's profile.
+-- | So we'll update the `relation` field to the `You` value.
+getRelation :: forall r. Maybe Username -> Json -> { username :: Username | r } -> Either String Relation
+getRelation mbUsername json record = case mbUsername of
+  Just username | username == record.username -> pure You
+  _ -> decodeJson json
+
+-- | This utility can use the automatic JSON decoding provided by Argonaut to facilitate decoding of
+-- | any record type with an 'author' field so long as every other field of the type can be
+-- | generically derived.
+-- |
+-- | An example of its use can be found in 'Conduit.Data.Article', where `decodeArticles` delegates
+-- | to `decodeJsonWithAuthor` to determine an array of `ArticleWithMetadata` values.
+decodeJsonWithAuthor
+  :: forall l r
+   . GDecodeJson Builder (Either String) Record Nil () l r
+  => Lacks "author" r
+  => RowToList r l
+  => Maybe Username
+  -> Json
+  -> Either String { author :: Author | r }
+decodeJsonWithAuthor u =
+  Tolerant.decodeJsonPer { author: decodeAuthor u }
+
+decodeProfileAuthor :: Maybe Username -> Json -> Either String Author
+decodeProfileAuthor u = decodeAuthor u <=< decodeAt "profile"
 
 -- | The `Profile` type is usually a part of a larger type, like a component's `State`. If you have
 -- | a `State` and want to get the username out of a profile stored in that state, you'll have to 

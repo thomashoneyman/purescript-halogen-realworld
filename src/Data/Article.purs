@@ -14,11 +14,11 @@ module Conduit.Data.Article where
 
 import Prelude
 
-import Conduit.Api.Utils (decodeAt)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.PreciseDateTime (PreciseDateTime)
-import Conduit.Data.Profile (Author, decodeAuthor)
+import Conduit.Data.Profile (Author, decodeJsonWithAuthor)
 import Conduit.Data.Username (Username)
+import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (decodeJson, (.:))
 import Data.Array (filter)
@@ -74,33 +74,56 @@ type ArticleWithMetadata = { | ArticleRep + ArticleMetadataRep () }
 -- | because it requires knowing the username of the current user (if there is one) to determine 
 -- | you follow this particular author.
 -- |
--- | So we'll write this decoder manually.
+-- | So we'll write the decoder for the `Article` type manually.
+-- |
+-- | We have two decoding options we can consider:
+-- |
+-- | 1. using `decodeJsonWith` from the 'tolerant-argonaut' package and manually decoding just
+-- | the `articles` field
+-- |
+-- | ```purescript
+-- | decodeArticles
+-- |   :: Maybe Username
+-- |   -> Json
+-- |   -> Either String { articles :: Array ArticleWithMetadata, articlesCount :: Int }
+-- | decodeArticles u =
+-- |    decodeJsonWith { articles: decodeArticles' <=< decodeJson }
+-- |  where
+-- |  decodeArticles' = sequence <<< filter isRight <<< map (decodeJsonWithAuthor u)
+-- | ```
+-- |
+-- | 2. manually decoding every field (shown below)
+-- |
+-- | The first method has the advantage of easily scaling to accommodate larger record types.
+-- | However, as a tradeoff, adapting the field names of incoming JSON data becomes more difficult.
+-- | For example, changing the field names to convert JSON to instances of `PaginatedArray
+-- | ArticleWithMetadata` might be done as follows:
+-- |
+-- | ```purescript
+-- | decodeArticles :: Maybe Username -> Json -> Either String (PaginatedArray ArticleWithMetadata)
+-- | decodeArticles u = map renameFields <<< decode
+-- |   where
+-- |   renameFields =
+-- |     rrenameMany
+-- |       { articles: SProxy :: SProxy "body"
+-- |       , articlesCount: SProxy :: SProxy "total"
+-- |       }
+-- |   decode = decodeJsonWith { articles: decodeArticles' <=< decodeJson }
+-- |   decodeArticles' = sequence <<< filter isRight <<< map (decodeJsonWithAuthor u)
+-- | ```
+-- |
+-- | Because `PaginatedArray ArticleWithMetadata` is a relatively simple type, we opt for the
+-- | second method, and we manually decode every field.
 decodeArticles :: Maybe Username -> Json -> Either String (PaginatedArray ArticleWithMetadata)
 decodeArticles u json = do
-  obj <- decodeJson json 
+  obj <- decodeJson json
   arr <- obj .: "articles"
   total <- obj .: "articlesCount"
-  -- For now, we'll drop out malformed articles. The server shouldn't send us bad data, and we 
+  -- For now, we'll drop out malformed articles. The server shouldn't send us bad data, and we
   -- could have a more sophisticated response, but this will do for our MVP.
-  filteredArr <- sequence $ filter isRight $ map (decodeArticleWithMetadata u) arr
+  filteredArr <- sequence $ filter isRight $ map (decodeJsonWithAuthor u) arr
   pure { body: filteredArr, total }
 
 -- | This helper function decodes a single `ArticleWithMetadata` at the key "article".
 decodeArticle :: Maybe Username -> Json -> Either String ArticleWithMetadata
-decodeArticle u = decodeArticleWithMetadata u <=< decodeAt "article"
-
--- | This function decodes an `ArticleWithMetadata` object, given a username to provide to
--- | the `author` decoder.
-decodeArticleWithMetadata :: Maybe Username -> Json -> Either String ArticleWithMetadata
-decodeArticleWithMetadata u json = do
-  obj <- decodeJson json
-  slug <- obj .: "slug"
-  title <- obj .: "title"
-  body <- obj .: "body"
-  description <- obj .: "description"
-  tagList <- obj .: "tagList"
-  favorited <- obj .: "favorited"
-  favoritesCount <- obj .: "favoritesCount"
-  createdAt <- obj .: "createdAt" 
-  author <- decodeAuthor u =<< obj .: "author"
-  pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }
+decodeArticle u = decodeJsonWithAuthor u <=< decodeAt "article"

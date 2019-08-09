@@ -19,7 +19,7 @@ import Prelude
 import Conduit.Api.Endpoint (Endpoint(..), noArticleParams)
 import Conduit.Api.Request (RequestMethod(..))
 import Conduit.Api.Request as Request
-import Conduit.Api.Utils (authenticate, decode, decodeAt, decodeWithAt, decodeWithUser, mkAuthRequest, mkRequest)
+import Conduit.Api.Utils (authenticate, decode, decodeWithUser, mkAuthRequest, mkRequest)
 import Conduit.Capability.LogMessages (class LogMessages)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Now (class Now)
@@ -30,8 +30,9 @@ import Conduit.Capability.Resource.User (class ManageUser)
 import Conduit.Data.Article (decodeArticle, decodeArticles)
 import Conduit.Data.Comment (decodeComments)
 import Conduit.Data.Log as Log
-import Conduit.Data.Profile (decodeAuthor, decodeProfileWithEmail)
+import Conduit.Data.Profile (decodeProfileAuthor)
 import Conduit.Data.Route as Route
+import Conduit.Data.Utils (decodeAt)
 import Conduit.Env (Env, LogLevel(..))
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Encode (encodeJson)
@@ -203,22 +204,22 @@ instance manageUserAppM :: ManageUser AppM where
 
   getCurrentUser =
     mkAuthRequest { endpoint: User, method: Get }
-      >>= decode (decodeWithAt decodeProfileWithEmail "user")
+      >>= decode (decodeAt "user")
 
   getAuthor username =
     mkRequest { endpoint: Profiles username, method: Get }
-      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
+      >>= decodeWithUser decodeProfileAuthor
 
   updateUser fields =
     void $ mkAuthRequest { endpoint: User, method: Post (Just (encodeJson fields)) }
 
   followUser username =
     mkAuthRequest { endpoint: Follow username, method: Post Nothing }
-      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
+      >>= decodeWithUser decodeProfileAuthor
 
   unfollowUser username =
     mkAuthRequest { endpoint: Follow username, method: Delete }
-      >>= decodeWithUser (\mbU -> decodeAuthor mbU <=< decodeAt "profile")
+      >>= decodeWithUser decodeProfileAuthor
 
 -- | Our operations for managing tags
 instance manageTagAppM :: ManageTag AppM where
