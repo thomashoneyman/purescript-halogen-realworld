@@ -14,21 +14,35 @@ This repository follows the [RealWorld](https://github.com/gothinkster/realworld
 
 ## Installation
 
-You can install and build the project with:
+Firstly, clone the repository:
 
 ```sh
-# clone the repository
 git clone https://github.com/thomashoneyman/purescript-halogen-realworld
 cd purescript-halogen-realworld
-
-# install dependencies
-yarn install
-
-# build the project and run the local server
-yarn build-serve
 ```
 
-If you are doing local development, I'd recommend running `yarn watch-dev` while working, and only use `yarn watch-serve` when you need to view how your changes reflect in the application (Parcel takes some time to run).
+In order to install the JavaScript dependencies:
+
+```sh
+yarn install
+```
+
+Then, build the project (this command will perform a `spago build`):
+
+```sh
+yarn build
+```
+
+Lastly, run a local server (default is to run on [port 8080](http://127.0.0.1:8080), but if this port is already in use
+it will increment to 8081 etc.):
+
+```sh
+yarn serve
+```
+
+The `yarn serve` command will also perform the bundle step, but you can also run `yarn bundle`, which creates a
+distribution-ready bundle of CSS and JavaScript. This will run `spago bundle-app` and `parcel build assets/index.html`
+under the hood.
 
 ## Learning PureScript
 
