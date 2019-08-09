@@ -27,7 +27,8 @@ To install the JavaScript and PureScript dependencies:
 yarn install
 ```
 
-Then, build the project (this command will perform a `spago build`):
+Then, build the project (this command will perform a `spago build`; see the [`package.json`](package.json) file to see
+all helper scripts for the project):
 
 ```sh
 yarn build
@@ -40,9 +41,8 @@ it will increment to 8081 etc.):
 yarn serve
 ```
 
-The `yarn serve` command will also perform the bundle step, but you can also run `yarn bundle`, which creates a
-distribution-ready bundle of CSS and JavaScript. This will run `spago bundle-app` and `parcel build assets/index.html`
-under the hood.
+The `yarn serve` command will perform the bundle step, but you can also run `yarn bundle`, to create a
+distribution-ready bundle of CSS and JavaScript.
 
 ## Learning PureScript
 
