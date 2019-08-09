@@ -14,35 +14,33 @@ This repository follows the [RealWorld](https://github.com/gothinkster/realworld
 
 ## Installation
 
-Firstly, clone the repository:
+First, clone the repository:
 
 ```sh
 git clone https://github.com/thomashoneyman/purescript-halogen-realworld
 cd purescript-halogen-realworld
 ```
 
-To install the JavaScript and PureScript dependencies:
+Install the JavaScript and PureScript dependencies:
 
 ```sh
 yarn install
 ```
 
-Then, build the project (this command will perform a `spago build`; see the [`package.json`](package.json) file to see
+Next, build the project (this command will run `spago build`; see the [`package.json`](package.json) file to see
 all helper scripts for the project):
 
 ```sh
 yarn build
 ```
 
-Lastly, run a local server (default is to run on [port 8080](http://127.0.0.1:8080), but if this port is already in use
-it will increment to 8081 etc.):
+Finally, bundle the JS and run a local server (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
 
 ```sh
 yarn serve
 ```
 
-The `yarn serve` command will perform the bundle step, but you can also run `yarn bundle`, to create a
-distribution-ready bundle of CSS and JavaScript.
+You can also run `yarn bundle` to create a distribution-ready bundle of JavaScript without starting a server.
 
 ## Learning PureScript
 
