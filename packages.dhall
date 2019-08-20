@@ -22,7 +22,7 @@ let additions =
           , "profunctor-lenses"
           ]
           "https://github.com/thomashoneyman/purescript-halogen-formless.git"
-          "halogen-5"
+          "v1.0.0-rc.1"
       , slug =
           mkPackage
           [ "prelude"
