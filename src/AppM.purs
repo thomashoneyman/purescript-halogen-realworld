@@ -211,7 +211,7 @@ instance manageUserAppM :: ManageUser AppM where
       >>= decodeWithUser decodeProfileAuthor
 
   updateUser fields =
-    void $ mkAuthRequest { endpoint: User, method: Post (Just (encodeJson fields)) }
+    void $ mkAuthRequest { endpoint: User, method: Put (Just (encodeJson fields)) }
 
   followUser username =
     mkAuthRequest { endpoint: Follow username, method: Post Nothing }
@@ -256,7 +256,7 @@ instance manageArticleAppM :: ManageArticle AppM where
       >>= decodeWithUser decodeArticle
 
   updateArticle slug article = do
-    let method = Post $ Just $ encodeJson { article }
+    let method = Put $ Just $ encodeJson { article }
     mkAuthRequest { endpoint: Article slug, method }
       >>= decodeWithUser decodeArticle
 
