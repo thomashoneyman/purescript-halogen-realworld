@@ -4,6 +4,8 @@ module Conduit.Page.Home where
 
 import Prelude
 
+import Component.HOC.Connect (WithCurrentUser)
+import Component.HOC.Connect as Connect
 import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Capability.Navigate (class Navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, getArticles, getCurrentUserFeed)
@@ -13,13 +15,11 @@ import Conduit.Component.HTML.Footer (footer)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
-import Conduit.Component.Utils (busEventSource)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
-import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (UserEnv)
-import Control.Monad.Reader (class MonadAsk, asks)
+import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
@@ -28,8 +28,6 @@ import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref as Ref
-import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -40,6 +38,7 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 data Action
   = Initialize
+  | Receive { | Input }
   | ShowTab Tab
   | LoadFeed Pagination
   | LoadArticles ArticleParams
@@ -52,9 +51,11 @@ type State =
   { tags :: RemoteData String (Array String)
   , articles :: RemoteData String (PaginatedArray ArticleWithMetadata)
   , tab :: Tab
-  , currentUser :: Maybe Profile
   , page :: Int
+  | Input
   }
+
+type Input = WithCurrentUser ()
 
 data Tab
   = Feed
@@ -74,22 +75,23 @@ component
   => Navigate m
   => ManageTag m
   => ManageArticle m
-  => H.Component HH.HTML (Const Void) Unit Void m
-component = H.mkComponent
+  => H.Component HH.HTML (Const Void) {} Void m
+component = Connect.component $ H.mkComponent
   { initialState
   , render
   , eval: H.mkEval $ H.defaultEval
       { handleAction = handleAction
+      , receive = Just <<< Receive
       , initialize = Just Initialize
       }
   }
   where
-  initialState :: Unit -> State
-  initialState _ =
+  initialState :: { | Input } -> State
+  initialState { currentUser } =
     { tags: NotAsked
     , articles: NotAsked
     , tab: Global
-    , currentUser: Nothing
+    , currentUser
     , page: 1
     }
 
@@ -104,6 +106,9 @@ component = H.mkComponent
         profile -> do
           void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
           H.modify_ _ { tab = Feed }
+    
+    Receive { currentUser } ->
+      H.modify_ _ { currentUser = currentUser }
       
     LoadTags -> do
       H.modify_ _ { tags = Loading}

@@ -5,6 +5,7 @@ module Conduit.Page.Editor where
 
 import Prelude
 
+import Component.HOC.Connect (WithCurrentUser)
 import Component.HOC.Connect as Connect
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
@@ -13,7 +14,6 @@ import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
 import Conduit.Data.Article (ArticleWithMetadata, Article)
-import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (UserEnv)
 import Conduit.Form.Field as Field
@@ -34,22 +34,25 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Slug (Slug)
+import Type.Row (type (+))
 
 data Action
   = Initialize
+  | Receive { | InnerInput }
   | HandleEditor Article
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
-  , slug :: Maybe Slug
-  , currentUser :: Maybe Profile
+  | InnerInput
   }
 
 type InnerInput =
-  ( slug :: Maybe Slug )
+  ( WithCurrentUser
+  + Input
+  )
 
 type Input =
-  { slug :: Maybe Slug }
+  ( slug :: Maybe Slug )
 
 type ChildSlots =
   ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
@@ -60,7 +63,7 @@ component
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageArticle m
-  => H.Component HH.HTML (Const Void) Input Void m
+  => H.Component HH.HTML (Const Void) { | Input } Void m
 component = Connect.component $ H.mkComponent
   -- due to the use of `Connect.component`, our input now also has `currentUser`
   -- in it, even though this component's only input is a slug.
@@ -68,6 +71,7 @@ component = Connect.component $ H.mkComponent
   , render
   , eval: H.mkEval $ H.defaultEval
       { handleAction = handleAction
+      , receive = Just <<< Receive
       , initialize = Just Initialize
       }
   }
@@ -86,6 +90,9 @@ component = Connect.component $ H.mkComponent
           let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
+    
+    Receive { currentUser } ->
+      H.modify_ _ { currentUser = currentUser }
 
     HandleEditor article -> do
       st <- H.get

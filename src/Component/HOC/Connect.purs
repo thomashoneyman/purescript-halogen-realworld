@@ -24,10 +24,8 @@ data Action output
   | HandleUserBus (Maybe Profile)
   | Emit output
 
-type State input = 
-  { currentUser :: Maybe Profile
-  , input :: input
-  }
+type WithCurrentUser r =
+  ( currentUser :: Maybe Profile | r )
 
 type ChildSlots query output =
   ( inner :: H.Slot query output Unit )
@@ -42,7 +40,7 @@ component
    . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Row.Lacks "currentUser" input 
-  => H.Component HH.HTML query { currentUser :: Maybe Profile | input } output m
+  => H.Component HH.HTML query { | WithCurrentUser input } output m
   -> H.Component HH.HTML query { | input } output m
 component innerComponent = 
   H.mkComponent
