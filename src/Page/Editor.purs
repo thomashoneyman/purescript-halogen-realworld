@@ -5,13 +5,13 @@ module Conduit.Page.Editor where
 
 import Prelude
 
+import Component.HOC.Connect as Connect
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
-import Conduit.Component.Utils (busEventSource)
 import Conduit.Data.Article (ArticleWithMetadata, Article)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
@@ -19,7 +19,7 @@ import Conduit.Env (UserEnv)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
-import Control.Monad.Reader (class MonadAsk, asks)
+import Control.Monad.Reader (class MonadAsk)
 import Data.Const (Const)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
@@ -27,9 +27,7 @@ import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref as Ref
 import Formless as F
-import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -39,7 +37,6 @@ import Slug (Slug)
 
 data Action
   = Initialize
-  | HandleUserBus (Maybe Profile)
   | HandleEditor Article
 
 type State =
@@ -48,8 +45,13 @@ type State =
   , currentUser :: Maybe Profile
   }
 
+type InnerInput =
+  ( slug :: Maybe Slug )
+
 type Input =
-  { slug :: Maybe Slug }
+  { currentUser :: Maybe Profile
+  , slug :: Maybe Slug
+  }
 
 type ChildSlots =
   ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
@@ -62,7 +64,7 @@ component
   => ManageArticle m
   => H.Component HH.HTML (Const Void) Input Void m
 component = H.mkComponent
-  { initialState: \{ slug } -> { article: NotAsked, currentUser: Nothing, slug }
+  { initialState: \{ currentUser, slug } -> { article: NotAsked, currentUser, slug }
   , render
   , eval: H.mkEval $ H.defaultEval
       { handleAction = handleAction
@@ -72,11 +74,8 @@ component = H.mkComponent
   where
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
-    Initialize ->  do
-      { currentUser, userBus } <- asks _.userEnv
-      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
-      mbProfile <- liftEffect $ Ref.read currentUser
-      st <- H.modify _ { currentUser = mbProfile }
+    Initialize -> do
+      st <- H.get
       for_ st.slug \slug -> do
         H.modify_ _ { article = Loading }
         mbArticle <- getArticle slug
@@ -88,16 +87,12 @@ component = H.mkComponent
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
 
-    HandleUserBus mbProfile ->
-      H.modify_ _ { currentUser = mbProfile }
-
     HandleEditor article -> do
       st <- H.get
       mbArticleWithMetadata <- case st.slug of
         Nothing -> createArticle article
         Just s -> updateArticle s article
-      let
-        slug = _.slug <$> mbArticleWithMetadata
+      let slug = _.slug <$> mbArticleWithMetadata
       H.modify_ _ { article = fromMaybe mbArticleWithMetadata, slug = slug }
       for_ slug (navigate <<< ViewArticle)
 

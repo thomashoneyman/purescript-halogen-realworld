@@ -3,17 +3,30 @@
 -- | stay in sync with changes to that data.
 module Component.HOC.Connect where
 
+import Prelude
+
+import Conduit.Component.Utils (busEventSource)
+import Conduit.Data.Profile (Profile)
+import Conduit.Env (UserEnv)
+import Control.Monad.Reader (class MonadAsk, asks)
+import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+import Effect.Aff.Class (class MonadAff)
+import Effect.Ref as Ref
+import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
+import Prim.Row as Row
+import Record as Record
 
-data Action 
+data Action output
   = Initialize
   | HandleUserBus (Maybe Profile)
+  | Emit output
 
 type State input = 
-  { input :: input
-  , currentUser :: Maybe Profile
+  { currentUser :: Maybe Profile
+  , input :: input
   }
 
 type ChildSlots query output =
@@ -25,20 +38,21 @@ _inner = SProxy :: SProxy "inner"
 -- | component because it has no queries or outputs of its own. That makes
 -- | it a transparent wrapper around the inner component.
 component
-  :: forall query output m r
+  :: forall query input output m r
    . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
-  => H.Component HH.HTML query input output m
-  -> H.Component HH.HTML query (State input) output m
+  => Row.Lacks "currentUser" input 
+  => H.Component HH.HTML query { currentUser :: Maybe Profile | input } output m
+  -> H.Component HH.HTML query { | input } output m
 component innerComponent = 
   H.mkComponent
-    { initialState: 
-        { input: _
-        , currentUser: Nothing 
-        }
+    -- here, we'll insert the current user into the wrapped component's input 
+    -- minus the current user
+    { initialState: Record.insert (SProxy :: _ "currentUser") Nothing
     , render
     , eval: H.mkEval $ H.defaultEval
         { handleAction = handleAction
+        , handleQuery = handleQuery
         , initialize = Just Initialize
         }
     }
@@ -58,10 +72,15 @@ component innerComponent =
     HandleUserBus mbProfile ->
       H.modify_ _ { currentUser = mbProfile }
 
-    Bubble output ->
+    Emit output ->
       H.raise output
+  
+  -- We'll simply defer all queries to the existing H.query function, sending
+  -- to the correct slot.
+  handleQuery :: forall a. query a -> H.HalogenM _ _ _ _ _ (Maybe a)
+  handleQuery = H.query _inner unit
 
-  -- Here, we pass the inner component its input along with the current
-  -- user from the global state.
+  -- We'll simply render the inner component as-is, except with the augmented
+  -- input containing the current user.
   render state = 
-    HH.slot _inner unit innerComponent state (Just <<< Bubble)
+    HH.slot _inner unit innerComponent state (Just <<< Emit)
