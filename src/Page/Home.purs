@@ -4,7 +4,6 @@ module Conduit.Page.Home where
 
 import Prelude
 
-import Component.HOC.Connect (WithCurrentUser)
 import Component.HOC.Connect as Connect
 import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Capability.Navigate (class Navigate)
@@ -17,6 +16,7 @@ import Conduit.Component.HTML.Utils (css, maybeElem, whenElem)
 import Conduit.Component.Part.FavoriteButton (favorite, unfavorite)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk)
@@ -38,7 +38,7 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 data Action
   = Initialize
-  | Receive { | Input }
+  | Receive { currentUser :: Maybe Profile }
   | ShowTab Tab
   | LoadFeed Pagination
   | LoadArticles ArticleParams
@@ -52,10 +52,8 @@ type State =
   , articles :: RemoteData String (PaginatedArray ArticleWithMetadata)
   , tab :: Tab
   , page :: Int
-  | Input
+  , currentUser :: Maybe Profile
   }
-
-type Input = WithCurrentUser ()
 
 data Tab
   = Feed
@@ -86,7 +84,6 @@ component = Connect.component $ H.mkComponent
       }
   }
   where
-  initialState :: { | Input } -> State
   initialState { currentUser } =
     { tags: NotAsked
     , articles: NotAsked
