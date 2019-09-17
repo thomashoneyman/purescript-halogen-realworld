@@ -49,9 +49,7 @@ type InnerInput =
   ( slug :: Maybe Slug )
 
 type Input =
-  { currentUser :: Maybe Profile
-  , slug :: Maybe Slug
-  }
+  { slug :: Maybe Slug }
 
 type ChildSlots =
   ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
@@ -63,7 +61,9 @@ component
   => Navigate m
   => ManageArticle m
   => H.Component HH.HTML (Const Void) Input Void m
-component = H.mkComponent
+component = Connect.component $ H.mkComponent
+  -- due to the use of `Connect.component`, our input now also has `currentUser`
+  -- in it, even though this component's only input is a slug.
   { initialState: \{ currentUser, slug } -> { article: NotAsked, currentUser, slug }
   , render
   , eval: H.mkEval $ H.defaultEval

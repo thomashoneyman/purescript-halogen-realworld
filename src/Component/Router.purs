@@ -7,7 +7,6 @@ module Conduit.Component.Router where
 
 import Prelude
 
-import Component.HOC.Connect as Connect
 import Conduit.Capability.LogMessages (class LogMessages)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Now (class Now)
@@ -136,10 +135,10 @@ component = H.mkComponent
         HH.slot (SProxy :: _ "settings") unit Settings.component unit absurd
           # authorize currentUser
       Editor -> 
-        HH.slot (SProxy :: _ "editor") unit (Connect.component Editor.component) { slug: Nothing } absurd
-          # authorize currentUser
+        authorize currentUser 
+          $ HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Nothing } absurd
       EditArticle slug -> 
-        HH.slot (SProxy :: _ "editor") unit (Connect.component Editor.component) { slug: Just slug } absurd
+        HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Just slug } absurd
           # authorize currentUser
       ViewArticle slug -> 
         HH.slot (SProxy :: _ "viewArticle") unit ViewArticle.component { slug } absurd

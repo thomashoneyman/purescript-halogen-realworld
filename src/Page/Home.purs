@@ -40,7 +40,6 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 data Action
   = Initialize
-  | HandleUserBus (Maybe Profile)
   | ShowTab Tab
   | LoadFeed Pagination
   | LoadArticles ArticleParams
@@ -97,19 +96,15 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action () Void m Unit
   handleAction = case _ of
     Initialize -> do
-      { currentUser, userBus } <- asks _.userEnv
-      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
       void $ H.fork $ handleAction LoadTags
-      liftEffect (Ref.read currentUser) >>= case _ of
+      state <- H.get
+      case state.currentUser of
         Nothing ->
           void $ H.fork $ handleAction $ LoadArticles noArticleParams
         profile -> do
           void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
-          H.modify_ _ { currentUser = profile, tab = Feed }
-
-    HandleUserBus profile ->
-      H.modify_ _ { currentUser = profile }
-
+          H.modify_ _ { tab = Feed }
+      
     LoadTags -> do
       H.modify_ _ { tags = Loading}
       tags <- getAllTags
