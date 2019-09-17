@@ -103,10 +103,10 @@ component = Connect.component $ H.mkComponent
         profile -> do
           void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
           H.modify_ _ { tab = Feed }
-    
+
     Receive { currentUser } ->
       H.modify_ _ { currentUser = currentUser }
-      
+
     LoadTags -> do
       H.modify_ _ { tags = Loading}
       tags <- getAllTags

@@ -85,7 +85,7 @@ component = Connect.component $ H.mkComponent
           let newFields = F.wrapInputFields { title, description, body, tagList: map Tag tagList }
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
-    
+
     Receive { currentUser } ->
       H.modify_ _ { currentUser = currentUser }
 
