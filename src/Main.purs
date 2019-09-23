@@ -122,7 +122,7 @@ main = HA.runHalogenAff do
   --
   -- Let's put it all together. With `hoist`, `runAppM`, our environment, and our router component,
   -- we can produce a proper root component for Halogen to run.  
-    rootComponent :: H.Component HH.HTML Router.Query Unit Void Aff
+    rootComponent :: H.Component HH.HTML Router.Query {} Void Aff
     rootComponent = H.hoist (runAppM environment) Router.component
 
   -- Now we have the two things we need to run a Halogen application: a reference to an HTML element
@@ -138,7 +138,7 @@ main = HA.runHalogenAff do
   -- Note: Since our root component is our router, the "queries" and "messages" above refer to the 
   -- `Query` and `Message` types defined in the `Conduit.Router` module. Only those queries and 
   -- messages can be used, or else you'll get a compiler error.
-  halogenIO <- runUI rootComponent unit body
+  halogenIO <- runUI rootComponent {} body
 
   -- Fantastic! Our app is running and we're almost done. All that's left is to notify the router
   -- any time the location changes in the URL. 

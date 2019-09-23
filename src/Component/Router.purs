@@ -7,6 +7,8 @@ module Conduit.Component.Router where
 
 import Prelude
 
+import Component.HOC.Connect (WithCurrentUser)
+import Component.HOC.Connect as Connect
 import Conduit.Capability.LogMessages (class LogMessages)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Now (class Now)
@@ -14,7 +16,7 @@ import Conduit.Capability.Resource.Article (class ManageArticle)
 import Conduit.Capability.Resource.Comment (class ManageComment)
 import Conduit.Capability.Resource.Tag (class ManageTag)
 import Conduit.Capability.Resource.User (class ManageUser)
-import Conduit.Component.Utils (OpaqueSlot, busEventSource)
+import Conduit.Component.Utils (OpaqueSlot)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..), routeCodec)
 import Conduit.Env (UserEnv)
@@ -26,13 +28,12 @@ import Conduit.Page.Profile as Profile
 import Conduit.Page.Register as Register
 import Conduit.Page.Settings as Settings
 import Conduit.Page.ViewArticle as ViewArticle
-import Control.Monad.Reader (class MonadAsk, asks)
+import Control.Monad.Reader (class MonadAsk)
 import Data.Either (hush)
 import Data.Foldable (elem)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref as Ref
 import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
@@ -49,7 +50,7 @@ data Query a
 
 data Action 
   = Initialize 
-  | HandleUserBus (Maybe Profile)
+  | Receive { | WithCurrentUser () }
 
 type ChildSlots = 
   ( home :: OpaqueSlot Unit
@@ -72,13 +73,14 @@ component
   => ManageArticle m
   => ManageComment m
   => ManageTag m
-  => H.Component HH.HTML Query Unit Void m
-component = H.mkComponent
-  { initialState: \_ -> { route: Nothing, currentUser: Nothing } 
+  => H.Component HH.HTML Query {} Void m
+component = Connect.component $ H.mkComponent
+  { initialState: \{ currentUser } -> { route: Nothing, currentUser } 
   , render
   , eval: H.mkEval $ H.defaultEval 
       { handleQuery = handleQuery 
       , handleAction = handleAction
+      , receive = Just <<< Receive
       , initialize = Just Initialize
       }
   }
@@ -86,19 +88,13 @@ component = H.mkComponent
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize -> do
-      -- first, we'll get the value of the current user and subscribe to updates any time the
-      -- value changes
-      { currentUser, userBus } <- asks _.userEnv
-      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
-      mbProfile <- liftEffect (Ref.read currentUser) 
-      H.modify_ _ { currentUser = mbProfile }
-      -- then, we'll get the route the user landed on
+      -- first we'll get the route the user landed on
       initialRoute <- hush <<< (RD.parse routeCodec) <$> liftEffect getHash
-      -- and, finally, we'll navigate to the new route (also setting the hash)
+      -- then we'll navigate to the new route (also setting the hash)
       navigate $ fromMaybe Home initialRoute
     
-    HandleUserBus mbProfile -> do
-      H.modify_ _ { currentUser = mbProfile }
+    Receive { currentUser } ->
+      H.modify_ _ { currentUser = currentUser }
 
   handleQuery :: forall a. Query a -> H.HalogenM State Action ChildSlots Void m (Maybe a)
   handleQuery = case _ of
@@ -126,7 +122,7 @@ component = H.mkComponent
   render { route, currentUser } = case route of
     Just r -> case r of
       Home -> 
-        HH.slot (SProxy :: _ "home") unit Home.component unit absurd
+        HH.slot (SProxy :: _ "home") unit Home.component {} absurd
       Login -> 
         HH.slot (SProxy :: _ "login") unit Login.component { redirect: true } absurd
       Register -> 
