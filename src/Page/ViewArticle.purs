@@ -150,8 +150,10 @@ component = H.mkComponent
       H.modify_ _ { comments = fromMaybe comments }
 
     Receive { slug } -> do
-      H.modify_ _ { slug = slug }
-      handleAction Initialize
+      st <- H.get
+      when (st.slug /= slug) do
+        H.modify_ _ { slug = slug }
+        handleAction Initialize
 
   _author :: Traversal' State Author
   _author = _article <<< prop (SProxy :: SProxy "author")

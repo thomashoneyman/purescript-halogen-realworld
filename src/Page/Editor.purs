@@ -87,8 +87,7 @@ component = Connect.component $ H.mkComponent
           pure unit
 
     Receive { slug, currentUser } -> do
-      st <- H.get
-      H.modify_ _ { currentUser = currentUser }
+      st <- H.modify _ { currentUser = currentUser }
       when (slug /= st.slug) do
         handleAction Initialize
 
