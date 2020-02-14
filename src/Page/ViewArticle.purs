@@ -53,6 +53,7 @@ data Action
   | UnfavoriteArticle
   | DeleteArticle
   | DeleteComment CommentId
+  | Receive Input
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
@@ -84,6 +85,7 @@ component = H.mkComponent
   , eval: H.mkEval $ H.defaultEval
       { handleAction = handleAction
       , initialize = Just Initialize
+      , receive = Just <<< Receive
       }
   }
   where
@@ -146,6 +148,10 @@ component = H.mkComponent
       deleteComment st.slug commentId
       comments <- getComments st.slug
       H.modify_ _ { comments = fromMaybe comments }
+
+    Receive { slug } -> do
+      H.modify_ _ { slug = slug }
+      handleAction Initialize
 
   _author :: Traversal' State Author
   _author = _article <<< prop (SProxy :: SProxy "author")

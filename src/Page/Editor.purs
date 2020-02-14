@@ -86,8 +86,11 @@ component = Connect.component $ H.mkComponent
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
 
-    Receive { currentUser } ->
+    Receive { slug, currentUser } -> do
+      st <- H.get
       H.modify_ _ { currentUser = currentUser }
+      when (slug /= st.slug) do
+        handleAction Initialize
 
     HandleEditor article -> do
       st <- H.get
