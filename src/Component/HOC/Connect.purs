@@ -19,9 +19,10 @@ import Halogen.HTML as HH
 import Prim.Row as Row
 import Record as Record
 
-data Action output
+data Action input output
   = Initialize
   | HandleUserBus (Maybe Profile)
+  | Receive input
   | Emit output
 
 type WithCurrentUser r =
@@ -52,6 +53,7 @@ component innerComponent =
         { handleAction = handleAction
         , handleQuery = handleQuery
         , initialize = Just Initialize
+        , receive = Just <<< Receive
         }
     }
   where
@@ -69,6 +71,10 @@ component innerComponent =
     -- and we need to update our local state to stay in sync.
     HandleUserBus mbProfile ->
       H.modify_ _ { currentUser = mbProfile }
+    
+    Receive input -> do
+      { currentUser } <- H.get
+      H.put $ Record.insert (SProxy :: _ "currentUser") currentUser input
 
     Emit output ->
       H.raise output
