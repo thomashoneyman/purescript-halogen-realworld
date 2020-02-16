@@ -35,16 +35,16 @@ instance showCommentId :: Show CommentId where
   show = genericShow
 
 -- | Next, we'll define our larger comment type. A comment consists of a persistent unique
--- | identifier, a timestamp, a user-created body, and information about the user who created   
+-- | identifier, a timestamp, a user-created body, and information about the user who created
 -- | the comment.
 type Comment =
-  { id :: CommentId 
+  { id :: CommentId
   , createdAt :: PreciseDateTime
   , body :: String
   , author :: Author
   }
 
--- | Most records can be generically encoded or decoded without us having to write anything 
+-- | Most records can be generically encoded or decoded without us having to write anything
 -- | manually. In this case, though, there is a field that can't be handled generically:
 -- | an author, which requires a username to be decoded.
 -- |

@@ -17,7 +17,6 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Data.Const (Const)
 import Data.Lens (preview)
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
@@ -52,11 +51,11 @@ type State =
   { profile :: RemoteData String ProfileWithEmail }
 
 component
-  :: forall m
+  :: forall q o m
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML (Const Void) Unit Void m
+  => H.Component HH.HTML q Unit o m
 component = H.mkComponent
   { initialState: \_ -> { profile: NotAsked }
   , render
@@ -125,7 +124,7 @@ component = H.mkComponent
             ]
         ]
 
-    formComponent :: F.Component SettingsForm (Const Void) () Unit UpdateProfileFields m
+    formComponent :: forall query slots. F.Component SettingsForm query slots Unit UpdateProfileFields m
     formComponent = F.component formInput $ F.defaultSpec
       { render = renderForm
       , handleEvent = F.raiseResult

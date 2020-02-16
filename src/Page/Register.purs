@@ -14,7 +14,6 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Data.Const (Const)
 import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
@@ -39,11 +38,11 @@ data Action
   = HandleRegisterForm RegisterFields
 
 component
-  :: forall m
+  :: forall q o m
    . MonadAff m
   => ManageUser m
   => Navigate m
-  => H.Component HH.HTML (Const Void) Unit Void m
+  => H.Component HH.HTML q Unit o m
 component = H.mkComponent
   { initialState: const unit
   , render
@@ -85,13 +84,15 @@ component = H.mkComponent
             ]
         ]
 
-    formComponent :: F.Component RegisterForm (Const Void) () Unit RegisterFields m
+    formComponent
+      :: forall formQuery formSlots formInput
+       . F.Component RegisterForm formQuery formSlots formInput RegisterFields m
     formComponent = F.component formInput $ F.defaultSpec
       { render = renderForm
       , handleEvent = F.raiseResult
       }
       where
-      formInput :: Unit -> F.Input' RegisterForm m
+      formInput :: formInput -> F.Input' RegisterForm m
       formInput _ =
         { validators: RegisterForm
             { username: V.required >>> V.usernameFormat

@@ -23,36 +23,36 @@ import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
 import Web.UIEvent.MouseEvent (MouseEvent)
 
-articleList 
+articleList
   :: forall props act
    . (Int -> act)
   -> (Int -> act)
-  -> RemoteData String (PaginatedArray ArticleWithMetadata) 
+  -> RemoteData String (PaginatedArray ArticleWithMetadata)
   -> HH.HTML props act
 articleList favoriteAct unfavoriteAct = case _ of
-  NotAsked -> 
+  NotAsked ->
     text "Articles not yet loaded"
-  Loading -> 
+  Loading ->
     text "Loading..."
-  Failure err -> 
+  Failure err ->
     text ("Error loading articles: " <> err)
-  Success { body } | length body == 0 -> 
+  Success { body } | length body == 0 ->
     text "No articles are here...yet!"
-  Success articles -> 
-    HH.div_ 
+  Success articles ->
+    HH.div_
       (articlePreview favoriteAct unfavoriteAct `mapWithIndex` articles.body)
   where
-  text str = 
+  text str =
     HH.div
       [ css "article-preview" ]
       [ HH.text str ]
 
-articlePreview 
+articlePreview
   :: forall props act
    . (Int -> act)
   -> (Int -> act)
   -> Int
-  -> ArticleWithMetadata 
+  -> ArticleWithMetadata
   -> HH.HTML props act
 articlePreview favoriteAct unfavoriteAct ix article =
   HH.div
@@ -80,14 +80,14 @@ articlePreview favoriteAct unfavoriteAct ix article =
             [ favoriteButton Icon (favoriteAct ix) (unfavoriteAct ix) article ]
         ]
     , HH.a
-        [ css "preview-link" 
+        [ css "preview-link"
         , safeHref $ ViewArticle article.slug
         ]
-        [ HH.h1_ 
+        [ HH.h1_
             [ HH.text article.title ]
-        , HH.p_ 
+        , HH.p_
             [ HH.text article.description ]
-        , HH.span_ 
+        , HH.span_
             [ HH.text "Read more..." ]
         , HH.ul
             [ css "tag-list" ]
@@ -106,30 +106,30 @@ renderTag tag =
 
 -- Pagination
 
-renderPagination 
+renderPagination
   :: forall props act
-   . (Int -> MouseEvent -> act) 
-  -> Int 
-  -> PaginatedArray ArticleWithMetadata 
+   . (Int -> MouseEvent -> act)
+  -> Int
+  -> PaginatedArray ArticleWithMetadata
   -> HH.HTML props act
 renderPagination act currentIndex { body, total } =
   whenElem (total > 20) \_ ->
-    HH.ul  
+    HH.ul
       [ css "pagination" ]
       (renderPageLink act currentIndex <$> enumFromTo 1 (total / 20))
 
-renderPageLink 
+renderPageLink
   :: forall props act
-   . (Int -> MouseEvent -> act) 
-  -> Int 
-  -> Int 
+   . (Int -> MouseEvent -> act)
+  -> Int
+  -> Int
   -> HH.HTML props act
 renderPageLink act activeIndex index =
   HH.li
     [ css $ "page-item" <> guard (activeIndex == index) " active" ]
-    [ HH.a 
+    [ HH.a
         [ css "page-link"
-        , HP.href "" -- needed for realworld css; remember to prevent default! 
+        , HP.href "" -- needed for realworld css; remember to prevent default!
         , HE.onClick $ Just <<< act index
         ]
         [ HH.text $ show index ]

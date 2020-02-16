@@ -2,10 +2,10 @@
 -- | component, but do need to trigger certain actions in a parent component. To avoid writing the
 -- | same query handler over and over again, we'll export both the pure HTML function and a default
 -- | handle from this module.
--- | 
--- | For a more in-depth example of this pattern, see the `Conduit.Component.Part.FollowButton` 
+-- |
+-- | For a more in-depth example of this pattern, see the `Conduit.Component.Part.FollowButton`
 -- | module.
-module Conduit.Component.Part.FavoriteButton 
+module Conduit.Component.Part.FavoriteButton
   ( ButtonSize(..)
   , favoriteButton
   , favorite
@@ -31,47 +31,47 @@ data ButtonSize
   = Icon
   | Medium
 
-derive instance eqButtonSize :: Eq ButtonSize 
+derive instance eqButtonSize :: Eq ButtonSize
 
-favoriteButton 
+favoriteButton
   :: forall props act
-   . ButtonSize 
-  -> act 
-  -> act 
-  -> ArticleWithMetadata 
+   . ButtonSize
+  -> act
+  -> act
+  -> ArticleWithMetadata
   -> HH.HTML props act
 favoriteButton buttonSize favoriteAct unfavoriteAct article =
   HH.button
     [ css $ "btn btn-sm " <> if article.favorited then "btn-primary" else "btn-outline-primary"
     , HE.onClick \_ -> Just if article.favorited then unfavoriteAct else favoriteAct
     ]
-    [ HH.i 
+    [ HH.i
         [ css "ion-heart" ]
         []
     , HH.span_
-        [ HH.text $ case article.favorited, buttonSize of 
-            true, Medium -> " Unfavorite Article" 
-            _, Medium -> " Favorite Article" 
+        [ HH.text $ case article.favorited, buttonSize of
+            true, Medium -> " Unfavorite Article"
+            _, Medium -> " Favorite Article"
             _, _ -> " "
         ]
     , HH.span
         [ css "counter" ]
         [ HH.text $ case buttonSize of
             Icon -> " " <> show article.favoritesCount
-            _ -> " (" <> show article.favoritesCount <> ")" 
+            _ -> " (" <> show article.favoritesCount <> ")"
         ]
     ]
 
 -- Eval
 
-favorite  
+favorite
   :: forall st act slots msg m
    . ManageArticle m
   => Traversal' st ArticleWithMetadata
   -> H.HalogenM st act slots msg m Unit
 favorite _article = act (not <<< _.favorited) favoriteArticle _article
 
-unfavorite  
+unfavorite
   :: forall st act slots msg m
    . ManageArticle m
   => Traversal' st ArticleWithMetadata
@@ -80,7 +80,7 @@ unfavorite _article = act _.favorited unfavoriteArticle _article
 
 -- This will be kept internal.
 
-act  
+act
   :: forall st act slots msg m
    . ManageArticle m
   => (ArticleWithMetadata -> Boolean)

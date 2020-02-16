@@ -15,6 +15,7 @@ import Conduit.Component.HTML.Utils (css, maybeElem, safeHref, whenElem)
 import Conduit.Component.Part.FavoriteButton (ButtonSize(..), favorite, favoriteButton, unfavorite)
 import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Component.RawHTML as RawHTML
+import Conduit.Component.Utils (OpaqueSlot)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (Comment, CommentId)
@@ -25,7 +26,6 @@ import Conduit.Data.Username as Username
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Control.Parallel (parTraverse_)
-import Data.Const (Const)
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview)
 import Data.Lens.Record (prop)
@@ -68,17 +68,17 @@ type Input =
   }
 
 type ChildSlots =
-  ( rawHtml :: H.Slot (Const Void) Void Unit )
+  ( rawHtml :: OpaqueSlot Unit )
 
 component
-  :: forall m r
+  :: forall q o m r
    . MonadAff m
   => ManageArticle m
   => ManageComment m
   => ManageUser m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
-  => H.Component HH.HTML (Const Void) Input Void m
+  => H.Component HH.HTML q Input o m
 component = H.mkComponent
   { initialState
   , render
@@ -98,7 +98,7 @@ component = H.mkComponent
     , slug
     }
 
-  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
+  handleAction :: Action -> H.HalogenM State Action ChildSlots o m Unit
   handleAction = case _ of
     Initialize -> do
       parTraverse_ H.fork [ handleAction GetArticle, handleAction GetComments ]
@@ -154,12 +154,6 @@ component = H.mkComponent
       when (st.slug /= slug) do
         H.modify_ _ { slug = slug }
         handleAction Initialize
-
-  _author :: Traversal' State Author
-  _author = _article <<< prop (SProxy :: SProxy "author")
-
-  _article :: Traversal' State ArticleWithMetadata
-  _article = prop (SProxy :: SProxy "article") <<< _Success
 
   render :: State -> H.ComponentHTML Action ChildSlots m
   render state =
@@ -338,3 +332,9 @@ component = H.mkComponent
                 ]
           ]
         ]
+
+  _author :: Traversal' State Author
+  _author = _article <<< prop (SProxy :: SProxy "author")
+
+  _article :: Traversal' State ArticleWithMetadata
+  _article = prop (SProxy :: SProxy "article") <<< _Success

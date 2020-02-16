@@ -1,11 +1,11 @@
 -- | A capability representing the ability to manage users in our system. That includes logging in,
 -- | registering, following / unfollowing, fetching an article's author, and more.
--- | 
+-- |
 -- | This capability lets us ignore the mechanics of managing a resource and focus on our
--- | business logic. For now our app implements this capability with a REST API, but we could 
--- | easily swap in a database, RPC, local filesystem, or something else without having to touch 
--- | any application code besides the application monad, `Conduit.AppM`. In addition, we can test 
--- | our business logic  by mocking responses in our test monad instead of hitting the server.
+-- | business logic. For now our app implements this capability with a REST API, but we could
+-- | easily swap in a database, RPC, local filesystem, or something else without having to touch
+-- | any application code besides the application monad, `Conduit.AppM`. In addition, we can test
+-- | our business logic by mocking responses in our test monad instead of hitting the server.
 -- |
 -- | To learn more about why we use capabilities and this architecture, please see the guide:
 -- | https://thomashoneyman.com/guides/real-world-halogen/push-effects-to-the-edges/
@@ -21,15 +21,15 @@ import Halogen (HalogenM, lift)
 import Type.Row (type (+))
 
 -- | This type is a record made up of two row types: the fields that make up a profile, plus the
--- | fields used for authentication, like their email address and password. See the 
+-- | fields used for authentication, like their email address and password. See the
 -- | `Conduit.Data.Profile` module for more details.
 type UpdateProfileFields = { | ProfileRep + AuthFieldsRep Maybe () }
 
 -- | This capability represents the ability to manage users in our system. We support logging users
--- | in, and registering them, as well as reading information about various users and who follows 
+-- | in, and registering them, as well as reading information about various users and who follows
 -- | who.
--- | 
--- | We'll handle all the mechanics of making the request, decoding responses, handling errors, and 
+-- |
+-- | We'll handle all the mechanics of making the request, decoding responses, handling errors, and
 -- | so on in the implementation.
 class Monad m <= ManageUser m where
   loginUser :: LoginFields -> m (Maybe Profile)

@@ -53,12 +53,12 @@ type ChildSlots =
   ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
 
 component
-  :: forall m r
+  :: forall q o m r
    . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageArticle m
-  => H.Component HH.HTML (Const Void) Input Void m
+  => H.Component HH.HTML q Input o m
 component = Connect.component $ H.mkComponent
   -- due to the use of `Connect.component`, our input now also has `currentUser`
   -- in it, even though this component's only input is a slug.
@@ -71,7 +71,7 @@ component = Connect.component $ H.mkComponent
       }
   }
   where
-  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
+  handleAction :: Action -> H.HalogenM State Action ChildSlots o m Unit
   handleAction = case _ of
     Initialize -> do
       st <- H.get
@@ -139,16 +139,17 @@ data FormAction
   = HandleTagInput TagInput.Message
 
 formComponent
-  :: forall m. MonadAff m
+  :: forall q i m
+   . MonadAff m
   => Maybe ArticleWithMetadata
-  -> F.Component EditorFields (Const Void) FormChildSlots Unit Article m
+  -> F.Component EditorFields q FormChildSlots i Article m
 formComponent mbArticle = F.component formInput $ F.defaultSpec
   { render = render
   , handleAction = handleAction
   , handleEvent = handleEvent
   }
   where
-  formInput :: Unit -> F.Input' EditorFields m
+  formInput :: i -> F.Input' EditorFields m
   formInput _ =
     { validators: EditorFields
         { title: V.required >>> V.minLength 1
@@ -165,12 +166,10 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
 
   handleAction = case _ of
     HandleTagInput msg -> case msg of
-      TagInput.TagAdded _ set -> do
+      TagInput.TagAdded _ set ->
         eval $ F.set proxies.tagList (Set.toUnfoldable set)
-        pure unit
-      TagInput.TagRemoved _ set -> do
+      TagInput.TagRemoved _ set ->
         eval $ F.set proxies.tagList (Set.toUnfoldable set)
-        pure unit
     where
     eval act = F.handleAction handleAction handleEvent act
 

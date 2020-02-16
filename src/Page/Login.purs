@@ -14,7 +14,6 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field (submit)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
-import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Effect.Aff.Class (class MonadAff)
@@ -38,18 +37,18 @@ type ChildSlots =
   ( formless :: F.Slot LoginForm FormQuery () LoginFields Unit )
 
 component
-  :: forall m
+  :: forall q o m
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML (Const Void) Input Void m
+  => H.Component HH.HTML q Input o m
 component = H.mkComponent
   { initialState: identity
   , render
   , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
   }
   where
-  handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
+  handleAction :: Action -> H.HalogenM State Action ChildSlots o m Unit
   handleAction = case _ of
     HandleLoginForm fields -> do
       -- loginUser also handles broadcasting the user changes to subscribed components
@@ -109,14 +108,17 @@ data FormQuery a
 
 derive instance functorFormQuery :: Functor (FormQuery)
 
-formComponent :: forall m. MonadAff m => F.Component LoginForm FormQuery () Unit LoginFields m
+formComponent
+  :: forall i slots m
+   . MonadAff m
+  => F.Component LoginForm FormQuery slots i LoginFields m
 formComponent = F.component formInput $ F.defaultSpec
   { render = renderLogin
   , handleEvent = handleEvent
   , handleQuery = handleQuery
   }
   where
-  formInput :: Unit -> F.Input LoginForm (loginError :: Boolean) m
+  formInput :: i -> F.Input LoginForm (loginError :: Boolean) m
   formInput _ =
     { validators: LoginForm
         { email: V.required >>> V.minLength 3 >>> V.emailFormat

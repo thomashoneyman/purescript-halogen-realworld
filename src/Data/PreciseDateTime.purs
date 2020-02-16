@@ -4,7 +4,7 @@
 -- | instances. After all, there are many ways you could represent a datetime as a string!
 -- |
 -- | I want to be able to generically encode and decode records that contain precise datetimes,
--- | though. I can't write type class instances for a type I don't own, so I can't write them for 
+-- | though. I can't write type class instances for a type I don't own, so I can't write them for
 -- | the `Data.PreciseDateTime` type directly.
 -- |
 -- | Instead, this module demonstrates how to use a tiny wrapping type to write our own type class
@@ -22,7 +22,7 @@ import Data.Newtype (class Newtype, unwrap)
 import Data.PreciseDateTime as PDT
 import Data.RFC3339String (RFC3339String(..))
 
--- | Newtypes have no runtime representation, so this small wrapping type lets us write new 
+-- | Newtypes have no runtime representation, so this small wrapping type lets us write new
 -- | instances for the `Data.PreciseDateTime` type without incurring costs. Since we can always
 -- | remove this wrapper, we still get to access all functions and type class instances that
 -- | operate on the original type, too.
@@ -30,17 +30,17 @@ newtype PreciseDateTime = PreciseDateTime PDT.PreciseDateTime
 
 derive instance newtypePreciseDateTime :: Newtype PreciseDateTime _
 
--- | For example, we can now define a JSON decoder for the type by expecting one particular 
+-- | For example, we can now define a JSON decoder for the type by expecting one particular
 -- | string representation.
 instance decodeJsonPreciseDateTime :: DecodeJson PreciseDateTime where
   decodeJson = fromString <=< decodeJson
 
 -- | Try to parse a `PreciseDateTime` from a string.
 fromString :: String -> Either String PreciseDateTime
-fromString = 
-  map PreciseDateTime 
-    <<< note "Could not parse RFC339 string" 
-    <<< PDT.fromRFC3339String 
+fromString =
+  map PreciseDateTime
+    <<< note "Could not parse RFC339 string"
+    <<< PDT.fromRFC3339String
     <<< RFC3339String
 
 -- | Convert a precise datetime into a less-precise JS-based datetime

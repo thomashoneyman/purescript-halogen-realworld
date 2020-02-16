@@ -13,9 +13,9 @@ import Data.Monoid (guard)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 
--- | Our header will be a pure render function, but we'll require a route as an argument so we can 
--- | judge whether a link should display active or not. We'll allow for any profile record type so 
--- | long as it has our core fields -- this makes the header reusable across pages despite which 
+-- | Our header will be a pure render function, but we'll require a route as an argument so we can
+-- | judge whether a link should display active or not. We'll allow for any profile record type so
+-- | long as it has our core fields -- this makes the header reusable across pages despite which
 -- | variation on `Profile` they use.
 header :: forall i p r. Maybe { | ProfileRep r } -> Route -> HH.HTML i p
 header currentUser route =
@@ -24,21 +24,21 @@ header currentUser route =
     [ HH.div
       [ css "container" ]
       [ HH.a
-        [ css "navbar-brand" 
+        [ css "navbar-brand"
         , safeHref Home
         ]
         [ HH.text "conduit" ]
       , HH.ul
         [ css "nav navbar-nav pull-xs-right" ]
-        [ navItem Home 
+        [ navItem Home
             [ HH.text "Home" ]
-        , whenElem (isJust currentUser) \_ -> 
+        , whenElem (isJust currentUser) \_ ->
             navItem Editor
-              [ HH.i 
+              [ HH.i
                 [ css "ion-compose" ]
                 [ HH.text " New Post" ]
               ]
-        , whenElem (isJust currentUser) \_ -> 
+        , whenElem (isJust currentUser) \_ ->
             navItem Settings
               [ HH.i
                 [ css "ion-gear-a" ]
@@ -46,8 +46,8 @@ header currentUser route =
               ]
         , maybeElem currentUser \profile ->
             navItem (Profile profile.username)
-              [ HH.img 
-                [ css "user-pic" 
+              [ HH.img
+                [ css "user-pic"
                 , HP.src $ Avatar.toStringWithDefault profile.image
                 ]
               , HH.text $ Username.toString profile.username
@@ -64,7 +64,7 @@ header currentUser route =
 
   where
 
-  navItem r html = 
+  navItem r html =
     HH.li
       [ css "nav-item" ]
       [ HH.a

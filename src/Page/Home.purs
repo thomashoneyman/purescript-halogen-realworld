@@ -20,7 +20,6 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk)
-import Data.Const (Const)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
@@ -67,13 +66,13 @@ tabIsTag (Tag _) = true
 tabIsTag _ = false
 
 component
-  :: forall m r
+  :: forall q o m r
    . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageTag m
   => ManageArticle m
-  => H.Component HH.HTML (Const Void) {} Void m
+  => H.Component HH.HTML q {} o m
 component = Connect.component $ H.mkComponent
   { initialState
   , render
@@ -92,7 +91,7 @@ component = Connect.component $ H.mkComponent
     , page: 1
     }
 
-  handleAction :: Action -> H.HalogenM State Action () Void m Unit
+  handleAction :: forall slots. Action -> H.HalogenM State Action slots o m Unit
   handleAction = case _ of
     Initialize -> do
       void $ H.fork $ handleAction LoadTags
@@ -152,117 +151,110 @@ component = Connect.component $ H.mkComponent
         Tag tag ->
           LoadArticles (noArticleParams { tag = Just tag, limit = Just 20, offset = offset })
 
-  _article :: Int -> Traversal' State ArticleWithMetadata
-  _article i =
-    prop (SProxy :: SProxy "articles")
-      <<< _Success
-      <<< prop (SProxy :: SProxy "body")
-      <<< ix i
-
-  render :: State -> H.ComponentHTML Action () m
+  render :: forall slots. State -> H.ComponentHTML Action slots m
   render state@{ tags, articles, currentUser } =
     HH.div_
-    [ header currentUser Home
-    , HH.div
-      [ css "home-page" ]
-      [ whenElem (isNothing currentUser) \_ -> banner
+      [ header currentUser Home
       , HH.div
-        [ css "container page" ]
-        [ HH.div
-          [ css "row" ]
-          [ mainView state
+          [ css "home-page" ]
+          [ whenElem (isNothing currentUser) \_ -> banner
           , HH.div
-            [ css "col-md-3" ]
-            [ HH.div
-              [ css "sidebar" ]
-              [ HH.p_
-                [ HH.text "Popular Tags" ]
-              , renderTags tags
+              [ css "container page" ]
+              [ HH.div
+                  [ css "row" ]
+                  [ mainView
+                  , HH.div
+                      [ css "col-md-3" ]
+                      [ HH.div
+                          [ css "sidebar" ]
+                          [ HH.p_
+                              [ HH.text "Popular Tags" ]
+                          , renderTags tags
+                          ]
+                      ]
+                  ]
               ]
-            ]
           ]
-        ]
-      ]
-    , footer
-    ]
-
-  mainView :: forall props. State -> HH.HTML props Action
-  mainView state =
-    HH.div
-      [ css "col-md-9" ]
-      [ HH.div
-          [ css "feed-toggle" ]
-          [ HH.ul
-            [ css "nav nav-pills outline-active" ]
-            [ whenElem (isJust state.currentUser) \_ -> tab state Feed
-            , tab state Global
-            , whenElem (tabIsTag state.tab) \_ -> tab state state.tab
-            ]
-          ]
-      , articleList FavoriteArticle UnfavoriteArticle state.articles
-      , maybeElem (toMaybe state.articles) \paginated ->
-          renderPagination SelectPage state.page paginated
-      ]
-
-  banner :: forall props act. HH.HTML props act
-  banner =
-    HH.div
-      [ css "banner" ]
-      [ HH.div
-          [ css "container" ]
-          [ HH.h1
-              [ css "logo-font" ]
-              [ HH.text "conduit" ]
-          , HH.p_
-              [ HH.text "A place to share your knowledge." ]
-          ]
-      ]
-
-  tab :: forall props. State -> Tab -> HH.HTML props Action
-  tab st thisTab =
-    HH.li
-      [ css "nav-item" ]
-      [ HH.a
-          [ css $ "nav-link" <> guard (st.tab == thisTab) " active"
-          , HE.onClick \_ -> Just $ ShowTab thisTab
-          , HP.href "#/"
-          ]
-          htmlBody
+      , footer
       ]
     where
-    htmlBody = case thisTab of
-      Feed ->
-        [ HH.text "Your Feed" ]
-      Global ->
-        [ HH.text "Global Feed" ]
-      Tag tag ->
-        [ HH.i
-          [ css "ion-pound" ]
-          []
-        , HH.text $ "#" <> tag
+    mainView =
+      HH.div
+        [ css "col-md-9" ]
+        [ HH.div
+            [ css "feed-toggle" ]
+            [ HH.ul
+              [ css "nav nav-pills outline-active" ]
+              [ whenElem (isJust state.currentUser) \_ -> tab Feed
+              , tab Global
+              , whenElem (tabIsTag state.tab) \_ -> tab state.tab
+              ]
+            ]
+        , articleList FavoriteArticle UnfavoriteArticle state.articles
+        , maybeElem (toMaybe state.articles) \paginated ->
+            renderPagination SelectPage state.page paginated
         ]
 
-  renderTags :: forall props. RemoteData String (Array String) -> HH.HTML props Action
-  renderTags = case _ of
-    NotAsked ->
-      HH.div_
-        [ HH.text "Tags not loaded" ]
-    Loading ->
-      HH.div_
-        [ HH.text "Loading Tags" ]
-    Failure err ->
-      HH.div_
-        [ HH.text $ "Failed loading tags: " <> err ]
-    Success tags ->
+    banner =
       HH.div
-        [ css "tag-list" ]
-        (tags <#> renderTag)
+        [ css "banner" ]
+        [ HH.div
+            [ css "container" ]
+            [ HH.h1
+                [ css "logo-font" ]
+                [ HH.text "conduit" ]
+            , HH.p_
+                [ HH.text "A place to share your knowledge." ]
+            ]
+        ]
 
-  renderTag :: forall props. String -> HH.HTML props Action
-  renderTag tag =
-    HH.a
-      [ css "tag-default tag-pill"
-      , HE.onClick \_ -> Just $ ShowTab (Tag tag)
-      , HP.href "#/"
-      ]
-      [ HH.text tag ]
+    tab thisTab =
+      HH.li
+        [ css "nav-item" ]
+        [ HH.a
+            [ css $ "nav-link" <> guard (state.tab == thisTab) " active"
+            , HE.onClick \_ -> Just $ ShowTab thisTab
+            , HP.href "#/"
+            ]
+            case thisTab of
+              Feed ->
+                [ HH.text "Your Feed" ]
+              Global ->
+                [ HH.text "Global Feed" ]
+              Tag tag ->
+                [ HH.i
+                  [ css "ion-pound" ]
+                  []
+                , HH.text $ "#" <> tag
+                ]
+        ]
+
+    renderTags = case _ of
+      NotAsked ->
+        HH.div_
+          [ HH.text "Tags not loaded" ]
+      Loading ->
+        HH.div_
+          [ HH.text "Loading Tags" ]
+      Failure err ->
+        HH.div_
+          [ HH.text $ "Failed loading tags: " <> err ]
+      Success loadedTags ->
+        HH.div
+          [ css "tag-list" ]
+          (map renderTag loadedTags)
+
+    renderTag tag =
+      HH.a
+        [ css "tag-default tag-pill"
+        , HE.onClick \_ -> Just $ ShowTab (Tag tag)
+        , HP.href "#/"
+        ]
+        [ HH.text tag ]
+
+_article :: Int -> Traversal' State ArticleWithMetadata
+_article i =
+  prop (SProxy :: SProxy "articles")
+    <<< _Success
+    <<< prop (SProxy :: SProxy "body")
+    <<< ix i

@@ -1,4 +1,4 @@
--- | The `Router` component is the root of our Halogen application. Every other component is a 
+-- | The `Router` component is the root of our Halogen application. Every other component is a
 -- | direct descendent of this component. We'll use the router to choose which component to render
 -- | given a particular `Route` and to manage the user's location in the application.
 -- |
@@ -41,18 +41,18 @@ import Routing.Duplex as RD
 import Routing.Hash (getHash)
 
 type State =
-  { route :: Maybe Route 
+  { route :: Maybe Route
   , currentUser :: Maybe Profile
   }
 
 data Query a
   = Navigate Route a
 
-data Action 
-  = Initialize 
+data Action
+  = Initialize
   | Receive { | WithCurrentUser () }
 
-type ChildSlots = 
+type ChildSlots =
   ( home :: OpaqueSlot Unit
   , login :: OpaqueSlot Unit
   , register :: OpaqueSlot Unit
@@ -75,16 +75,16 @@ component
   => ManageTag m
   => H.Component HH.HTML Query {} Void m
 component = Connect.component $ H.mkComponent
-  { initialState: \{ currentUser } -> { route: Nothing, currentUser } 
+  { initialState: \{ currentUser } -> { route: Nothing, currentUser }
   , render
-  , eval: H.mkEval $ H.defaultEval 
-      { handleQuery = handleQuery 
+  , eval: H.mkEval $ H.defaultEval
+      { handleQuery = handleQuery
       , handleAction = handleAction
       , receive = Just <<< Receive
       , initialize = Just Initialize
       }
   }
-  where 
+  where
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize -> do
@@ -92,14 +92,14 @@ component = Connect.component $ H.mkComponent
       initialRoute <- hush <<< (RD.parse routeCodec) <$> liftEffect getHash
       -- then we'll navigate to the new route (also setting the hash)
       navigate $ fromMaybe Home initialRoute
-    
+
     Receive { currentUser } ->
       H.modify_ _ { currentUser = currentUser }
 
   handleQuery :: forall a. Query a -> H.HalogenM State Action ChildSlots Void m (Maybe a)
   handleQuery = case _ of
     Navigate dest a -> do
-      { route, currentUser } <- H.get 
+      { route, currentUser } <- H.get
       -- don't re-render unnecessarily if the route is unchanged
       when (route /= Just dest) do
         -- don't change routes if there is a logged-in user trying to access
@@ -109,7 +109,7 @@ component = Connect.component $ H.mkComponent
           _ -> pure unit
       pure (Just a)
 
-  -- Display the login page instead of the expected page if there is no current user; a simple 
+  -- Display the login page instead of the expected page if there is no current user; a simple
   -- way to restrict access.
   authorize :: Maybe Profile -> H.ComponentHTML Action ChildSlots m -> H.ComponentHTML Action ChildSlots m
   authorize mbProfile html = case mbProfile of
@@ -117,31 +117,30 @@ component = Connect.component $ H.mkComponent
       HH.slot (SProxy :: _ "login") unit Login.component { redirect: false } absurd
     Just _ ->
       html
-   
+
   render :: State -> H.ComponentHTML Action ChildSlots m
   render { route, currentUser } = case route of
     Just r -> case r of
-      Home -> 
+      Home ->
         HH.slot (SProxy :: _ "home") unit Home.component {} absurd
-      Login -> 
+      Login ->
         HH.slot (SProxy :: _ "login") unit Login.component { redirect: true } absurd
-      Register -> 
+      Register ->
         HH.slot (SProxy :: _ "register") unit Register.component unit absurd
-      Settings -> 
+      Settings ->
         HH.slot (SProxy :: _ "settings") unit Settings.component unit absurd
           # authorize currentUser
-      Editor -> 
+      Editor ->
         HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Nothing } absurd
           # authorize currentUser
-      EditArticle slug -> 
+      EditArticle slug ->
         HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Just slug } absurd
           # authorize currentUser
-      ViewArticle slug -> 
+      ViewArticle slug ->
         HH.slot (SProxy :: _ "viewArticle") unit ViewArticle.component { slug } absurd
-      Profile username -> 
+      Profile username ->
         HH.slot (SProxy :: _ "profile") unit Profile.component { username, tab: ArticlesTab } absurd
-      Favorites username -> 
+      Favorites username ->
         HH.slot (SProxy :: _ "profile") unit Profile.component { username, tab: FavoritesTab } absurd
     Nothing ->
       HH.div_ [ HH.text "Oh no! That page wasn't found." ]
-      

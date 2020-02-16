@@ -1,4 +1,4 @@
--- | Email addresses are used sparingly in Conduit, but it's still useful to be able to tell 
+-- | Email addresses are used sparingly in Conduit, but it's still useful to be able to tell
 -- | at a glance that a string is not just a string -- it's an email address.
 module Conduit.Data.Email where
 

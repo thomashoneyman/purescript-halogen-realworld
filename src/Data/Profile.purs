@@ -1,16 +1,16 @@
 -- | Profiles are an example of an entity (a persistent data type with a unique identity) and are
 -- | widely used in the Conduit application.
 -- |
--- | We have two versions of the `Profile` type, as with the `Article` type: one with a few core 
--- | fields about the user and another that also contains their email address. It's tedious and 
--- | error-prone to write out multiple variations of a type which all share the same core fields 
+-- | We have two versions of the `Profile` type, as with the `Article` type: one with a few core
+-- | fields about the user and another that also contains their email address. It's tedious and
+-- | error-prone to write out multiple variations of a type which all share the same core fields
 -- | so we'll use extensible to solve that problem.
 -- |
--- | The backend returns a `following` flag as part of a profile, but this can lead to invalid 
+-- | The backend returns a `following` flag as part of a profile, but this can lead to invalid
 -- | states. What happens if you're viewing your own profile? There's no concept of following
--- | yourself. We'll create a custom type to rule out invalid relationships like this. 
--- | 
--- | This module also demonstrates how to create lenses for record types. Optics, which include  
+-- | yourself. We'll create a custom type to rule out invalid relationships like this.
+-- |
+-- | This module also demonstrates how to create lenses for record types. Optics, which include
 -- | lenses, let you work with values within nested structures. We'll use optics to drill down from
 -- | large types like a component `State` to a particular field in a profile stored in that state.
 module Conduit.Data.Profile where
@@ -39,9 +39,9 @@ import Type.RowList (class RowToList, Nil)
 -- | Let's start by defining a small helper data type before we move on to the larger `Profile` type.
 -- |
 -- | As far as our JSON is concerned, a user profile includes a username, avatar, biography, and
--- | a unique field: whether the currently-authenticated user is following this profile. This 
+-- | a unique field: whether the currently-authenticated user is following this profile. This
 -- | value is true only when there is a current user and they follow the profile in question.
--- | If there is no current user, or the requested profile belongs to the current user, or the 
+-- | If there is no current user, or the requested profile belongs to the current user, or the
 -- | current user isn't following the requested profile, then the value is `false`.
 -- |
 -- | Unfortunately, this tricky true/false flag can lead to invalid states in our UI. For example,
@@ -60,7 +60,7 @@ data Relation
 derive instance eqRelation :: Eq Relation
 
 instance decodeJsonFollowStatus :: DecodeJson Relation where
-  decodeJson = decodeJson >=> if _ then pure Following else pure NotFollowing 
+  decodeJson = decodeJson >=> if _ then pure Following else pure NotFollowing
 
 instance encodeJsonFollowStatus :: EncodeJson Relation where
   encodeJson Following = encodeJson true
@@ -69,10 +69,10 @@ instance encodeJsonFollowStatus :: EncodeJson Relation where
 -- | Now, let's describe the fields of our main `Profile` type, which should also be shared with
 -- | the extended `ProfileWithEmail` type.
 -- |
--- | A user profile contains a mandatory username, a biography which is allowed to be empty, an 
--- | optional avatar, and a relation to the current user, if there is one. We've already designed 
+-- | A user profile contains a mandatory username, a biography which is allowed to be empty, an
+-- | optional avatar, and a relation to the current user, if there is one. We've already designed
 -- | types that nicely capture the semantics of each field, so all we need to do here is assemble
--- | them into a row that can be used to implement `Profile` and `ProfileWithEmail`. 
+-- | them into a row that can be used to implement `Profile` and `ProfileWithEmail`.
 type ProfileRep row =
   ( username :: Username
   , bio :: Maybe String
@@ -89,18 +89,18 @@ type ProfileWithEmail = { | ProfileRep (email :: Email) }
 -- | The `Author` type extends the `Profile` fields with an additional `Relation` type.
 type Author = { | ProfileRep (relation :: Relation) }
 
--- | Unfortunately, we can't automatically encode and decode the `Author` type from JSON for 
+-- | Unfortunately, we can't automatically encode and decode the `Author` type from JSON for
 -- | two reasons.
 -- |
 -- | First, we already determined that the "following" boolean doesn't adequately cover the three
 -- | ways in which a given profile can relate to the person viewing it; to decode this boolean into
 -- | our better `Relation` type, we'll need to take the username of the current user (if there is
--- | one) as an argument. Since the `decodeJson :: Json -> Either String a` function doesn't take 
--- | any arguments besides the JSON to decode, we can't write a `DecodeJSON` instance (and 
+-- | one) as an argument. Since the `decodeJson :: Json -> Either String a` function doesn't take
+-- | any arguments besides the JSON to decode, we can't write a `DecodeJSON` instance (and
 -- | therefore we certainly can't derive one automatically).
 -- |
--- | Second, I've opted to rename the "following" field to the more apt "relation". We can't 
--- | automatically encode and decode when we're changing field names, so we will fall back to a 
+-- | Second, I've opted to rename the "following" field to the more apt "relation". We can't
+-- | automatically encode and decode when we're changing field names, so we will fall back to a
 -- | manual decoder.
 decodeAuthor :: Maybe Username -> Json -> Either String Author
 decodeAuthor mbUsername =
@@ -136,7 +136,7 @@ decodeProfileAuthor :: Maybe Username -> Json -> Either String Author
 decodeProfileAuthor u = decodeAuthor u <=< decodeAt "profile"
 
 -- | The `Profile` type is usually a part of a larger type, like a component's `State`. If you have
--- | a `State` and want to get the username out of a profile stored in that state, you'll have to 
+-- | a `State` and want to get the username out of a profile stored in that state, you'll have to
 -- | drill down several layers of structure. This is easy to do when the nested structure is made
 -- | entirely of records because of dot syntax. We do this all the time! For example:
 -- |
@@ -160,7 +160,7 @@ decodeProfileAuthor u = decodeAuthor u <=< decodeAt "profile"
 -- |
 -- | ```purescript
 -- | type MyRecordMaybe = { x :: Maybe { y :: Int } }
--- | 
+-- |
 -- | -- we can no longer use just record syntax and have to start mixing in functions that operate
 -- | -- on `Maybe` values as well.
 -- | getY :: MyRecordMaybe -> Maybe Int
@@ -169,12 +169,12 @@ decodeProfileAuthor u = decodeAuthor u <=< decodeAt "profile"
 -- |
 -- | Optics are far more powerful and flexible than dot syntax, but achieve a similar goal: access
 -- | to values in nested structures. You can use optics to read a value, like the dot syntax example,
--- | but also to set, modify, and transform values. Even better, they apply widely across types, 
--- | including `Either`, `Maybe`, `Tuple`, your custom types, and more. The best part is that optics 
--- | compose, so drilling into a `Maybe (Either Int (Maybe { x :: Either String (Array Int) }))` 
+-- | but also to set, modify, and transform values. Even better, they apply widely across types,
+-- | including `Either`, `Maybe`, `Tuple`, your custom types, and more. The best part is that optics
+-- | compose, so drilling into a `Maybe (Either Int (Maybe { x :: Either String (Array Int) }))`
 -- | takes little more effort than our chained record accessors (dots) above.
 -- |
--- | Let's see an example! We can define lenses for each of our record fields, compose them 
+-- | Let's see an example! We can define lenses for each of our record fields, compose them
 -- | together, and use `view` to access the `z` field as we did above. But we can also throw som
 -- | other types into the mix --  record accessors can't handle that. And we can easily apply
 -- | functions to the nested value, too, not just read it. Here are some examples in action:

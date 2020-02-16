@@ -23,7 +23,6 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, asks)
-import Data.Const (Const)
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
@@ -73,21 +72,22 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 component
-  :: forall m r
+  :: forall q o m r
    . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
   => ManageUser m
   => ManageArticle m
-  => H.Component HH.HTML (Const Void) Input Void m
-component = H.mkComponent
-  { initialState
-  , render
-  , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction
-      , receive = Just <<< Receive
-      , initialize = Just Initialize
-      }
-  }
+  => H.Component HH.HTML q Input o m
+component =
+  H.mkComponent
+    { initialState
+    , render
+    , eval: H.mkEval $ H.defaultEval
+        { handleAction = handleAction
+        , receive = Just <<< Receive
+        , initialize = Just Initialize
+        }
+    }
   where
   initialState :: Input -> State
   initialState { username, tab } =
@@ -100,7 +100,7 @@ component = H.mkComponent
     , username
     }
 
-  handleAction :: Action -> H.HalogenM State Action () Void m Unit
+  handleAction :: forall slots. Action -> H.HalogenM State Action slots o m Unit
   handleAction = case _ of
     Initialize -> do
       mbProfile <- H.liftEffect <<< Ref.read =<< asks _.userEnv.currentUser
@@ -165,97 +165,96 @@ component = H.mkComponent
         FavoritesTab -> LoadFavorites
         ArticlesTab -> LoadArticles
 
-  _author :: Traversal' State Author
-  _author = prop (SProxy :: SProxy "author") <<< _Success
-
-  _article :: Int -> Traversal' State ArticleWithMetadata
-  _article i =
-    prop (SProxy :: SProxy "articles")
-      <<< _Success
-      <<< prop (SProxy :: SProxy "body")
-      <<< ix i
-
-  render :: State -> H.ComponentHTML Action () m
+  render :: forall slots. State -> H.ComponentHTML Action slots m
   render state =
     HH.div_
       [ header state.currentUser (Profile state.username)
       , HH.div
           [ css "profile-page" ]
-          [ userInfo state
+          [ userInfo
           , HH.div
               [ css "container" ]
               [ HH.div
                   [ css "row" ]
-                  [ mainView state ]
+                  [ mainView ]
               ]
           ]
       , footer
       ]
-
-  userInfo state =
-    HH.div
-      [ css "user-info"]
-      [ HH.div
-          [ css "container" ]
-          [ HH.div
-              [ css "row" ]
-              [ HH.div
-                  [ css "col-xs-12 col-md-10 offset-md-1" ]
-                  [ HH.img
-                      [ css "user-img"
-                      , HP.src $ Avatar.toStringWithDefault (_.image =<< toMaybe state.author)
-                      ]
-                  , HH.h4_
-                      [ HH.text $ Username.toString state.username ]
-                  , maybeElem (_.bio =<< toMaybe state.author) \str ->
-                      HH.p_
-                        [ HH.text str ]
-                  , maybeElem (toMaybe state.author) (followButton FollowAuthor UnfollowAuthor)
-                  ]
-              ]
-          ]
-      ]
-
-  mainView state =
-    HH.div
-      [ css "col-xs-12 col-md-10 offset-md-1" ]
-      [ HH.div
-          [ css "articles-toggle" ]
-          [ HH.ul
-              [ css "nav nav-pills outline-active" ]
-              [ mkTab state ArticlesTab
-              , mkTab state FavoritesTab
-              ]
-          ]
-      , whenElem (state.tab == ArticlesTab) \_ ->
-          HH.div_
-            [ articleList FavoriteArticle UnfavoriteArticle state.articles
-            , maybeElem (toMaybe state.articles) \paginated ->
-                renderPagination SelectPage state.page paginated
+    where
+    userInfo =
+      HH.div
+        [ css "user-info"]
+        [ HH.div
+            [ css "container" ]
+            [ HH.div
+                [ css "row" ]
+                [ HH.div
+                    [ css "col-xs-12 col-md-10 offset-md-1" ]
+                    [ HH.img
+                        [ css "user-img"
+                        , HP.src $ Avatar.toStringWithDefault (_.image =<< toMaybe state.author)
+                        ]
+                    , HH.h4_
+                        [ HH.text $ Username.toString state.username ]
+                    , maybeElem (_.bio =<< toMaybe state.author) \str ->
+                        HH.p_
+                          [ HH.text str ]
+                    , maybeElem (toMaybe state.author) (followButton FollowAuthor UnfollowAuthor)
+                    ]
+                ]
             ]
-      , whenElem (state.tab == FavoritesTab) \_ ->
-          HH.div_
-            [ articleList FavoriteArticle UnfavoriteArticle state.favorites
-            , maybeElem (toMaybe state.favorites) \paginated ->
-                renderPagination SelectPage state.page paginated
-            ]
-      ]
+        ]
 
-  mkTab :: forall props. State -> Tab -> HH.HTML props Action
-  mkTab st thisTab =
-    HH.li
-      [ css "nav-item" ]
-      [ case thisTab of
-          ArticlesTab ->
-            HH.a
-              [ css $ "nav-link" <> guard (st.tab == thisTab) " active"
-              , safeHref $ Profile st.username
+    mainView =
+      HH.div
+        [ css "col-xs-12 col-md-10 offset-md-1" ]
+        [ HH.div
+            [ css "articles-toggle" ]
+            [ HH.ul
+                [ css "nav nav-pills outline-active" ]
+                [ mkTab ArticlesTab
+                , mkTab FavoritesTab
+                ]
+            ]
+        , whenElem (state.tab == ArticlesTab) \_ ->
+            HH.div_
+              [ articleList FavoriteArticle UnfavoriteArticle state.articles
+              , maybeElem (toMaybe state.articles) \paginated ->
+                  renderPagination SelectPage state.page paginated
               ]
-              [ HH.text "My Articles" ]
-          FavoritesTab ->
-            HH.a
-              [ css $ "nav-link" <> guard (st.tab == thisTab) " active"
-              , safeHref $ Favorites st.username
+        , whenElem (state.tab == FavoritesTab) \_ ->
+            HH.div_
+              [ articleList FavoriteArticle UnfavoriteArticle state.favorites
+              , maybeElem (toMaybe state.favorites) \paginated ->
+                  renderPagination SelectPage state.page paginated
               ]
-              [ HH.text "My Favorites" ]
-      ]
+        ]
+
+    mkTab thisTab =
+      HH.li
+        [ css "nav-item" ]
+        [ case thisTab of
+            ArticlesTab ->
+              HH.a
+                [ css $ "nav-link" <> guard (state.tab == thisTab) " active"
+                , safeHref $ Profile state.username
+                ]
+                [ HH.text "My Articles" ]
+            FavoritesTab ->
+              HH.a
+                [ css $ "nav-link" <> guard (state.tab == thisTab) " active"
+                , safeHref $ Favorites state.username
+                ]
+                [ HH.text "My Favorites" ]
+        ]
+
+_author :: Traversal' State Author
+_author = prop (SProxy :: SProxy "author") <<< _Success
+
+_article :: Int -> Traversal' State ArticleWithMetadata
+_article i =
+  prop (SProxy :: SProxy "articles")
+    <<< _Success
+    <<< prop (SProxy :: SProxy "body")
+    <<< ix i

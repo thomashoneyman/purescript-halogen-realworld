@@ -1,4 +1,4 @@
--- | Avatars are strings representing URL locations of images. It's useful to be able to tell at 
+-- | Avatars are strings representing URL locations of images. It's useful to be able to tell at
 -- | a glance that a value isn't just a string -- it's an avatar -- and to prevent accidental
 -- | operations on the type that shouldn't be allowed (string functions). In fact, this should be
 -- | a largely read-only type in our application, so we'll use the smart constructor pattern to
@@ -6,7 +6,7 @@
 -- |
 -- | For more information on this pattern, please see:
 -- | https://thomashoneyman.com/guides/real-world-halogen/design-data-pure-functions/#restricting-the-domain-using-smart-constructors
-module Conduit.Data.Avatar 
+module Conduit.Data.Avatar
   ( Avatar -- constructor not exported
   , parse
   , toString
@@ -23,8 +23,8 @@ import Data.Maybe (Maybe(..))
 
 -- | Avatars are strings representing URL locations of images, and we'll use the `Avatar` type to
 -- | distinguish them from usual strings. We'll restrict the type so that not any old string can
--- | be an avatar: they'll have to pass our `parse` validation first. 
--- | 
+-- | be an avatar: they'll have to pass our `parse` validation first.
+-- |
 -- | Not all users have an avatar, which we'll represent with  the correct type: `Maybe Avatar`.
 newtype Avatar = Avatar String
 
@@ -37,7 +37,7 @@ derive newtype instance decodeJsonAvatar :: DecodeJson Avatar
 instance showAvatar :: Show Avatar where
   show = genericShow
 
--- | While not all users have an avatar, if the `Avatar` type is being used, then we should be 
+-- | While not all users have an avatar, if the `Avatar` type is being used, then we should be
 -- | confident there's actually a URL location inside. We won't validate the URLs (though we could!)
 -- | but we *will* verify non-emptiness.
 parse :: String -> Maybe Avatar

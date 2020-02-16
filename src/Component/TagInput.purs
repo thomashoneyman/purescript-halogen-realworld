@@ -6,7 +6,6 @@ module Conduit.Component.TagInput where
 import Prelude
 
 import Conduit.Component.HTML.Utils (css)
-import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set (Set)
@@ -35,24 +34,24 @@ derive instance newtypeTag :: Newtype Tag _
 derive instance eqTag :: Eq Tag
 derive instance ordTag :: Ord Tag
 
-data Message 
-  = TagAdded Tag (Set Tag) 
-  | TagRemoved Tag (Set Tag) 
+data Message
+  = TagAdded Tag (Set Tag)
+  | TagRemoved Tag (Set Tag)
 
-component :: forall m. MonadEffect m => H.Component HH.HTML (Const Void) Unit Message m
+component :: forall q i m. MonadEffect m => H.Component HH.HTML q i Message m
 component = H.mkComponent
   { initialState: \_ -> { tags: Set.empty, text: "" }
   , render
   , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
   }
   where
-  handleAction :: Action -> H.HalogenM State Action () Message m Unit
-  handleAction = case _ of 
+  handleAction :: forall slots. Action -> H.HalogenM State Action slots Message m Unit
+  handleAction = case _ of
     HandleInput str ->
       H.modify_ _ { text = str }
 
     HandleKey ev -> case code ev of
-      "Enter" -> do 
+      "Enter" -> do
         H.liftEffect $ preventDefault (toEvent ev)
         st <- H.get
         when (st.text /= "") do
@@ -64,13 +63,13 @@ component = H.mkComponent
       st <- H.modify \s -> s { tags = Set.delete tag s.tags }
       H.raise $ TagRemoved tag st.tags
 
-  render :: State -> H.ComponentHTML Action () m
+  render :: forall slots. State -> H.ComponentHTML Action slots m
   render { text, tags } =
     HH.fieldset
       [ css "form-group" ]
-      [ HH.input 
+      [ HH.input
           [ css "form-control"
-          , HP.type_ HP.InputText 
+          , HP.type_ HP.InputText
           , HP.placeholder "Enter tags"
           , HP.value text
           , HE.onValueInput $ Just <<< HandleInput
@@ -85,7 +84,7 @@ component = H.mkComponent
       HH.span
         [ css "tag-default tag-pill" ]
         [ HH.i
-          [ css "ion-close-round" 
+          [ css "ion-close-round"
           , HE.onClick \_ -> Just $ RemoveTag tag
           ]
           [ ]

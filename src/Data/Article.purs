@@ -1,4 +1,4 @@
--- | Articles are an example of an entity (a persistent data type with a unique identity). They're 
+-- | Articles are an example of an entity (a persistent data type with a unique identity). They're
 -- | a critical, widely-used type in Conduit.
 -- |
 -- | We have two versions of the `Article` type: one with just some base fields and another with
@@ -45,7 +45,7 @@ type ArticleRep row =
 -- | and a custom `Profile` type. The `Profile` type is interesting because it disallows some tricky
 -- | invalid states in the type system. It's defined in `Conduit.Data.Profile`.
 type ArticleMetadataRep row =
-  ( slug :: Slug 
+  ( slug :: Slug
   , createdAt :: PreciseDateTime
   , favorited :: Boolean
   , favoritesCount :: Int
@@ -71,7 +71,7 @@ type ArticleWithMetadata = { | ArticleRep + ArticleMetadataRep () }
 -- | done for us.
 -- |
 -- | Unfortunately, our custom `Author` type cannot be generically encoded and decoded like this
--- | because it requires knowing the username of the current user (if there is one) to determine 
+-- | because it requires knowing the username of the current user (if there is one) to determine
 -- | you follow this particular author.
 -- |
 -- | So we'll write the decoder for the `Article` type manually.
