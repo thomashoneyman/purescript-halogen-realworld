@@ -179,12 +179,18 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
         [ title
         , description
         , body
-        , HH.slot (SProxy :: _ "tagInput") unit TagInput.component unit handler
-        , Field.submit $ if isJust mbArticle then "Commit changes" else "Publish"
+        , HH.slot (SProxy :: _ "tagInput") unit TagInput.component { tags } handler
+        , Field.submit do
+            if isJust mbArticle
+              then "Commit changes"
+              else "Publish"
         ]
       ]
     where
     handler = Just <<< F.injAction <<< HandleTagInput
+
+    tags =
+      Set.fromFoldable $ F.getInput proxies.tagList form
 
     title =
       Field.input proxies.title form
