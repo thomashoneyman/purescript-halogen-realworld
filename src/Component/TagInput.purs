@@ -22,10 +22,15 @@ data Action
   = HandleInput String
   | HandleKey KeyboardEvent
   | RemoveTag Tag
+  | Receive Input
 
 type State =
   { text :: String
   , tags :: Set Tag
+  }
+
+type Input =
+  { tags :: Set Tag
   }
 
 newtype Tag = Tag String
@@ -38,11 +43,14 @@ data Message
   = TagAdded Tag (Set Tag)
   | TagRemoved Tag (Set Tag)
 
-component :: forall q i m. MonadEffect m => H.Component HH.HTML q i Message m
+component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Message m
 component = H.mkComponent
-  { initialState: \_ -> { tags: Set.empty, text: "" }
+  { initialState: \{ tags } -> { tags, text: "" }
   , render
-  , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+  , eval: H.mkEval $ H.defaultEval
+      { handleAction = handleAction
+      , receive = Just <<< Receive
+      }
   }
   where
   handleAction :: forall slots. Action -> H.HalogenM State Action slots Message m Unit
@@ -62,6 +70,11 @@ component = H.mkComponent
     RemoveTag tag -> do
       st <- H.modify \s -> s { tags = Set.delete tag s.tags }
       H.raise $ TagRemoved tag st.tags
+
+    Receive { tags } -> do
+      st <- H.get
+      when (tags /= st.tags) do
+        H.modify_ _ { tags = tags }
 
   render :: forall slots. State -> H.ComponentHTML Action slots m
   render { text, tags } =
