@@ -4,12 +4,15 @@
   "description": "An exemplary real-world application demonstrating PureScript and the Halogen framework",
   "scripts": {
     "postinstall": "spago install",
-    "clean": "rm -rf node_modules output .spago dist/* *.lock",
+    "clean": "rm -rf node_modules output dce-output .spago dist/* *.lock .cache",
     "build": "spago build",
     "watch": "spago build --watch",
-    "bundle": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.html",
-    "serve": "yarn bundle && http-server dist",
-    "test": "spago test"
+    "serve": "http-server dist",
+    "test": "spago test",
+    "bundle:build": "spago build --purs-args '--codegen corefn'",
+    "bundle:dce": "zephyr -f Main.main",
+    "bundle:parcel": "parcel build assets/index.html --no-source-maps --experimental-scope-hoisting",
+    "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:parcel"
   },
   "repository": {
     "type": "git",
@@ -29,11 +32,11 @@
   "devDependencies": {
     "parcel-bundler": "^1.12.4",
     "purescript": "^0.13.6",
-    "spago": "^0.13.1"
+    "spago": "^0.15.2"
   },
   "dependencies": {
     "decimal.js": "^10.2.0",
     "http-server": "^0.12.1",
-    "marked": "^0.8.0"
+    "marked": "^1.0.0"
   }
 }
