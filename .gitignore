@@ -21,3 +21,4 @@ dce-output
 dist
 *.lock
 *.map
+package-lock.json

@@ -34,13 +34,17 @@ all helper scripts for the project):
 yarn build
 ```
 
-Finally, bundle the JS and run a local server (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
+You can bundle the JS for production (this requires installing Zephyr, [which you can get from its releases page](https://github.com/coot/zephyr/releases). Ensure it exists in your PATH by moving it to `usr/bin/local` or some equivalent).
+
+```sh
+yarn bundle
+```
+
+And, once bundled, you can run a local server to use Conduit (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
 
 ```sh
 yarn serve
 ```
-
-You can also run `yarn bundle` to create a distribution-ready bundle of JavaScript without starting a server.
 
 ## Learning PureScript
 
