@@ -12,7 +12,7 @@ I’m a senior software engineer at [Awake Security](https://github.com/awakesec
 
 This repository follows the [RealWorld](https://github.com/gothinkster/realworld) spec to implement a Medium clone called Conduit using [Halogen](https://github.com/slamdata/purescript-halogen). It’s large enough to demonstrate real world examples (CRUD, state management, scalable architecture, type classes, components, etc.) but not so large as to be overwhelming.
 
-If you have found this repository and the guide useful, please consider [sponsoring its development](https://github.com/sponsors/thomashoneyman).
+If you have found this repository and the guide useful, please consider [becoming a sponsor](https://github.com/sponsors/thomashoneyman)!
 
 ## Installation
 
