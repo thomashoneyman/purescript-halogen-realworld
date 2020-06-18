@@ -43,7 +43,7 @@ data Message
   = TagAdded Tag (Set Tag)
   | TagRemoved Tag (Set Tag)
 
-component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Message m
+component :: forall q m. MonadEffect m => H.Component q Input Message m
 component = H.mkComponent
   { initialState: \{ tags } -> { tags, text: "" }
   , render
@@ -85,8 +85,8 @@ component = H.mkComponent
           , HP.type_ HP.InputText
           , HP.placeholder "Enter tags"
           , HP.value text
-          , HE.onValueInput $ Just <<< HandleInput
-          , HE.onKeyDown $ Just <<< HandleKey
+          , HE.onValueInput $ HandleInput
+          , HE.onKeyDown $ HandleKey
           ]
       , HH.div
           [ css "tag-list" ]
@@ -98,7 +98,7 @@ component = H.mkComponent
         [ css "tag-default tag-pill" ]
         [ HH.i
           [ css "ion-close-round"
-          , HE.onClick \_ -> Just $ RemoveTag tag
+          , HE.onClick \_ -> RemoveTag tag
           ]
           [ ]
         , HH.text (unwrap tag)

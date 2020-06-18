@@ -15,7 +15,6 @@ import Conduit.Data.Username as Username
 import Data.Array (mapWithIndex)
 import Data.Enum (enumFromTo)
 import Data.Foldable (length)
-import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -130,7 +129,7 @@ renderPageLink act activeIndex index =
     [ HH.a
         [ css "page-link"
         , HP.href "" -- needed for realworld css; remember to prevent default!
-        , HE.onClick $ Just <<< act index
+        , HE.onClick $ act index
         ]
         [ HH.text $ show index ]
     ]

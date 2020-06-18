@@ -78,7 +78,7 @@ component
   => ManageUser m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component = H.mkComponent
   { initialState
   , render
@@ -200,7 +200,7 @@ component = H.mkComponent
                       [ maybeElem state.currentUser \profile ->
                           HH.form
                             [ css "card comment-form"
-                            , HE.onSubmit \_ -> Just AddComment
+                            , HE.onSubmit \_ -> AddComment
                             ]
                             [ HH.div
                                 [ css "card-block" ]
@@ -208,7 +208,7 @@ component = H.mkComponent
                                     [ css "form-control"
                                     , HP.placeholder "Write a comment..."
                                     , HP.rows 3
-                                    , HE.onValueInput $ Just <<< UpdateCommentText
+                                    , HE.onValueInput $ UpdateCommentText
                                     ]
                                 ]
                             , HH.div
@@ -272,7 +272,7 @@ component = H.mkComponent
                 , HH.text " "
                 , HH.button
                     [ css "btn btn-outline-danger btn-sm"
-                    , HE.onClick \_ -> Just DeleteArticle
+                    , HE.onClick \_ -> DeleteArticle
                     ]
                     [ HH.i
                         [ css "ion-trash-a" ]
@@ -326,7 +326,7 @@ component = H.mkComponent
                 [ css "mod-options" ]
                 [ HH.i
                     [ css "ion-trash-a"
-                    , HE.onClick \_ -> Just $ DeleteComment comment.id
+                    , HE.onClick \_ -> DeleteComment comment.id
                     ]
                     []
                 ]

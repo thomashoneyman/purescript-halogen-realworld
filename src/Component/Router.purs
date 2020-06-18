@@ -73,7 +73,7 @@ component
   => ManageArticle m
   => ManageComment m
   => ManageTag m
-  => H.Component HH.HTML Query {} Void m
+  => H.Component Query {} Void m
 component = Connect.component $ H.mkComponent
   { initialState: \{ currentUser } -> { route: Nothing, currentUser }
   , render

@@ -25,7 +25,6 @@ import Effect.Ref as Ref
 import Halogen (liftAff, liftEffect)
 import Halogen as H
 import Halogen.Aff as HA
-import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
 import Routing.Duplex (parse)
 import Routing.Hash (matchesWith)
@@ -122,7 +121,7 @@ main = HA.runHalogenAff do
   --
   -- Let's put it all together. With `hoist`, `runAppM`, our environment, and our router component,
   -- we can produce a proper root component for Halogen to run.
-    rootComponent :: H.Component HH.HTML Router.Query {} Void Aff
+    rootComponent :: H.Component Router.Query {} Void Aff
     rootComponent = H.hoist (runAppM environment) Router.component
 
   -- Now we have the two things we need to run a Halogen application: a reference to an HTML element
@@ -155,6 +154,6 @@ main = HA.runHalogenAff do
   -- https://github.com/natefaubion/purescript-routing-duplex/blob/v0.2.0/README.md
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
     when (old /= Just new) do
-      launchAff_ $ halogenIO.query $ H.tell $ Router.Navigate new
+      launchAff_ $ halogenIO.query $ H.mkTell $ Router.Navigate new
 
   pure unit

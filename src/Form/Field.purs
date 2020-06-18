@@ -31,7 +31,7 @@ submit :: forall form act slots m. String -> F.ComponentHTML form act slots m
 submit buttonText =
   HH.button
     [ css "btn btn-lg btn-primary pull-xs-right"
-    , HE.onClick \_ -> Just F.submit
+    , HE.onClick \_ -> F.submit
     ]
     [ HH.text buttonText ]
 
@@ -77,7 +77,7 @@ input sym form props =
       ( append
           [ css "form-control form-control-lg"
           , HP.value $ F.getInput sym form
-          , HE.onValueInput $ Just <<< F.setValidate sym
+          , HE.onValueInput $ F.setValidate sym
           ]
           props
       )

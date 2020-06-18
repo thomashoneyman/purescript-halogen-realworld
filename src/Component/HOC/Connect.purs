@@ -5,7 +5,7 @@ module Component.HOC.Connect where
 
 import Prelude
 
-import Conduit.Component.Utils (busEventSource)
+import Conduit.Component.Utils (busEvent)
 import Conduit.Data.Profile (Profile)
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, asks)
@@ -41,8 +41,8 @@ component
    . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Row.Lacks "currentUser" input
-  => H.Component HH.HTML query { | WithCurrentUser input } output m
-  -> H.Component HH.HTML query { | input } output m
+  => H.Component query { | WithCurrentUser input } output m
+  -> H.Component query { | input } output m
 component innerComponent =
   H.mkComponent
     -- here, we'll insert the current user into the wrapped component's input
@@ -63,7 +63,7 @@ component innerComponent =
     -- stay in sync.
     Initialize -> do
       { currentUser, userBus } <- asks _.userEnv
-      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
+      _ <- H.subscribe (HandleUserBus <$> busEvent userBus)
       mbProfile <- liftEffect $ Ref.read currentUser
       H.modify_ _ { currentUser = mbProfile }
 
@@ -87,4 +87,4 @@ component innerComponent =
   -- We'll simply render the inner component as-is, except with the augmented
   -- input containing the current user.
   render state =
-    HH.slot _inner unit innerComponent state (Just <<< Emit)
+    HH.slot _inner unit innerComponent state Emit

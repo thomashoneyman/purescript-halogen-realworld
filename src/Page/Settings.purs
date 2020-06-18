@@ -55,7 +55,7 @@ component
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML q Unit o m
+  => H.Component q Unit o m
 component = H.mkComponent
   { initialState: \_ -> { profile: NotAsked }
   , render
@@ -98,11 +98,11 @@ component = H.mkComponent
       [ HH.h1
           [ css "text-xs-center"]
           [ HH.text "Your Settings" ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleForm)
+      , HH.slot F._formless unit formComponent unit HandleForm
       , HH.hr_
       , HH.button
           [ css "btn btn-outline-danger"
-          , HE.onClick \_ -> Just LogUserOut
+          , HE.onClick \_ -> LogUserOut
           ]
           [ HH.text "Log out" ]
       ]
@@ -172,7 +172,7 @@ component = H.mkComponent
                 , HP.placeholder "Short bio about you"
                 , HP.rows 8
                 , HP.value $ F.getInput proxies.bio form
-                , HE.onValueInput $ Just <<< F.setValidate proxies.bio
+                , HE.onValueInput $ F.setValidate proxies.bio
                 ]
             ]
 

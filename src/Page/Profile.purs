@@ -77,7 +77,7 @@ component
   => MonadAsk { userEnv :: UserEnv | r } m
   => ManageUser m
   => ManageArticle m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component =
   H.mkComponent
     { initialState

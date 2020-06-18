@@ -31,13 +31,13 @@ followButton followAct unfollowAct author = case author.relation of
   Following ->
     HH.button
       [ css "btn btn-sm action-btn btn-secondary"
-      , HE.onClick \_ -> Just unfollowAct
+      , HE.onClick \_ -> unfollowAct
       ]
       [ HH.text $ " Unfollow " <> Username.toString author.username ]
   NotFollowing ->
     HH.button
       [ css "btn btn-sm action-btn btn-outline-secondary"
-      , HE.onClick \_ -> Just followAct
+      , HE.onClick \_ -> followAct
       ]
       [ HH.i
           [ css "ion-plus-round"]

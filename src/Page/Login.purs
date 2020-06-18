@@ -41,7 +41,7 @@ component
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component = H.mkComponent
   { initialState: identity
   , render
@@ -73,7 +73,7 @@ component = H.mkComponent
               [ safeHref Register ]
               [ HH.text "Need an account?" ]
         ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleLoginForm)
+      , HH.slot F._formless unit formComponent unit HandleLoginForm
       ]
     where
     container html =

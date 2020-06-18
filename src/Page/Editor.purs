@@ -58,7 +58,7 @@ component
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageArticle m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component = Connect.component $ H.mkComponent
   -- due to the use of `Connect.component`, our input now also has `currentUser`
   -- in it, even though this component's only input is a slug.
@@ -112,7 +112,7 @@ component = Connect.component $ H.mkComponent
               [ css "row" ]
               [ HH.div
                 [ css "col-md-10 offset-md-1 col-xs-12" ]
-                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit (Just <<< HandleEditor) ]
+                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit HandleEditor ]
               ]
             ]
         ]
@@ -187,7 +187,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
         ]
       ]
     where
-    handler = Just <<< F.injAction <<< HandleTagInput
+    handler = F.injAction <<< HandleTagInput
 
     tags =
       Set.fromFoldable $ F.getInput proxies.tagList form
@@ -208,7 +208,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
             , HP.placeholder "Write your article (in markdown)"
             , HP.value $ F.getInput proxies.body form
             , HP.rows 8
-            , HE.onValueInput $ Just <<< F.setValidate proxies.body
+            , HE.onValueInput $ F.setValidate proxies.body
             ]
           , maybeElem (F.getError proxies.body form) \err ->
               HH.div
