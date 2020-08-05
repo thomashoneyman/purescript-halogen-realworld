@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: thomashoneyman/setup-purescript@master
+      - uses: thomashoneyman/setup-purescript@main
         with:
           purescript: "0.13.8"
           spago: "0.15.3"
