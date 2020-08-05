@@ -13,7 +13,7 @@ module Conduit.Data.PreciseDateTime where
 
 import Prelude
 
-import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..), decodeJson)
 import Data.DateTime (DateTime)
 import Data.Either (Either, note)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
@@ -36,10 +36,10 @@ instance decodeJsonPreciseDateTime :: DecodeJson PreciseDateTime where
   decodeJson = fromString <=< decodeJson
 
 -- | Try to parse a `PreciseDateTime` from a string.
-fromString :: String -> Either String PreciseDateTime
+fromString :: String -> Either JsonDecodeError PreciseDateTime
 fromString =
   map PreciseDateTime
-    <<< note "Could not parse RFC339 string"
+    <<< note (TypeMismatch "RFC3339String")
     <<< PDT.fromRFC3339String
     <<< RFC3339String
 

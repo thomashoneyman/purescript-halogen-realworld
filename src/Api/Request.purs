@@ -34,9 +34,10 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
 import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
+import Data.Argonaut.Decode (JsonDecodeError, printJsonDecodeError)
 import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
 import Data.Argonaut.Encode (encodeJson)
-import Data.Bifunctor (bimap)
+import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
@@ -253,12 +254,14 @@ register baseUrl fields =
 requestUser :: forall m. MonadAff m => BaseURL -> RequestOptions -> m (Either String (Tuple Token Profile))
 requestUser baseUrl opts = do
   res <- liftAff $ request $ defaultRequest baseUrl Nothing opts
-  pure $ decodeAuthProfile =<< decodeAt "user" =<< bimap printError _.body res
+  case res of
+    Left e -> pure $ Left $ printError e
+    Right v -> pure $ lmap printJsonDecodeError $ decodeAuthProfile =<< decodeAt "user" v.body
 
 -- | This JSON decoder is defined in this module because it manipulates a token. First, we'll decode
 -- | only the token field from the payload, and then we'll decode everything else separately into
 -- | the user's profile.
-decodeAuthProfile :: Json -> Either String (Tuple Token Profile)
+decodeAuthProfile :: Json -> Either JsonDecodeError (Tuple Token Profile)
 decodeAuthProfile =
   decodeParts
     (map Token <<< decodeAt "token")

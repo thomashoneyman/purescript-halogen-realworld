@@ -22,7 +22,7 @@ import Conduit.Data.Email (Email)
 import Conduit.Data.Username (Username)
 import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError, decodeJson)
 import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
 import Data.Argonaut.Decode.Struct.Tolerant.GDecodeJson (class GDecodeJson)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
@@ -102,7 +102,7 @@ type Author = { | ProfileRep (relation :: Relation) }
 -- | Second, I've opted to rename the "following" field to the more apt "relation". We can't
 -- | automatically encode and decode when we're changing field names, so we will fall back to a
 -- | manual decoder.
-decodeAuthor :: Maybe Username -> Json -> Either String Author
+decodeAuthor :: Maybe Username -> Json -> Either JsonDecodeError Author
 decodeAuthor mbUsername =
   map (rrenameMany { following: SProxy :: SProxy "relation" })
     <<< Tolerant.decodeJsonWith { following: getRelation mbUsername }
@@ -110,7 +110,7 @@ decodeAuthor mbUsername =
 -- | If the profile we're decoding from JSON has the same unique identifying username as the one
 -- | passed as an argument, then the profile we've decoded is in fact the current user's profile.
 -- | So we'll update the `relation` field to the `You` value.
-getRelation :: forall r. Maybe Username -> Json -> { username :: Username | r } -> Either String Relation
+getRelation :: forall r. Maybe Username -> Json -> { username :: Username | r } -> Either JsonDecodeError Relation
 getRelation mbUsername json record = case mbUsername of
   Just username | username == record.username -> pure You
   _ -> decodeJson json
@@ -123,16 +123,16 @@ getRelation mbUsername json record = case mbUsername of
 -- | to `decodeJsonWithAuthor` to determine an array of `ArticleWithMetadata` values.
 decodeJsonWithAuthor
   :: forall l r
-   . GDecodeJson Builder (Either String) Record Nil () l r
+   . GDecodeJson Builder (Either JsonDecodeError) Record Nil () l r
   => Lacks "author" r
   => RowToList r l
   => Maybe Username
   -> Json
-  -> Either String { author :: Author | r }
+  -> Either JsonDecodeError { author :: Author | r }
 decodeJsonWithAuthor u =
   Tolerant.decodeJsonPer { author: decodeAuthor u }
 
-decodeProfileAuthor :: Maybe Username -> Json -> Either String Author
+decodeProfileAuthor :: Maybe Username -> Json -> Either JsonDecodeError Author
 decodeProfileAuthor u = decodeAuthor u <=< decodeAt "profile"
 
 -- | The `Profile` type is usually a part of a larger type, like a component's `State`. If you have

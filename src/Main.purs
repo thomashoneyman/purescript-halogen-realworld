@@ -14,8 +14,9 @@ import Conduit.Component.Router as Router
 import Conduit.Data.Route (routeCodec)
 import Conduit.Data.Utils (decodeAt)
 import Conduit.Env (LogLevel(..), UserEnv, Env)
-import Data.Bifunctor (bimap)
-import Data.Either (hush)
+import Data.Argonaut (printJsonDecodeError)
+import Data.Bifunctor (lmap)
+import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
 import Effect (Effect)
@@ -90,8 +91,14 @@ main = HA.runHalogenAff do
   liftEffect readToken >>= traverse_ \token -> do
     let requestOptions = { endpoint: User, method: Get }
     res <- liftAff $ request $ defaultRequest baseUrl (Just token) requestOptions
-    let u = decodeAt "user" =<< bimap printError _.body res
-    liftEffect $ Ref.write (hush u) currentUser
+
+    let
+      user :: Either String _
+      user = case res of
+        Left e -> Left $ printError e
+        Right v -> lmap printJsonDecodeError $ decodeAt "user" v.body
+
+    liftEffect $ Ref.write (hush user) currentUser
 
   -- We now have the three pieces of information necessary to configure our app. Let's create
   -- a record that matches the `Env` type our application requires by filling in these three

@@ -3,7 +3,7 @@ module Conduit.Data.Utils where
 import Prelude
 
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode (JsonDecodeError, decodeJson)
 import Data.Argonaut.Decode.Struct.Tolerant ((.::))
 import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
 import Data.Either (Either)
@@ -26,6 +26,5 @@ import Data.Either (Either)
 -- | decodeProfile :: Json -> Either String Profile
 -- | decodeProfile = decodeAt "user"
 -- | ```
-
-decodeAt :: forall a. Tolerant.DecodeJson a => String -> Json -> Either String a
+decodeAt :: forall a. Tolerant.DecodeJson a => String -> Json -> Either JsonDecodeError a
 decodeAt key = (_ .:: key) <=< decodeJson
