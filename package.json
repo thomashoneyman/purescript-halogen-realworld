@@ -1,6 +1,8 @@
 {
   "name": "purescript-halogen-realworld",
   "description": "An exemplary real-world application demonstrating PureScript and the Halogen framework",
+  "author": "Thomas Honeyman",
+  "license": "MIT",
   "scripts": {
     "postinstall": "spago install",
     "clean": "rm -rf node_modules output dce-output .spago dist/* *.lock .cache",
@@ -13,21 +15,6 @@
     "bundle:parcel": "parcel build assets/index.html --no-source-maps --experimental-scope-hoisting",
     "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:parcel"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/thomashoneyman/purescript-halogen-realworld.git"
-  },
-  "keywords": [
-    "purescript",
-    "halogen",
-    "realworld"
-  ],
-  "author": "Thomas Honeyman",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/thomashoneyman/purescript-halogen-realworld/issues"
-  },
-  "homepage": "https://github.com/thomashoneyman/purescript-halogen-realworld#readme",
   "devDependencies": {
     "http-server": "^0.12.3",
     "parcel-bundler": "^1.12.4"
