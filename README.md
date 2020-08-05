@@ -1,7 +1,7 @@
 # Real World Halogen
 
 [![RealWorld Frontend](https://camo.githubusercontent.com/b507ac8f2ec6427bbef518193567c4ec6060c780/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f7265616c776f726c642d66726f6e74656e642d2532333738333537382e737667)](http://realworld.io)
-[![CircleCI](https://circleci.com/gh/thomashoneyman/purescript-halogen-realworld/tree/master.svg?style=shield)](https://circleci.com/gh/thomashoneyman/purescript-halogen-realworld/tree/master)
+[![CI](https://github.com/thomashoneyman/purescript-halogen-realworld/workflows/CI/badge.svg?branch=master)](https://github.com/thomashoneyman/purescript-halogen-realworld/actions?query=workflow%3ACI+branch%3Amaster)
 [![Maintainer: thomashoneyman](https://img.shields.io/badge/maintainer-thomashoneyman-lightgrey.svg)](http://github.com/thomashoneyman)
 
 [PureScript](https://github.com/purescript) is a delightful purely-functional language that offers powerful, pragmatic tools to manage complexity and help you design, build, and refactor reliable apps of any size. This repository demonstrates the principles I apply at work every day in more than 2,000 lines of thoroughly commented code and has an accompanying long-form [guide to building real-world Halogen applications](https://thomashoneyman.com/guides/real-world-halogen).
@@ -23,29 +23,36 @@ git clone https://github.com/thomashoneyman/purescript-halogen-realworld
 cd purescript-halogen-realworld
 ```
 
-Install the JavaScript and PureScript dependencies:
+Install JavaScript dependencies:
 
 ```sh
-yarn install
+npm install
+```
+
+Ensure you have PureScript dependencies available:
+
+```sh
+# You can also install these on a per-project basis
+npm install --global purescript spago
 ```
 
 Next, build the project (this command will run `spago build`; see the [`package.json`](package.json) file to see
 all helper scripts for the project):
 
 ```sh
-yarn build
+npm run build
 ```
 
 You can bundle the JS for production (this requires installing Zephyr, [which you can get from its releases page](https://github.com/coot/zephyr/releases). Ensure it exists in your PATH by moving it to `usr/bin/local` or some equivalent).
 
 ```sh
-yarn bundle
+npm run bundle
 ```
 
 And, once bundled, you can run a local server to use Conduit (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
 
 ```sh
-yarn serve
+npm run serve
 ```
 
 ## Learning PureScript

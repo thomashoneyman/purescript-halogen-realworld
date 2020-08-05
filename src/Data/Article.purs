@@ -20,7 +20,7 @@ import Conduit.Data.Profile (Author, decodeJsonWithAuthor)
 import Conduit.Data.Username (Username)
 import Conduit.Data.Utils (decodeAt)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson, (.:))
+import Data.Argonaut.Decode (JsonDecodeError, decodeJson, (.:))
 import Data.Array (filter)
 import Data.Either (Either, isRight)
 import Data.Maybe (Maybe)
@@ -114,7 +114,7 @@ type ArticleWithMetadata = { | ArticleRep + ArticleMetadataRep () }
 -- |
 -- | Because `PaginatedArray ArticleWithMetadata` is a relatively simple type, we opt for the
 -- | second method, and we manually decode every field.
-decodeArticles :: Maybe Username -> Json -> Either String (PaginatedArray ArticleWithMetadata)
+decodeArticles :: Maybe Username -> Json -> Either JsonDecodeError (PaginatedArray ArticleWithMetadata)
 decodeArticles u json = do
   obj <- decodeJson json
   arr <- obj .: "articles"
@@ -125,5 +125,5 @@ decodeArticles u json = do
   pure { body: filteredArr, total }
 
 -- | This helper function decodes a single `ArticleWithMetadata` at the key "article".
-decodeArticle :: Maybe Username -> Json -> Either String ArticleWithMetadata
+decodeArticle :: Maybe Username -> Json -> Either JsonDecodeError ArticleWithMetadata
 decodeArticle u = decodeJsonWithAuthor u <=< decodeAt "article"

@@ -9,6 +9,7 @@ import Conduit.Data.PreciseDateTime (PreciseDateTime)
 import Conduit.Data.Profile (Author, decodeJsonWithAuthor)
 import Conduit.Data.Username (Username)
 import Conduit.Data.Utils (decodeAt)
+import Data.Argonaut (JsonDecodeError)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson)
 import Data.Argonaut.Encode (class EncodeJson)
@@ -49,6 +50,6 @@ type Comment =
 -- | an author, which requires a username to be decoded.
 -- |
 -- | So we'll go ahead and write this decoder manually.
-decodeComments :: Maybe Username -> Json -> Either String (Array Comment)
+decodeComments :: Maybe Username -> Json -> Either JsonDecodeError (Array Comment)
 decodeComments u =
   traverse (decodeJsonWithAuthor u) <=< decodeAt "comments"

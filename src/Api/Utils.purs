@@ -13,6 +13,7 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Data.Username (Username)
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, ask, asks)
+import Data.Argonaut (JsonDecodeError, printJsonDecodeError)
 import Data.Argonaut.Core (Json)
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..), hush)
@@ -80,10 +81,10 @@ authenticate req fields = do
 -- | This small utility decodes JSON and logs any failures that occurred, returning the parsed
 -- | value only if decoding succeeded. This utility makes it easy to abstract the mechanices of
 -- | dealing with malformed responses. See `Conduit.AppM` for examples of this in practice.
-decode :: forall m a. LogMessages m => Now m => (Json -> Either String a) -> Maybe Json -> m (Maybe a)
+decode :: forall m a. LogMessages m => Now m => (Json -> Either JsonDecodeError a) -> Maybe Json -> m (Maybe a)
 decode _ Nothing = logError "Response malformed" *> pure Nothing
 decode decoder (Just json) = case decoder json of
-  Left err -> logError err *> pure Nothing
+  Left err -> logError (printJsonDecodeError err) *> pure Nothing
   Right response -> pure (Just response)
 
 -- | This small utility is similar to the prior `decode` function, but it's designed to work with
@@ -98,7 +99,7 @@ decodeWithUser
   => MonadAsk { userEnv :: UserEnv | r } m
   => LogMessages m
   => Now m
-  => (Maybe Username -> Json -> Either String a)
+  => (Maybe Username -> Json -> Either JsonDecodeError a)
   -> Maybe Json
   -> m (Maybe a)
 decodeWithUser decoder json = do
