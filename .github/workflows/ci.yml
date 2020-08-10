@@ -19,6 +19,14 @@ jobs:
           spago: "0.15.3"
           zephyr: "0.3.2"
 
+      - name: Cache PureScript dependencies
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
+          path: |
+            .spago
+            output
+
       - uses: actions/setup-node@v1
         with:
           node-version: "12.x"
@@ -43,7 +51,7 @@ jobs:
         run: spago build
 
       - name: Run tests
-        run: spago test
+        run: spago test --no-install
 
       - name: Run bundle
         run: npm run bundle
