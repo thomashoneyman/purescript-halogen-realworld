@@ -23,17 +23,18 @@ git clone https://github.com/thomashoneyman/purescript-halogen-realworld
 cd purescript-halogen-realworld
 ```
 
-Install JavaScript dependencies:
+You can enter a development shell with all non-JavaScript dependencies via Nix:
+
+```sh
+nix-shell
+```
+
+> Alternately, you can install PureScript, Spago, and Zephyr manually. You can use NPM to install PureScript and Spago, and you can install the Zephyr binary [from its releases page](https://github.com/coot/zephyr/releases) -- ensure it exists in your PATH by moving it to `usr/bin/local`.
+
+Next, install JavaScript dependencies:
 
 ```sh
 npm install
-```
-
-Ensure you have PureScript dependencies available:
-
-```sh
-# You can also install these on a per-project basis
-npm install --global purescript spago
 ```
 
 Next, build the project (this command will run `spago build`; see the [`package.json`](package.json) file to see
@@ -43,7 +44,7 @@ all helper scripts for the project):
 npm run build
 ```
 
-You can bundle the JS for production (this requires installing Zephyr, [which you can get from its releases page](https://github.com/coot/zephyr/releases). Ensure it exists in your PATH by moving it to `usr/bin/local` or some equivalent).
+You can bundle the JS for production:
 
 ```sh
 npm run bundle
