@@ -7,10 +7,11 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  main:
     runs-on: ubuntu-latest
 
     steps:
+      # SETUP
       - uses: actions/checkout@v2
 
       - uses: thomashoneyman/setup-purescript@main
@@ -47,11 +48,21 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
+      # BUILD
       - name: Build source
         run: spago build
 
+      # TEST
       - name: Run tests
         run: spago test --no-install
 
+      # DEPLOY
       - name: Run bundle
         run: npm run bundle
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
