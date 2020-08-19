@@ -12,7 +12,7 @@
     "test": "spago test",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main.main",
-    "bundle:parcel": "parcel build assets/index.html --no-source-maps --experimental-scope-hoisting",
+    "bundle:parcel": "parcel build assets/index.html --public-url '.' --no-source-maps",
     "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:parcel"
   },
   "repository": {
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "http-server": "^0.12.3",
-    "parcel-bundler": "^1.12.4"
+    "parcel": "^2.0.0-beta.1"
   },
   "dependencies": {
     "decimal.js": "^10.2.0",
