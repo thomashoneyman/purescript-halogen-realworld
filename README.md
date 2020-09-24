@@ -70,6 +70,7 @@ And run the application with
 ```sh
 npm run serve-dev
 ```
+This will open your default browser at [port 1234](http://localhost:1234)
 
 ## Learning PureScript
 
