@@ -59,7 +59,7 @@ npm run serve
 ```
 ## Dev mode
 
-To run it in dev mode where your saving your changes to source files reloades the page you can build with the --watch option
+To run it in dev mode where saving your changes rebuilds and reloads the app, you can run the command below (which calls `spago build --watch`) 
 
 ```sh
 npm run watch
