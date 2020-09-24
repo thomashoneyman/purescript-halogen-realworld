@@ -9,6 +9,7 @@
     "build": "spago build",
     "watch": "spago build --watch",
     "serve": "http-server dist",
+    "serve-dev": "parcel dev/index.html --open",
     "test": "spago test",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main.main",

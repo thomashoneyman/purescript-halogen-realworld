@@ -14,7 +14,7 @@ node_modules
 
 # IDE files
 *.code-workspace
-
+.vscode
 # Generated
 output
 dce-output

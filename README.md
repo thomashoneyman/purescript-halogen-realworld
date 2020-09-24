@@ -37,6 +37,8 @@ Next, install JavaScript dependencies:
 npm install
 ```
 
+## Building and running
+
 Next, build the project (this command will run `spago build`; see the [`package.json`](package.json) file to see
 all helper scripts for the project):
 
@@ -54,6 +56,19 @@ And, once bundled, you can run a local server to use Conduit (defaults to [port 
 
 ```sh
 npm run serve
+```
+## Dev mode
+
+To run it in dev mode where your saving your changes to source files reloades the page you can build with the --watch option
+
+```sh
+npm run watch
+```
+
+And run the application with
+
+```sh
+npm run serve-dev
 ```
 
 ## Learning PureScript
