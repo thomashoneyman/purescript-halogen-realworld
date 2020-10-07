@@ -11,14 +11,13 @@ module Conduit.Data.Avatar
   , parse
   , toString
   , toStringWithDefault
+  , codec
   ) where
 
 import Prelude
 
-import Data.Argonaut.Decode (class DecodeJson)
-import Data.Argonaut.Encode (class EncodeJson)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Codec.Argonaut (JsonCodec)
+import Data.Codec.Argonaut as CA
 import Data.Maybe (Maybe(..))
 
 -- | Avatars are strings representing URL locations of images, and we'll use the `Avatar` type to
@@ -28,14 +27,13 @@ import Data.Maybe (Maybe(..))
 -- | Not all users have an avatar, which we'll represent with  the correct type: `Maybe Avatar`.
 newtype Avatar = Avatar String
 
-derive instance genericAvatar :: Generic Avatar _
 derive instance eqAvatar :: Eq Avatar
 
-derive newtype instance encodeJsonAvatar :: EncodeJson Avatar
-derive newtype instance decodeJsonAvatar :: DecodeJson Avatar
-
-instance showAvatar :: Show Avatar where
-  show = genericShow
+-- | Ordinarily we'd define this using `wrapIso Avatar CA.string`, but here we don't actually have
+-- | a newtype instance. Instead, we'll explicitly provide to / from functions to the prismaticCodec
+-- | function.
+codec :: JsonCodec Avatar
+codec = CA.prismaticCodec parse toString CA.string
 
 -- | While not all users have an avatar, if the `Avatar` type is being used, then we should be
 -- | confident there's actually a URL location inside. We won't validate the URLs (though we could!)

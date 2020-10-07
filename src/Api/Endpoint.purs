@@ -14,7 +14,6 @@ module Conduit.Api.Endpoint where
 import Prelude hiding ((/))
 
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Maybe (Maybe(..))
 import Conduit.Data.Comment (CommentId)
@@ -84,9 +83,6 @@ data Endpoint
   | Tags
 
 derive instance genericEndpoint :: Generic Endpoint _
-
-instance showEndpoint :: Show Endpoint where
-  show = genericShow
 
 -- Our codec will cause a compile-time error if we fail to handle any of our
 -- route cases.

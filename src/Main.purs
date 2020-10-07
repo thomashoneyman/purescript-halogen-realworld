@@ -11,11 +11,14 @@ import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.AppM (runAppM)
 import Conduit.Component.Router as Router
+import Conduit.Data.Profile as Profile
 import Conduit.Data.Route (routeCodec)
-import Conduit.Data.Utils (decodeAt)
 import Conduit.Env (Env, LogLevel(..))
-import Data.Argonaut (printJsonDecodeError)
 import Data.Bifunctor (lmap)
+import Data.Codec as Codec
+import Data.Codec.Argonaut (printJsonDecodeError)
+import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
 import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
@@ -98,8 +101,11 @@ main = HA.runHalogenAff do
         let
           user :: Either String _
           user = case res of
-            Left e -> Left $ printError e
-            Right v -> lmap printJsonDecodeError $ decodeAt "user" v.body
+            Left e ->
+              Left (printError e)
+            Right v -> lmap printJsonDecodeError do
+              u <- Codec.decode (CAR.object "User" { user: CA.json }) v.body
+              CA.decode Profile.profileCodec u.user
 
         liftEffect (Ref.write (hush user) currentUser)
 

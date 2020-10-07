@@ -28,14 +28,17 @@ import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
 import Conduit.Api.Endpoint (Endpoint(..), endpointCodec)
 import Conduit.Data.Email (Email)
+import Conduit.Data.Email as Email
 import Conduit.Data.Profile (Profile)
+import Conduit.Data.Profile as Profile
 import Conduit.Data.Username (Username)
-import Conduit.Data.Utils (decodeAt)
+import Conduit.Data.Username as Username
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (JsonDecodeError, printJsonDecodeError)
-import Data.Argonaut.Decode.Struct.Tolerant as Tolerant
-import Data.Argonaut.Encode (encodeJson)
 import Data.Bifunctor (lmap)
+import Data.Codec as Codec
+import Data.Codec.Argonaut (JsonCodec, JsonDecodeError, printJsonDecodeError)
+import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
@@ -139,30 +142,44 @@ defaultRequest (BaseURL baseUrl) auth { endpoint, method } =
 -- | the `Token` type outside this module, so we'll somewhat awkwardly define the registration
 -- | and login requests in this module. These requests will be the only way to create an auth
 -- | token in the system.
-
 type RegisterFields =
   { email :: Email
   , password :: String
   , username :: Username
   }
 
+registerCodec :: JsonCodec RegisterFields
+registerCodec =
+  CAR.object "RegisterFields"
+    { email: Email.codec
+    , password: CA.string
+    , username: Username.codec
+    }
+
 type LoginFields =
   { email :: Email
   , password :: String
   }
 
+loginCodec :: JsonCodec LoginFields
+loginCodec =
+  CAR.object "LoginFields"
+    { email: Email.codec
+    , password: CA.string
+    }
+
 -- | This function logs a user in (if they exist), returning an auth token and the user's
 -- | minimal profile.
 login :: forall m. MonadAff m => BaseURL -> LoginFields -> m (Either String (Tuple Token Profile))
 login baseUrl fields =
-  let method = Post $ Just $ encodeJson { user: fields }
+  let method = Post $ Just $ Codec.encode (CAR.object "User" { user: loginCodec }) { user: fields }
    in requestUser baseUrl { endpoint: Login, method }
 
 -- | This function registers a user (if they don't already exist), returning an auth token and the
 -- | user's minimal profile.
 register :: forall m. MonadAff m => BaseURL -> RegisterFields -> m (Either String (Tuple Token Profile))
 register baseUrl fields =
-  let method = Post $ Just $ encodeJson { user: fields }
+  let method = Post $ Just $ Codec.encode (CAR.object "User" { user: registerCodec }) { user: fields }
    in requestUser baseUrl { endpoint: Users, method }
 
 -- | The login and registration requests share the same underlying implementation, just a different
@@ -172,20 +189,19 @@ requestUser baseUrl opts = do
   res <- liftAff $ request $ defaultRequest baseUrl Nothing opts
   case res of
     Left e -> pure $ Left $ printError e
-    Right v -> pure $ lmap printJsonDecodeError $ decodeAuthProfile =<< decodeAt "user" v.body
+    Right v -> pure $ lmap printJsonDecodeError $ decodeAuthProfile =<< Codec.decode (CAR.object "User" { user: CA.json }) v.body
 
 -- | This JSON decoder is defined in this module because it manipulates a token. First, we'll decode
 -- | only the token field from the payload, and then we'll decode everything else separately into
 -- | the user's profile.
-decodeAuthProfile :: Json -> Either JsonDecodeError (Tuple Token Profile)
-decodeAuthProfile =
-  decodeParts
-    (map Token <<< decodeAt "token")
-    Tolerant.decodeJson
-
-decodeParts :: forall a b c f. Apply f => (a -> f b) -> (a -> f c) -> a -> f (Tuple b c)
-decodeParts decoder1 decoder2 value =
-  Tuple <$> decoder1 value <*> decoder2 value
+decodeAuthProfile :: { user :: Json } -> Either JsonDecodeError (Tuple Token Profile)
+decodeAuthProfile { user } = do
+  { token } <- Codec.decode (CAR.object "Token" { token: tokenCodec }) user
+  profile <- Codec.decode Profile.profileCodec user
+  pure (Tuple token profile)
+  where
+  tokenCodec =
+    CA.prismaticCodec (Just <<< Token) (\(Token t) -> t) CA.string
 
 -- | The following functions deal with writing, reading, and deleting tokens in local storage at a
 -- | particular key. They'll be used as part of our production monad, `Conduit.AppM`.

@@ -5,10 +5,10 @@
   [ "aff"
   , "aff-bus"
   , "affjax"
-  , "argonaut-codecs"
   , "argonaut-core"
   , "codec-argonaut"
   , "console"
+  , "debug"
   , "effect"
   , "formatters"
   , "halogen"
@@ -21,9 +21,6 @@
   , "routing"
   , "routing-duplex"
   , "slug"
-  , "struct"
-  , "tolerant-argonaut"
-  , "typelevel-prelude"
   , "variant"
   ]
 }

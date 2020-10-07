@@ -27,15 +27,17 @@ import Conduit.Capability.Resource.Article (class ManageArticle)
 import Conduit.Capability.Resource.Comment (class ManageComment)
 import Conduit.Capability.Resource.Tag (class ManageTag)
 import Conduit.Capability.Resource.User (class ManageUser)
-import Conduit.Data.Article (decodeArticle, decodeArticles)
-import Conduit.Data.Comment (decodeComments)
+import Conduit.Data.Article as Article
+import Conduit.Data.Comment as Comment
 import Conduit.Data.Log as Log
-import Conduit.Data.Profile (decodeProfileAuthor)
+import Conduit.Data.Profile as Profile
 import Conduit.Data.Route as Route
-import Conduit.Data.Utils (decodeAt)
 import Conduit.Env (Env, LogLevel(..))
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Data.Argonaut.Encode (encodeJson)
+import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut as Codec
+import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 import Effect.Aff.Bus as Bus
@@ -202,36 +204,44 @@ instance manageUserAppM :: ManageUser AppM where
   registerUser =
     authenticate Request.register
 
-  getCurrentUser =
-    mkAuthRequest { endpoint: User, method: Get }
-      >>= decode (decodeAt "user")
+  getCurrentUser = do
+    mbJson <- mkAuthRequest { endpoint: User, method: Get }
+    map (map _.user)
+      $ decode (CAR.object "User" { user: Profile.profileWithEmailCodec }) mbJson
 
-  getAuthor username =
-    mkRequest { endpoint: Profiles username, method: Get }
-      >>= decodeWithUser decodeProfileAuthor
+  getAuthor username = do
+    mbJson <- mkRequest { endpoint: Profiles username, method: Get }
+    map (map _.profile)
+      $ decodeWithUser (\u -> CAR.object "Profile" { profile: Profile.authorCodec u }) mbJson
 
   updateUser fields =
-    void $ mkAuthRequest { endpoint: User, method: Put (Just (encodeJson fields)) }
+    void $ mkAuthRequest
+      { endpoint: User
+      , method: Put (Just (Codec.encode Profile.profileWithEmailPasswordCodec fields))
+      }
 
-  followUser username =
-    mkAuthRequest { endpoint: Follow username, method: Post Nothing }
-      >>= decodeWithUser decodeProfileAuthor
+  followUser username = do
+    mbJson <- mkAuthRequest { endpoint: Follow username, method: Post Nothing }
+    map (map _.profile)
+      $ decodeWithUser (\u -> CAR.object "Profile" { profile: Profile.authorCodec u }) mbJson
 
-  unfollowUser username =
-    mkAuthRequest { endpoint: Follow username, method: Delete }
-      >>= decodeWithUser decodeProfileAuthor
+  unfollowUser username = do
+    mbJson <- mkAuthRequest { endpoint: Follow username, method: Delete }
+    map (map _.profile)
+      $ decodeWithUser (\u -> CAR.object "Profile" { profile: Profile.authorCodec u }) mbJson
 
 -- | Our operations for managing tags
 instance manageTagAppM :: ManageTag AppM where
-  getAllTags =
-    mkRequest { endpoint: Tags, method: Get }
-      >>= decode (decodeAt "tags")
+  getAllTags = do
+    mbJson <- mkRequest { endpoint: Tags, method: Get }
+    map (map _.tags) $ decode (CAR.object "Tags" { tags: CA.array CA.string }) mbJson
 
 -- | Our operations for managing comments
 instance manageCommentAppM :: ManageComment AppM where
-  getComments slug =
-    mkRequest { endpoint: Comments slug, method: Get }
-      >>= decodeWithUser decodeComments
+  getComments slug = do
+    mbJson <- mkRequest { endpoint: Comments slug, method: Get }
+    map (map _.comments)
+      $ decodeWithUser (\u -> CAR.object "Comments" { comments: CA.array (Comment.codec u) }) mbJson
 
   createComment slug body =
     let method = Post $ Just $ encodeJson { body }
@@ -242,35 +252,43 @@ instance manageCommentAppM :: ManageComment AppM where
 
 -- | Our operations for managing articles
 instance manageArticleAppM :: ManageArticle AppM where
-  getArticle slug =
-    mkRequest { endpoint: Article slug, method: Get }
-      >>= decodeWithUser decodeArticle
+  getArticle slug = do
+    mbJson <- mkRequest { endpoint: Article slug, method: Get }
+    map (map _.article)
+      $ decodeWithUser (\u -> CAR.object "Article" { article: Article.articleWithMetadataCodec u }) mbJson
 
   getArticles fields =
     mkRequest { endpoint: Articles fields, method: Get }
-      >>= decodeWithUser decodeArticles
+      >>= decodeWithUser Article.articlesWithMetadataCodec
 
   createArticle article = do
-    let method = Post $ Just $ encodeJson { article }
-    mkAuthRequest { endpoint: Articles noArticleParams, method }
-      >>= decodeWithUser decodeArticle
+    let
+      codec = CAR.object "Article" { article: Article.articleCodec }
+      method = Post $ Just $ Codec.encode codec { article }
+
+    mbJson <- mkAuthRequest { endpoint: Articles noArticleParams, method }
+    map (map _.article)
+      $ decodeWithUser (\u -> CAR.object "Article" { article: Article.articleWithMetadataCodec u }) mbJson
 
   updateArticle slug article = do
-    let method = Put $ Just $ encodeJson { article }
-    mkAuthRequest { endpoint: Article slug, method }
-      >>= decodeWithUser decodeArticle
+    let
+      codec = CAR.object "Article" { article: Article.articleCodec }
+      method = Put $ Just $ Codec.encode codec { article }
+
+    mbJson <- mkAuthRequest { endpoint: Article slug, method }
+    map (map _.article) $ decodeWithUser (\u -> CAR.object "Article" { article: Article.articleWithMetadataCodec u }) mbJson
 
   deleteArticle slug =
     void $ mkAuthRequest { endpoint: Article slug, method: Delete }
 
-  favoriteArticle slug =
-    mkAuthRequest { endpoint: Favorite slug, method: Post Nothing }
-      >>= decodeWithUser decodeArticle
+  favoriteArticle slug = do
+    mbJson <- mkAuthRequest { endpoint: Favorite slug, method: Post Nothing }
+    map (map _.article) $ decodeWithUser (\u -> CAR.object "Article" { article: Article.articleWithMetadataCodec u }) mbJson
 
-  unfavoriteArticle slug =
-    mkAuthRequest { endpoint: Favorite slug, method: Delete }
-      >>= decodeWithUser decodeArticle
+  unfavoriteArticle slug = do
+    mbJson <- mkAuthRequest { endpoint: Favorite slug, method: Delete }
+    map (map _.article) $ decodeWithUser (\u -> CAR.object "Article" { article: Article.articleWithMetadataCodec u }) mbJson
 
   getCurrentUserFeed params =
     mkAuthRequest { endpoint: Feed params, method: Get }
-      >>= decodeWithUser decodeArticles
+      >>= decodeWithUser Article.articlesWithMetadataCodec

@@ -34,7 +34,7 @@ data LogLevel = Dev | Prod
 derive instance eqLogLevel :: Eq LogLevel
 derive instance ordLogLevel :: Ord LogLevel
 
--- | This type desribes a sub-section of our user environment. Having a section within the larger
+-- | This type describes a sub-section of our user environment. Having a section within the larger
 -- | record makes it easier to write constraints for components; you can, for example, require
 -- | a monad supporting the environment { userEnv :: UserEnv | more } rather than having to list
 -- | all the individual fields in `UserEnv`.

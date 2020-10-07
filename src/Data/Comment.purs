@@ -5,35 +5,25 @@ module Conduit.Data.Comment where
 
 import Prelude
 
-import Conduit.Data.PreciseDateTime (PreciseDateTime)
-import Conduit.Data.Profile (Author, decodeJsonWithAuthor)
+import Conduit.Data.PreciseDateTime as PDT
+import Conduit.Data.Profile (Author)
+import Conduit.Data.Profile as Profile
 import Conduit.Data.Username (Username)
-import Conduit.Data.Utils (decodeAt)
-import Data.Argonaut (JsonDecodeError)
-import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson)
-import Data.Argonaut.Encode (class EncodeJson)
-import Data.Either (Either)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Codec.Argonaut (JsonCodec)
+import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype)
-import Data.Traversable (traverse)
+import Data.PreciseDateTime (PreciseDateTime)
+import Data.Profunctor (wrapIso)
 
 -- | This type exists purely as an identifier to distinguish it from a normal `String`, so we'll
 -- | create a simple newtype which can be freely wrapped or unwrapped.
 newtype CommentId = CommentId Int
 
 derive instance newtypeCommentId :: Newtype CommentId _
-derive instance genericCommentId :: Generic CommentId _
 derive instance eqCommentId :: Eq CommentId
 derive instance ordCommentId :: Ord CommentId
-
-derive newtype instance encodeJsonCommentId :: EncodeJson CommentId
-derive newtype instance decodeJsonCommentId :: DecodeJson CommentId
-
-instance showCommentId :: Show CommentId where
-  show = genericShow
 
 -- | Next, we'll define our larger comment type. A comment consists of a persistent unique
 -- | identifier, a timestamp, a user-created body, and information about the user who created
@@ -45,11 +35,11 @@ type Comment =
   , author :: Author
   }
 
--- | Most records can be generically encoded or decoded without us having to write anything
--- | manually. In this case, though, there is a field that can't be handled generically:
--- | an author, which requires a username to be decoded.
--- |
--- | So we'll go ahead and write this decoder manually.
-decodeComments :: Maybe Username -> Json -> Either JsonDecodeError (Array Comment)
-decodeComments u =
-  traverse (decodeJsonWithAuthor u) <=< decodeAt "comments"
+codec :: Maybe Username -> JsonCodec Comment
+codec mbUsername =
+  CAR.object "Comment"
+    { id: wrapIso CommentId CA.int
+    , createdAt: PDT.codec
+    , body: CA.string
+    , author: Profile.authorCodec mbUsername
+    }
