@@ -34,7 +34,6 @@ import Conduit.Data.Profile as Profile
 import Conduit.Data.Route as Route
 import Conduit.Env (Env, LogLevel(..))
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Data.Argonaut.Encode (encodeJson)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut as Codec
 import Data.Codec.Argonaut.Record as CAR
@@ -244,7 +243,7 @@ instance manageCommentAppM :: ManageComment AppM where
       $ decodeWithUser (\u -> CAR.object "Comments" { comments: CA.array (Comment.codec u) }) mbJson
 
   createComment slug body =
-    let method = Post $ Just $ encodeJson { body }
+    let method = Post $ Just $ Codec.encode (CAR.object "CommentBody" { body: CA.string }) { body }
      in void $ mkAuthRequest { endpoint: Comments slug, method }
 
   deleteComment slug id =
