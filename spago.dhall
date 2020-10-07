@@ -1,5 +1,4 @@
-{ sources = [ "src/**/*.purs", "test/**/*.purs" ]
-, name = "purescript-halogen-realworld"
+{ name = "halogen-realworld"
 , packages = ./packages.dhall
 , dependencies =
   [ "aff"
@@ -23,4 +22,5 @@
   , "slug"
   , "variant"
   ]
+, sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }
