@@ -13,17 +13,21 @@ module Conduit.Capability.Resource.User where
 
 import Prelude
 
-import Conduit.Api.Request (AuthFieldsRep, LoginFields, RegisterFields)
+import Conduit.Api.Request (LoginFields, RegisterFields)
+import Conduit.Data.Email (Email)
 import Conduit.Data.Profile (Profile, ProfileRep, ProfileWithEmail, Author)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe)
 import Halogen (HalogenM, lift)
-import Type.Row (type (+))
 
 -- | This type is a record made up of two row types: the fields that make up a profile, plus the
 -- | fields used for authentication, like their email address and password. See the
 -- | `Conduit.Data.Profile` module for more details.
-type UpdateProfileFields = { | ProfileRep + AuthFieldsRep Maybe () }
+type UpdateProfileFields =
+  { email :: Email
+  , password :: Maybe String
+  | ProfileRep ()
+  }
 
 -- | This capability represents the ability to manage users in our system. We support logging users
 -- | in, and registering them, as well as reading information about various users and who follows

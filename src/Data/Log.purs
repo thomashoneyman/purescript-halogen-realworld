@@ -28,9 +28,8 @@ import Prelude
 import Conduit.Capability.Now (class Now, nowDateTime)
 import Data.DateTime (DateTime)
 import Data.Either (either)
+import Data.Foldable (fold)
 import Data.Formatter.DateTime (formatDateTime)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
 
 -- | Most of this module describes metadata that can be used to create a predictable logging
 -- | format that we can search later on or use to set filters in an external service like Splunk
@@ -38,12 +37,8 @@ import Data.Generic.Rep.Show (genericShow)
 -- | status information, warnings, and and errors.
 data LogReason = Debug | Info | Warn | Error
 
-derive instance genericLogReason :: Generic LogReason _
 derive instance eqLogReason :: Eq LogReason
 derive instance ordLogReason :: Ord LogReason
-
-instance showLogReason :: Show LogReason where
-  show = genericShow
 
 -- | We can now write our `Log` type, which contains the metadata about a particular message along
 -- | with the correctly-formatted message itself. It may seem redundant to include the metadata in
@@ -60,7 +55,6 @@ newtype Log = Log
   , message :: String
   }
 
-derive instance genericLog :: Generic Log _
 derive instance eqLog :: Eq Log
 
 -- | We have been careful to prevent creation of the `Log` type outside this module, but we should
@@ -89,14 +83,14 @@ mkLog logReason inputMessage = do
   let
     -- Will produce a header like "{DEBUG: 2018-10-25 11:25:29 AM]\nMessage contents..."
     headerWith start =
-      "[" <> start <> ": " <> formatTimestamp now <> "]\n" <> inputMessage
+      fold [ "[", start, ": ", formatTimestamp now, "]\n", inputMessage ]
 
     -- Writes the header with the correct log reason
-    formattedLog = case logReason of
-      Debug -> headerWith "DEBUG"
-      Info -> headerWith "INFO"
-      Warn -> headerWith "WARNING"
-      Error -> headerWith "ERROR"
+    formattedLog = headerWith case logReason of
+      Debug -> "DEBUG"
+      Info -> "INFO"
+      Warn -> "WARNING"
+      Error -> "ERROR"
 
   pure $ Log { reason: logReason, timestamp: now, message: formattedLog }
 
@@ -104,4 +98,4 @@ mkLog logReason inputMessage = do
   -- Will format "2018-10-25 11:25:29 AM"
   formatTimestamp =
     either (const "(Failed to assign time)") identity
-    <<< formatDateTime "YYYY-DD-MM hh:mm:ss a"
+      <<< formatDateTime "YYYY-DD-MM hh:mm:ss a"

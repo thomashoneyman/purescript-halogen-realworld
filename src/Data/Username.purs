@@ -10,32 +10,28 @@ module Conduit.Data.Username
   ( Username -- constructor not exported
   , parse
   , toString
+  , codec
   ) where
 
 import Prelude
 
-import Data.Argonaut.Decode (class DecodeJson)
-import Data.Argonaut.Encode (class EncodeJson)
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Codec.Argonaut (JsonCodec)
+import Data.Codec.Argonaut as CA
 import Data.Maybe (Maybe(..))
+import Data.Newtype (class Newtype)
+import Data.Profunctor (wrapIso)
 
 -- | We'll represent usernames as a newtype wrapper around a string. Newtypes have no performance
 -- | overhead, so they're the fastest way to add a documenting type to a primitive type like
 -- | `String`.
 newtype Username = Username String
 
-derive instance genericUsername :: Generic Username _
 derive instance eqUsername :: Eq Username
 derive instance ordUsername :: Ord Username
+derive instance newtypeUsername :: Newtype Username _
 
--- | We can rely on the `String` JSON instances for encoding and decoding. We don't need to write
--- | them manually.
-derive newtype instance encodeJsonUsername :: EncodeJson Username
-derive newtype instance decodeJsonUsername :: DecodeJson Username
-
-instance showUsername :: Show Username where
-  show = genericShow
+codec :: JsonCodec Username
+codec = wrapIso Username CA.string
 
 -- | This function requires a string to pass some validation before being considered a valid
 -- | `Username`. For now, we'll just enforce a username is non-empty, but we might introduce more

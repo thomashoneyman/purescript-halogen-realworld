@@ -11,11 +11,14 @@ import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.AppM (runAppM)
 import Conduit.Component.Router as Router
+import Conduit.Data.Profile as Profile
 import Conduit.Data.Route (routeCodec)
-import Conduit.Data.Utils (decodeAt)
-import Conduit.Env (LogLevel(..), UserEnv, Env)
-import Data.Argonaut (printJsonDecodeError)
+import Conduit.Env (Env, LogLevel(..))
 import Data.Bifunctor (lmap)
+import Data.Codec as Codec
+import Data.Codec.Argonaut (printJsonDecodeError)
+import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
 import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse_)
@@ -23,7 +26,7 @@ import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Aff.Bus as Bus
 import Effect.Ref as Ref
-import Halogen (liftAff, liftEffect)
+import Halogen (liftEffect)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -72,33 +75,42 @@ main = HA.runHalogenAff do
     baseUrl = BaseURL "https://conduit.productionready.io"
     logLevel = Dev
 
-  -- Next, we'll maintain a global mutable reference which contains the profile for the currently
-  -- authenticated user (if there is one). To start, we'll fill the mutable reference with `Nothing`
-  -- since we don't yet have the user's profile.
-  currentUser <- liftEffect $ Ref.new Nothing
+  -- We'll now construct our user environment, state that is accessible anywhere in the application.
+  userEnv <- liftEffect do
+    -- Next, we'll maintain a global mutable reference which contains the profile for the currently
+    -- authenticated user (if there is one). To start, we'll fill the mutable reference with `Nothing`
+    -- since we don't yet have the user's profile.
+    currentUser <- Ref.new Nothing
 
-  -- We'll also create a new bus to broadcast updates when the value of the current user changes;
-  -- that allows all subscribed components to stay in sync about this value.
-  userBus <- liftEffect Bus.make
+    -- We'll also create a new bus to broadcast updates when the value of the current user changes;
+    -- that allows all subscribed components to stay in sync about this value.
+    userBus <- Bus.make
 
-  -- Finally, we'll attempt to fill the reference with the user profile associated with the token in
-  -- local storage (if there is one). We'll read the token, request the user's profile if we can, and
-  -- if we get a valid result, we'll write it to our mutable reference.
-  --
-  -- Note: this is quite a verbose request because it uses none of our helper functions. They're
-  -- designed to be run in `AppM` (we're in `Effect`). This is the only request run outside `AppM`,
-  -- so it's OK to be a little verbose.
-  liftEffect readToken >>= traverse_ \token -> do
-    let requestOptions = { endpoint: User, method: Get }
-    res <- liftAff $ request $ defaultRequest baseUrl (Just token) requestOptions
+    -- Finally, we'll attempt to fill the reference with the user profile associated with the token in
+    -- local storage (if there is one). We'll read the token, request the user's profile if we can, and
+    -- if we get a valid result, we'll write it to our mutable reference.
+    --
+    -- Note: this is quite a verbose request because it uses none of our helper functions. They're
+    -- designed to be run in `AppM` (we're in `Effect`). This is the only request run outside `AppM`,
+    -- so it's OK to be a little verbose.
+    readToken >>= traverse_ \token -> do
+      let requestOptions = { endpoint: User, method: Get }
+      launchAff_ do
+        res <- request $ defaultRequest baseUrl (Just token) requestOptions
 
-    let
-      user :: Either String _
-      user = case res of
-        Left e -> Left $ printError e
-        Right v -> lmap printJsonDecodeError $ decodeAt "user" v.body
+        let
+          user :: Either String _
+          user = case res of
+            Left e ->
+              Left (printError e)
+            Right v -> lmap printJsonDecodeError do
+              u <- Codec.decode (CAR.object "User" { user: CA.json }) v.body
+              CA.decode Profile.profileCodec u.user
 
-    liftEffect $ Ref.write (hush user) currentUser
+        liftEffect (Ref.write (hush user) currentUser)
+
+    -- We can now return our constructed user environment.
+    pure { currentUser, userBus }
 
   -- We now have the three pieces of information necessary to configure our app. Let's create
   -- a record that matches the `Env` type our application requires by filling in these three
@@ -106,9 +118,6 @@ main = HA.runHalogenAff do
   let
     environment :: Env
     environment = { baseUrl, logLevel, userEnv }
-      where
-      userEnv :: UserEnv
-      userEnv = { currentUser, userBus }
 
   -- With our app environment ready to go, we can prepare the router to run as our root component.
   --
@@ -163,5 +172,3 @@ main = HA.runHalogenAff do
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
     when (old /= Just new) do
       launchAff_ $ halogenIO.query $ H.tell $ Router.Navigate new
-
-  pure unit
