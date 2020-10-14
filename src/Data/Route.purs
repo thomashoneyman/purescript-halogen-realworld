@@ -61,10 +61,10 @@ routeCodec = root $ sum
   , "Favorites": "profile" / uname segment / "favorites"
   }
 
--- | This combinator transforms a codec over `String` into one that operatos on the `Slug` type.
+-- | This combinator transforms a codec over `String` into one that operates on the `Slug` type.
 slug :: RouteDuplex' String -> RouteDuplex' Slug
 slug = as Slug.toString (Slug.parse >>> note "Bad slug")
 
--- | This combinator transforms a codec over `String` into one that operatos on the `Username` type.
+-- | This combinator transforms a codec over `String` into one that operates on the `Username` type.
 uname :: RouteDuplex' String -> RouteDuplex' Username
 uname = as Username.toString (Username.parse >>> note "Bad username")
