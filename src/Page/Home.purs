@@ -4,7 +4,7 @@ module Conduit.Page.Home where
 
 import Prelude
 
-import Component.HOC.Connect as Connect
+import Component.HigherOrder.Connect as Connect
 import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Capability.Navigate (class Navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, getArticles, getCurrentUserFeed)

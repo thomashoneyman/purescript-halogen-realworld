@@ -5,7 +5,7 @@ module Conduit.Page.Editor where
 
 import Prelude
 
-import Component.HOC.Connect as Connect
+import Component.HigherOrder.Connect as Connect
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
 import Conduit.Component.HTML.Header (header)

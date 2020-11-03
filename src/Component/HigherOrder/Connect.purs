@@ -1,7 +1,7 @@
 -- | This higher-order component exists to wrap other components which
 -- | need to connect to the user data in global application state and
 -- | stay in sync with changes to that data.
-module Component.HOC.Connect where
+module Component.HigherOrder.Connect where
 
 import Prelude
 
