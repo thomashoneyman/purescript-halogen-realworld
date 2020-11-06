@@ -34,11 +34,12 @@ import Conduit.Data.Profile as Profile
 import Conduit.Data.Route as Route
 import Conduit.Env (Env, LogLevel(..))
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
+import Control.Parallel (class Parallel, parallel, sequential)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut as Codec
 import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe(..))
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, ParAff)
 import Effect.Aff.Bus as Bus
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -142,6 +143,18 @@ derive newtype instance monadAffAppM :: MonadAff AppM
 -- | ```
 instance monadAskAppM :: TypeEquals e Env => MonadAsk e AppM where
   ask = AppM $ asks from
+
+-- | `ParAppM` allows our `AppM` to be parallelizable in conjunction with `Aff`.
+newtype ParAppM a
+  = ParAppM (ReaderT Env ParAff a)
+
+derive newtype instance functorParAppM :: Functor ParAppM
+derive newtype instance applyParAppM :: Apply ParAppM
+derive newtype instance applicativeParAppM :: Applicative ParAppM
+
+instance parallelAppM :: Parallel ParAppM AppM where
+  parallel (AppM readerT) = ParAppM (parallel readerT)
+  sequential (ParAppM readerT) = AppM (sequential readerT)
 
 -- | We're finally ready to write concrete implementations for each of our abstract capabilities.
 -- | For an in-depth description of each capability, please refer to the relevant `Capability.*`
