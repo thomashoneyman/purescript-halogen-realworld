@@ -7,8 +7,8 @@ module Conduit.Component.Router where
 
 import Prelude
 
-import Component.HOC.Connect (WithCurrentUser)
-import Component.HOC.Connect as Connect
+import Component.HigherOrder.Connect (WithCurrentUser)
+import Component.HigherOrder.Connect as Connect
 import Conduit.Capability.LogMessages (class LogMessages)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Now (class Now)
