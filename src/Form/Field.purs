@@ -23,17 +23,16 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Type.Row as Row
 
--- | Formless (the form library for Halogen) supports a submit event which will attempt to validate
--- | and return the successfully-parsed fields. We can create a small helper function that creates
--- | a submit button with customizable text and the submit event triggered by a click. Since all
--- | submit buttons in the Conduit application look the same, we can jus use this throughout the app.
-submit :: forall form act slots m. String -> F.ComponentHTML form act slots m
+-- | This small helper function that creates a submit button with customizable
+-- | text. Since all submit buttons in the Conduit application look the same,
+-- | we can just use this throughout the app.
+submit :: forall i p. String -> HH.HTML i p
 submit buttonText =
-  HH.button
+  HH.input
     [ css "btn btn-lg btn-primary pull-xs-right"
-    , HE.onClick \_ -> Just F.submit
+    , HP.type_ HP.InputSubmit
+    , HP.value buttonText
     ]
-    [ HH.text buttonText ]
 
 -- | This helper function creates an input field hooked up with Formless, including styles,
 -- | events, error handling, and more. The function ensures at compile-time that the field we

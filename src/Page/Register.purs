@@ -21,7 +21,9 @@ import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Web.Event.Event as Event
 
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
@@ -84,44 +86,58 @@ component = H.mkComponent
             ]
         ]
 
-    formComponent
-      :: forall formQuery formSlots formInput
-       . F.Component RegisterForm formQuery formSlots formInput RegisterFields m
-    formComponent = F.component formInput $ F.defaultSpec
-      { render = renderForm
-      , handleEvent = F.raiseResult
-      }
-      where
-      formInput :: formInput -> F.Input' RegisterForm m
-      formInput _ =
-        { validators: RegisterForm
-            { username: V.required >>> V.usernameFormat
-            , email: V.required >>> V.minLength 3 >>> V.emailFormat
-            , password: V.required >>> V.minLength 8 >>> V.maxLength 20
-            }
-        , initialInputs: Nothing
+data FormAction = Submit Event.Event
+
+formComponent
+  :: forall formQuery formSlots formInput m
+   . MonadAff m
+  => F.Component RegisterForm formQuery formSlots formInput RegisterFields m
+formComponent = F.component formInput $ F.defaultSpec
+  { render = renderForm
+  , handleEvent = handleEvent
+  , handleAction = handleAction
+  }
+  where
+  formInput :: formInput -> F.Input' RegisterForm m
+  formInput _ =
+    { validators: RegisterForm
+        { username: V.required >>> V.usernameFormat
+        , email: V.required >>> V.minLength 3 >>> V.emailFormat
+        , password: V.required >>> V.minLength 8 >>> V.maxLength 20
         }
+    , initialInputs: Nothing
+    }
 
-      renderForm { form } =
-        HH.form_
-          [ HH.fieldset_
-            [ username
-            , email
-            , password
-            ]
-          , Field.submit "Sign up"
+  handleEvent = F.raiseResult
+
+  handleAction = case _ of
+    Submit event -> do
+      H.liftEffect $ Event.preventDefault event
+      eval F.submit
+    where
+    eval act = F.handleAction handleAction handleEvent act
+
+  renderForm { form } =
+    HH.form
+      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HH.fieldset_
+          [ username
+          , email
+          , password
           ]
-        where
-        proxies = F.mkSProxies (F.FormProxy :: _ RegisterForm)
+      , Field.submit "Sign up"
+      ]
+    where
+    proxies = F.mkSProxies (F.FormProxy :: _ RegisterForm)
 
-        username =
-          Field.input proxies.username form
-            [ HP.placeholder "Username", HP.type_ HP.InputText ]
+    username =
+      Field.input proxies.username form
+        [ HP.placeholder "Username", HP.type_ HP.InputText ]
 
-        email =
-          Field.input proxies.email form
-            [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
+    email =
+      Field.input proxies.email form
+        [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
 
-        password =
-          Field.input proxies.password form
-            [ HP.placeholder "Password" , HP.type_ HP.InputPassword ]
+    password =
+      Field.input proxies.password form
+        [ HP.placeholder "Password" , HP.type_ HP.InputPassword ]
