@@ -11,7 +11,6 @@ import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, safeHref, whenElem)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Route (Route(..))
-import Conduit.Form.Field (submit)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation as V
 import Data.Maybe (Maybe(..))
@@ -20,7 +19,9 @@ import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Web.Event.Event as Event
 
 data Action
   = HandleLoginForm LoginFields
@@ -106,7 +107,10 @@ derive instance newtypeLoginForm :: Newtype (LoginForm r f) _
 data FormQuery a
   = SetLoginError Boolean a
 
-derive instance functorFormQuery :: Functor (FormQuery)
+derive instance functorFormQuery :: Functor FormQuery
+
+data FormAction
+  = Submit Event.Event
 
 formComponent
   :: forall i slots m
@@ -116,6 +120,7 @@ formComponent = F.component formInput $ F.defaultSpec
   { render = renderLogin
   , handleEvent = handleEvent
   , handleQuery = handleQuery
+  , handleAction = handleAction
   }
   where
   formInput :: i -> F.Input LoginForm (loginError :: Boolean) m
@@ -130,6 +135,13 @@ formComponent = F.component formInput $ F.defaultSpec
 
   handleEvent = F.raiseResult
 
+  handleAction = case _ of
+    Submit event -> do
+      H.liftEffect $ Event.preventDefault event
+      eval F.submit
+    where
+    eval act = F.handleAction handleAction handleEvent act
+
   handleQuery :: forall a. FormQuery a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = case _ of
     SetLoginError bool a -> do
@@ -139,7 +151,8 @@ formComponent = F.component formInput $ F.defaultSpec
   proxies = F.mkSProxies (F.FormProxy :: _ LoginForm)
 
   renderLogin { form, loginError } =
-    HH.form_
+    HH.form
+      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
       [ whenElem loginError \_ ->
           HH.div
             [ css "error-messages" ]
@@ -153,6 +166,6 @@ formComponent = F.component formInput $ F.defaultSpec
               [ HP.placeholder "Password"
               , HP.type_ HP.InputPassword
               ]
-          , submit "Log in"
+          , Field.submit "Log in"
           ]
       ]

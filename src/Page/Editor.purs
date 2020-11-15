@@ -34,6 +34,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Slug (Slug)
+import Web.Event.Event as Event
 
 data Action
   = Initialize
@@ -137,6 +138,7 @@ type FormChildSlots =
 
 data FormAction
   = HandleTagInput TagInput.Message
+  | Submit Event.Event
 
 formComponent
   :: forall q i m
@@ -165,6 +167,10 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
   handleEvent = F.raiseResult
 
   handleAction = case _ of
+    Submit event -> do
+      H.liftEffect $ Event.preventDefault event
+      eval F.submit
+
     HandleTagInput msg -> case msg of
       TagInput.TagAdded _ set ->
         eval $ F.set proxies.tagList (Set.toUnfoldable set)
@@ -174,7 +180,8 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     eval act = F.handleAction handleAction handleEvent act
 
   render st@{ form } =
-    HH.form_
+    HH.form
+      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
       [ HH.fieldset_
         [ title
         , description
