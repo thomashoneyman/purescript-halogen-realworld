@@ -74,7 +74,7 @@ type Profile = { | ProfileRep () }
 -- | The `ProfileWithEmail` type extends the `Profile` fields with an additional `Email` type.
 type ProfileWithEmail = { | ProfileRep (email :: Email) }
 
--- | The `ProfileWithEmail` type extends the `Profile` fields with an additional `Email` type.
+-- | The `ProfileWithEmailPassword` type extends the `Profile` fields with additional `Email` type and a password field.
 type ProfileWithEmailPassword = { | ProfileRep (email :: Email, password :: Maybe String) }
 
 -- | The `Author` type extends the `Profile` fields with an additional `Relation` type.
