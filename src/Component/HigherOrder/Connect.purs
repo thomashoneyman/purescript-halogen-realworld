@@ -10,7 +10,6 @@ import Conduit.Data.Profile (Profile)
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Data.Maybe (Maybe(..))
-import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref as Ref
 import Halogen (liftEffect)
@@ -18,6 +17,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Prim.Row as Row
 import Record as Record
+import Type.Proxy (Proxy(..))
 
 data Action input output
   = Initialize
@@ -31,7 +31,7 @@ type WithCurrentUser r =
 type ChildSlots query output =
   ( inner :: H.Slot query output Unit )
 
-_inner = SProxy :: SProxy "inner"
+_inner = Proxy :: Proxy "inner"
 
 -- | This component can re-use the query type and output type of its child
 -- | component because it has no queries or outputs of its own. That makes
@@ -47,7 +47,7 @@ component innerComponent =
   H.mkComponent
     -- here, we'll insert the current user into the wrapped component's input
     -- minus the current user
-    { initialState: Record.insert (SProxy :: _ "currentUser") Nothing
+    { initialState: Record.insert (Proxy :: _ "currentUser") Nothing
     , render
     , eval: H.mkEval $ H.defaultEval
         { handleAction = handleAction
@@ -74,7 +74,7 @@ component innerComponent =
 
     Receive input -> do
       { currentUser } <- H.get
-      H.put $ Record.insert (SProxy :: _ "currentUser") currentUser input
+      H.put $ Record.insert (Proxy :: _ "currentUser") currentUser input
 
     Emit output ->
       H.raise output

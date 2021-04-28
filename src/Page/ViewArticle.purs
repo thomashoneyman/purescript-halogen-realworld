@@ -31,7 +31,6 @@ import Data.Lens (Traversal', preview)
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
-import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Ref as Ref
 import Halogen as H
@@ -40,6 +39,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
 import Slug (Slug)
+import Type.Proxy (Proxy(..))
 
 data Action
   = Initialize
@@ -184,7 +184,7 @@ component = H.mkComponent
         [ css "container page" ]
         [ HH.div
             [ css "col-xs-12" ]
-            [ HH.slot (SProxy :: _ "rawHtml") unit RawHTML.component { markdown } absurd
+            [ HH.slot (Proxy :: _ "rawHtml") unit RawHTML.component { markdown } absurd
             , HH.ul
                 [ css "tag-list" ]
                 (renderTag <$> article.tagList)
@@ -334,7 +334,7 @@ component = H.mkComponent
         ]
 
   _author :: Traversal' State Author
-  _author = _article <<< prop (SProxy :: SProxy "author")
+  _author = _article <<< prop (Proxy :: Proxy "author")
 
   _article :: Traversal' State ArticleWithMetadata
-  _article = prop (SProxy :: SProxy "article") <<< _Success
+  _article = prop (Proxy :: Proxy "article") <<< _Success

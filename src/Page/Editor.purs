@@ -25,7 +25,6 @@ import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
-import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
@@ -34,6 +33,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Slug (Slug)
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 data Action
@@ -162,7 +162,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     , initialInputs: Nothing
     }
 
-  proxies = F.mkSProxies (F.FormProxy :: _ EditorFields)
+  proxies = F.mkSProxies (Proxy :: _ EditorFields)
 
   handleEvent = F.raiseResult
 
@@ -186,7 +186,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
         [ title
         , description
         , body
-        , HH.slot (SProxy :: _ "tagInput") unit TagInput.component { tags } handler
+        , HH.slot (Proxy :: _ "tagInput") unit TagInput.component { tags } handler
         , Field.submit do
             if isJust mbArticle
               then "Commit changes"

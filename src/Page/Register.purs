@@ -23,6 +23,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 -- | See the Formless tutorial to learn how to build your own forms:
@@ -128,7 +129,7 @@ formComponent = F.component formInput $ F.defaultSpec
       , Field.submit "Sign up"
       ]
     where
-    proxies = F.mkSProxies (F.FormProxy :: _ RegisterForm)
+    proxies = F.mkSProxies (Proxy :: _ RegisterForm)
 
     username =
       Field.input proxies.username form

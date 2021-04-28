@@ -21,6 +21,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 data Action
@@ -148,7 +149,7 @@ formComponent = F.component formInput $ F.defaultSpec
       H.modify_ _ { loginError = bool }
       pure (Just a)
 
-  proxies = F.mkSProxies (F.FormProxy :: _ LoginForm)
+  proxies = F.mkSProxies (Proxy :: _ LoginForm)
 
   renderLogin { form, loginError } =
     HH.form

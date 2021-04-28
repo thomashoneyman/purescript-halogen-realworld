@@ -28,6 +28,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 -- | See the Formless tutorial to learn how to build your own forms:
@@ -171,7 +172,7 @@ formComponent = F.component formInput $ F.defaultSpec
         ]
       ]
     where
-    proxies = F.mkSProxies (F.FormProxy :: _ SettingsForm)
+    proxies = F.mkSProxies (Proxy :: _ SettingsForm)
 
     image =
       Field.input proxies.image form
