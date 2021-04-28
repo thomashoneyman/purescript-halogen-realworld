@@ -59,7 +59,7 @@ component
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageArticle m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component = Connect.component $ H.mkComponent
   -- due to the use of `Connect.component`, our input now also has `currentUser`
   -- in it, even though this component's only input is a slug.

@@ -44,7 +44,7 @@ component
    . MonadAff m
   => ManageUser m
   => Navigate m
-  => H.Component HH.HTML q Unit o m
+  => H.Component q Unit o m
 component = H.mkComponent
   { initialState: const unit
   , render

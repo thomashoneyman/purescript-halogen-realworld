@@ -42,7 +42,7 @@ component
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component = H.mkComponent
   { initialState: identity
   , render

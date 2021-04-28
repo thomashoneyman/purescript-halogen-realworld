@@ -29,7 +29,6 @@ import Effect.Ref as Ref
 import Halogen (liftEffect)
 import Halogen as H
 import Halogen.Aff as HA
-import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
 import Routing.Duplex (parse)
 import Routing.Hash (matchesWith)
@@ -138,7 +137,7 @@ main = HA.runHalogenAff do
   --
   -- Let's put it all together. With `hoist`, `runAppM`, our environment, and our router component,
   -- we can produce a proper root component for Halogen to run.
-    rootComponent :: H.Component HH.HTML Router.Query {} Void Aff
+    rootComponent :: H.Component Router.Query {} Void Aff
     rootComponent = H.hoist (runAppM environment) Router.component
 
   -- Now we have the two things we need to run a Halogen application: a reference to an HTML element

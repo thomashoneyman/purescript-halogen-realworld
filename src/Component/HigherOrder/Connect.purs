@@ -41,8 +41,8 @@ component
    . MonadAff m
   => MonadAsk { userEnv :: UserEnv | r } m
   => Row.Lacks "currentUser" input
-  => H.Component HH.HTML query { | WithCurrentUser input } output m
-  -> H.Component HH.HTML query { | input } output m
+  => H.Component query { | WithCurrentUser input } output m
+  -> H.Component query { | input } output m
 component innerComponent =
   H.mkComponent
     -- here, we'll insert the current user into the wrapped component's input

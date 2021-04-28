@@ -72,7 +72,7 @@ component
   => Navigate m
   => ManageTag m
   => ManageArticle m
-  => H.Component HH.HTML q {} o m
+  => H.Component q {} o m
 component = Connect.component $ H.mkComponent
   { initialState
   , render

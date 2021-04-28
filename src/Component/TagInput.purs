@@ -43,7 +43,7 @@ data Message
   = TagAdded Tag (Set Tag)
   | TagRemoved Tag (Set Tag)
 
-component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Message m
+component :: forall q m. MonadEffect m => H.Component q Input Message m
 component = H.mkComponent
   { initialState: \{ tags } -> { tags, text: "" }
   , render

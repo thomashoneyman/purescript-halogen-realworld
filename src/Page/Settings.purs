@@ -56,7 +56,7 @@ component
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML q Unit o m
+  => H.Component q Unit o m
 component = H.mkComponent
   { initialState: \_ -> { profile: NotAsked }
   , render
