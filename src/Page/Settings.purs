@@ -100,11 +100,11 @@ component = H.mkComponent
       [ HH.h1
           [ css "text-xs-center"]
           [ HH.text "Your Settings" ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleForm)
+      , HH.slot F._formless unit formComponent unit HandleForm
       , HH.hr_
       , HH.button
           [ css "btn btn-outline-danger"
-          , HE.onClick \_ -> Just LogUserOut
+          , HE.onClick \_ -> LogUserOut
           ]
           [ HH.text "Log out" ]
       ]
@@ -161,7 +161,7 @@ formComponent = F.component formInput $ F.defaultSpec
 
   renderForm { form } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
         [ image
         , username
@@ -190,7 +190,7 @@ formComponent = F.component formInput $ F.defaultSpec
             , HP.placeholder "Short bio about you"
             , HP.rows 8
             , HP.value $ F.getInput proxies.bio form
-            , HE.onValueInput $ Just <<< F.setValidate proxies.bio
+            , HE.onValueInput $ F.setValidate proxies.bio
             ]
         ]
 

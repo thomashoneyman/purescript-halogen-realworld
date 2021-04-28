@@ -113,7 +113,7 @@ component = Connect.component $ H.mkComponent
               [ css "row" ]
               [ HH.div
                 [ css "col-md-10 offset-md-1 col-xs-12" ]
-                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit (Just <<< HandleEditor) ]
+                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit HandleEditor ]
               ]
             ]
         ]
@@ -181,7 +181,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
 
   render st@{ form } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
         [ title
         , description
@@ -194,7 +194,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
         ]
       ]
     where
-    handler = Just <<< F.injAction <<< HandleTagInput
+    handler = F.injAction <<< HandleTagInput
 
     tags =
       Set.fromFoldable $ F.getInput proxies.tagList form
@@ -215,7 +215,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
             , HP.placeholder "Write your article (in markdown)"
             , HP.value $ F.getInput proxies.body form
             , HP.rows 8
-            , HE.onValueInput $ Just <<< F.setValidate proxies.body
+            , HE.onValueInput $ F.setValidate proxies.body
             ]
           , maybeElem (F.getError proxies.body form) \err ->
               HH.div

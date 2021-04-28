@@ -75,7 +75,7 @@ component = H.mkComponent
               [ safeHref Register ]
               [ HH.text "Need an account?" ]
         ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleLoginForm)
+      , HH.slot F._formless unit formComponent unit HandleLoginForm
       ]
     where
     container html =
@@ -153,7 +153,7 @@ formComponent = F.component formInput $ F.defaultSpec
 
   renderLogin { form, loginError } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ whenElem loginError \_ ->
           HH.div
             [ css "error-messages" ]

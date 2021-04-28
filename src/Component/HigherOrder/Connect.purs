@@ -87,4 +87,4 @@ component innerComponent =
   -- We'll simply render the inner component as-is, except with the augmented
   -- input containing the current user.
   render state =
-    HH.slot _inner unit innerComponent state (Just <<< Emit)
+    HH.slot _inner unit innerComponent state Emit

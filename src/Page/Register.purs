@@ -67,7 +67,7 @@ component = H.mkComponent
               [ safeHref Login ]
               [ HH.text "Already have an account?" ]
         ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleRegisterForm)
+      , HH.slot F._formless unit formComponent unit HandleRegisterForm
       ]
     where
     container html =
@@ -120,7 +120,7 @@ formComponent = F.component formInput $ F.defaultSpec
 
   renderForm { form } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
           [ username
           , email

@@ -13,7 +13,6 @@ import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
 import DOM.HTML.Indexed (HTMLinput)
-import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Data.Symbol (class IsSymbol)
 import Data.Variant (Variant)
@@ -77,7 +76,7 @@ input sym form props =
       ( append
           [ css "form-control form-control-lg"
           , HP.value $ F.getInput sym form
-          , HE.onValueInput $ Just <<< F.setValidate sym
+          , HE.onValueInput $ F.setValidate sym
           ]
           props
       )

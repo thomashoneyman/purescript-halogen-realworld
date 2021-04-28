@@ -213,7 +213,7 @@ component = Connect.component $ H.mkComponent
         [ css "nav-item" ]
         [ HH.a
             [ css $ "nav-link" <> guard (state.tab == thisTab) " active"
-            , HE.onClick \_ -> Just $ ShowTab thisTab
+            , HE.onClick \_ -> ShowTab thisTab
             , HP.href "#/"
             ]
             case thisTab of
@@ -247,7 +247,7 @@ component = Connect.component $ H.mkComponent
     renderTag tag =
       HH.a
         [ css "tag-default tag-pill"
-        , HE.onClick \_ -> Just $ ShowTab (Tag tag)
+        , HE.onClick \_ -> ShowTab (Tag tag)
         , HP.href "#/"
         ]
         [ HH.text tag ]
