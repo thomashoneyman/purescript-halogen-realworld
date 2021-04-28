@@ -4,11 +4,12 @@ module Conduit.Component.Utils where
 import Prelude
 
 import Control.Monad.Rec.Class (forever)
-import Effect.Aff (error, forkAff, killFiber)
+import Effect.Aff (forkAff)
 import Effect.Aff.Bus as Bus
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
-import Halogen.Query.EventSource as ES
+import Halogen.Subscription as HS
+import Halogen.Subscription (Emitter)
 
 -- | When a component has no queries or messages, it has no public interface and can be
 -- | considered an "opaque" component. The only way for a parent to interact with the
@@ -34,15 +35,18 @@ type OpaqueSlot slot = forall query. H.Slot query Void slot
 -- | handleAction = case _ of
 -- |   Initialize -> do
 -- |     { currentUser, userBus } <- ask
--- |     _ <- H.subscribe $ busEventSource $ HandleBus <$> userBus
+-- |     _ <- H.subscribe =<< map HandleBus <$> busEventEmitter userBus
 -- |     mbProfile <- liftEffect $ Ref.read currentUser
 -- |     ...
 -- |
 -- |   HandleBus busMessage -> do
 -- |     ...
 -- | ```
-busEventSource :: forall m r act. MonadAff m => Bus.BusR' r act -> ES.EventSource m act
-busEventSource bus =
-  ES.affEventSource \emitter -> do
-    fiber <- forkAff $ forever $ ES.emit emitter =<< Bus.read bus
-    pure (ES.Finalizer (killFiber (error "Event source closed") fiber))
+busEventEmitter :: forall m r act. MonadAff m => Bus.BusR' r act -> m (Emitter act)
+busEventEmitter bus = do
+  { emitter, listener } <- H.liftEffect HS.create
+  _ <- H.liftAff $ forkAff $ forever do
+    action <- Bus.read bus
+    H.liftEffect $ HS.notify listener action
+  pure emitter
+

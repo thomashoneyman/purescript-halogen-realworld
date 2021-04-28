@@ -5,7 +5,7 @@ module Component.HigherOrder.Connect where
 
 import Prelude
 
-import Conduit.Component.Utils (busEventSource)
+import Conduit.Component.Utils (busEventEmitter)
 import Conduit.Data.Profile (Profile)
 import Conduit.Env (UserEnv)
 import Control.Monad.Reader (class MonadAsk, asks)
@@ -63,7 +63,7 @@ component innerComponent =
     -- stay in sync.
     Initialize -> do
       { currentUser, userBus } <- asks _.userEnv
-      _ <- H.subscribe (HandleUserBus <$> busEventSource userBus)
+      _ <- H.subscribe =<< map HandleUserBus <$> busEventEmitter userBus
       mbProfile <- liftEffect $ Ref.read currentUser
       H.modify_ _ { currentUser = mbProfile }
 
