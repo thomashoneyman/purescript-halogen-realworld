@@ -127,6 +127,7 @@ defaultRequest (BaseURL baseUrl) auth { endpoint, method } =
   , content: RB.json <$> body
   , username: Nothing
   , password: Nothing
+  , timeout: Nothing
   , withCredentials: false
   , responseFormat: RF.json
   }
