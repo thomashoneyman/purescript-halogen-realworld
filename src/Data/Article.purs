@@ -81,7 +81,7 @@ articleWithMetadataCodec mbUsername =
     , body: CA.string
     , description: CA.string
     , tagList: CA.array CA.string
-    , slug: CA.prismaticCodec Slug.parse Slug.toString CA.string
+    , slug: CA.prismaticCodec "Slug" Slug.parse Slug.toString CA.string
     , createdAt: PDT.codec
     , favorited: CA.boolean
     , favoritesCount: CA.int

@@ -201,7 +201,7 @@ decodeAuthProfile { user } = do
   pure (Tuple token profile)
   where
   tokenCodec =
-    CA.prismaticCodec (Just <<< Token) (\(Token t) -> t) CA.string
+    CA.prismaticCodec "Token (inner)" (Just <<< Token) (\(Token t) -> t) CA.string
 
 -- | The following functions deal with writing, reading, and deleting tokens in local storage at a
 -- | particular key. They'll be used as part of our production monad, `Conduit.AppM`.

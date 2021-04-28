@@ -33,7 +33,7 @@ derive instance eqAvatar :: Eq Avatar
 -- | a newtype instance. Instead, we'll explicitly provide to / from functions to the prismaticCodec
 -- | function.
 codec :: JsonCodec Avatar
-codec = CA.prismaticCodec parse toString CA.string
+codec = CA.prismaticCodec "Avatar" parse toString CA.string
 
 -- | While not all users have an avatar, if the `Avatar` type is being used, then we should be
 -- | confident there's actually a URL location inside. We won't validate the URLs (though we could!)

@@ -22,7 +22,7 @@ import Data.RFC3339String (RFC3339String(..))
 -- | round-trips from a string representation to a `PreciseDateTime` by describing how to
 -- | parse and print that string.
 codec :: JsonCodec PreciseDateTime
-codec = CA.prismaticCodec from to CA.string
+codec = CA.prismaticCodec "PreciseDateTime" from to CA.string
   where
   from = PDT.fromRFC3339String <<< RFC3339String
   to = unwrap <<< PDT.toRFC3339String
