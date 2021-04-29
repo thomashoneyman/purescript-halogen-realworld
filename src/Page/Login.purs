@@ -96,7 +96,7 @@ component = H.mkComponent
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype LoginForm r f = LoginForm (r
+newtype LoginForm (r :: Row Type -> Type) f = LoginForm (r
   ( email :: f V.FormError String Email
   , password :: f V.FormError String String
   ))

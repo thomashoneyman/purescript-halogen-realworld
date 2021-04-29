@@ -125,7 +125,7 @@ component = Connect.component $ H.mkComponent
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype EditorFields r f = EditorFields (r
+newtype EditorFields (r :: Row Type -> Type) f = EditorFields (r
   ( title :: f V.FormError String String
   , description :: f V.FormError String String
   , body :: f V.FormError String String

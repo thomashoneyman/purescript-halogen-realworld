@@ -29,7 +29,7 @@ import Web.Event.Event as Event
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype RegisterForm r f = RegisterForm (r
+newtype RegisterForm (r :: Row Type -> Type) f = RegisterForm (r
   ( username :: f V.FormError String Username
   , email :: f V.FormError String Email
   , password :: f V.FormError String String

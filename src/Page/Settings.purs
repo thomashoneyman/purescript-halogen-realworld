@@ -34,7 +34,7 @@ import Web.Event.Event as Event
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype SettingsForm r f = SettingsForm (r
+newtype SettingsForm (r :: Row Type -> Type) f = SettingsForm (r
   ( image :: f V.FormError String (Maybe Avatar)
   , username :: f V.FormError String Username
   , bio :: f Void String (Maybe String)
