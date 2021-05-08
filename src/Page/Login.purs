@@ -21,6 +21,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 data Action
@@ -42,7 +43,7 @@ component
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component = H.mkComponent
   { initialState: identity
   , render
@@ -74,7 +75,7 @@ component = H.mkComponent
               [ safeHref Register ]
               [ HH.text "Need an account?" ]
         ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleLoginForm)
+      , HH.slot F._formless unit formComponent unit HandleLoginForm
       ]
     where
     container html =
@@ -95,7 +96,7 @@ component = H.mkComponent
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype LoginForm r f = LoginForm (r
+newtype LoginForm (r :: Row Type -> Type) f = LoginForm (r
   ( email :: f V.FormError String Email
   , password :: f V.FormError String String
   ))
@@ -148,11 +149,11 @@ formComponent = F.component formInput $ F.defaultSpec
       H.modify_ _ { loginError = bool }
       pure (Just a)
 
-  proxies = F.mkSProxies (F.FormProxy :: _ LoginForm)
+  proxies = F.mkSProxies (Proxy :: _ LoginForm)
 
   renderLogin { form, loginError } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ whenElem loginError \_ ->
           HH.div
             [ css "error-messages" ]

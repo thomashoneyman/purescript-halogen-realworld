@@ -25,7 +25,6 @@ import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Set as Set
-import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
@@ -34,6 +33,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Slug (Slug)
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 data Action
@@ -59,7 +59,7 @@ component
   => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => ManageArticle m
-  => H.Component HH.HTML q Input o m
+  => H.Component q Input o m
 component = Connect.component $ H.mkComponent
   -- due to the use of `Connect.component`, our input now also has `currentUser`
   -- in it, even though this component's only input is a slug.
@@ -113,7 +113,7 @@ component = Connect.component $ H.mkComponent
               [ css "row" ]
               [ HH.div
                 [ css "col-md-10 offset-md-1 col-xs-12" ]
-                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit (Just <<< HandleEditor) ]
+                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit HandleEditor ]
               ]
             ]
         ]
@@ -125,7 +125,7 @@ component = Connect.component $ H.mkComponent
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype EditorFields r f = EditorFields (r
+newtype EditorFields (r :: Row Type -> Type) f = EditorFields (r
   ( title :: f V.FormError String String
   , description :: f V.FormError String String
   , body :: f V.FormError String String
@@ -162,7 +162,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     , initialInputs: Nothing
     }
 
-  proxies = F.mkSProxies (F.FormProxy :: _ EditorFields)
+  proxies = F.mkSProxies (Proxy :: _ EditorFields)
 
   handleEvent = F.raiseResult
 
@@ -181,12 +181,12 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
 
   render st@{ form } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
         [ title
         , description
         , body
-        , HH.slot (SProxy :: _ "tagInput") unit TagInput.component { tags } handler
+        , HH.slot (Proxy :: _ "tagInput") unit TagInput.component { tags } handler
         , Field.submit do
             if isJust mbArticle
               then "Commit changes"
@@ -194,7 +194,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
         ]
       ]
     where
-    handler = Just <<< F.injAction <<< HandleTagInput
+    handler = F.injAction <<< HandleTagInput
 
     tags =
       Set.fromFoldable $ F.getInput proxies.tagList form
@@ -215,7 +215,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
             , HP.placeholder "Write your article (in markdown)"
             , HP.value $ F.getInput proxies.body form
             , HP.rows 8
-            , HE.onValueInput $ Just <<< F.setValidate proxies.body
+            , HE.onValueInput $ F.setValidate proxies.body
             ]
           , maybeElem (F.getError proxies.body form) \err ->
               HH.div

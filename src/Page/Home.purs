@@ -25,13 +25,13 @@ import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Data.Monoid (guard)
-import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
+import Type.Proxy (Proxy(..))
 import Web.Event.Event (preventDefault)
 import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
@@ -72,7 +72,7 @@ component
   => Navigate m
   => ManageTag m
   => ManageArticle m
-  => H.Component HH.HTML q {} o m
+  => H.Component q {} o m
 component = Connect.component $ H.mkComponent
   { initialState
   , render
@@ -213,7 +213,7 @@ component = Connect.component $ H.mkComponent
         [ css "nav-item" ]
         [ HH.a
             [ css $ "nav-link" <> guard (state.tab == thisTab) " active"
-            , HE.onClick \_ -> Just $ ShowTab thisTab
+            , HE.onClick \_ -> ShowTab thisTab
             , HP.href "#/"
             ]
             case thisTab of
@@ -247,14 +247,14 @@ component = Connect.component $ H.mkComponent
     renderTag tag =
       HH.a
         [ css "tag-default tag-pill"
-        , HE.onClick \_ -> Just $ ShowTab (Tag tag)
+        , HE.onClick \_ -> ShowTab (Tag tag)
         , HP.href "#/"
         ]
         [ HH.text tag ]
 
 _article :: Int -> Traversal' State ArticleWithMetadata
 _article i =
-  prop (SProxy :: SProxy "articles")
+  prop (Proxy :: Proxy "articles")
     <<< _Success
-    <<< prop (SProxy :: SProxy "body")
+    <<< prop (Proxy :: Proxy "body")
     <<< ix i

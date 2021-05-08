@@ -28,12 +28,13 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype SettingsForm r f = SettingsForm (r
+newtype SettingsForm (r :: Row Type -> Type) f = SettingsForm (r
   ( image :: f V.FormError String (Maybe Avatar)
   , username :: f V.FormError String Username
   , bio :: f Void String (Maybe String)
@@ -56,7 +57,7 @@ component
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component HH.HTML q Unit o m
+  => H.Component q Unit o m
 component = H.mkComponent
   { initialState: \_ -> { profile: NotAsked }
   , render
@@ -99,11 +100,11 @@ component = H.mkComponent
       [ HH.h1
           [ css "text-xs-center"]
           [ HH.text "Your Settings" ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleForm)
+      , HH.slot F._formless unit formComponent unit HandleForm
       , HH.hr_
       , HH.button
           [ css "btn btn-outline-danger"
-          , HE.onClick \_ -> Just LogUserOut
+          , HE.onClick \_ -> LogUserOut
           ]
           [ HH.text "Log out" ]
       ]
@@ -160,7 +161,7 @@ formComponent = F.component formInput $ F.defaultSpec
 
   renderForm { form } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
         [ image
         , username
@@ -171,7 +172,7 @@ formComponent = F.component formInput $ F.defaultSpec
         ]
       ]
     where
-    proxies = F.mkSProxies (F.FormProxy :: _ SettingsForm)
+    proxies = F.mkSProxies (Proxy :: _ SettingsForm)
 
     image =
       Field.input proxies.image form
@@ -189,7 +190,7 @@ formComponent = F.component formInput $ F.defaultSpec
             , HP.placeholder "Short bio about you"
             , HP.rows 8
             , HP.value $ F.getInput proxies.bio form
-            , HE.onValueInput $ Just <<< F.setValidate proxies.bio
+            , HE.onValueInput $ F.setValidate proxies.bio
             ]
         ]
 

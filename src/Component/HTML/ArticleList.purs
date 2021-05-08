@@ -130,7 +130,7 @@ renderPageLink act activeIndex index =
     [ HH.a
         [ css "page-link"
         , HP.href "" -- needed for realworld css; remember to prevent default!
-        , HE.onClick $ Just <<< act index
+        , HE.onClick $ act index
         ]
         [ HH.text $ show index ]
     ]

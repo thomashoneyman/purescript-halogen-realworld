@@ -17,7 +17,7 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -31,13 +31,13 @@ followButton followAct unfollowAct author = case author.relation of
   Following ->
     HH.button
       [ css "btn btn-sm action-btn btn-secondary"
-      , HE.onClick \_ -> Just unfollowAct
+      , HE.onClick \_ -> unfollowAct
       ]
       [ HH.text $ " Unfollow " <> Username.toString author.username ]
   NotFollowing ->
     HH.button
       [ css "btn btn-sm action-btn btn-outline-secondary"
-      , HE.onClick \_ -> Just followAct
+      , HE.onClick \_ -> followAct
       ]
       [ HH.i
           [ css "ion-plus-round"]

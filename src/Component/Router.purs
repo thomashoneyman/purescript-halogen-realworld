@@ -32,13 +32,13 @@ import Control.Monad.Reader (class MonadAsk)
 import Data.Either (hush)
 import Data.Foldable (elem)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Routing.Duplex as RD
 import Routing.Hash (getHash)
+import Type.Proxy (Proxy(..))
 
 type State =
   { route :: Maybe Route
@@ -73,7 +73,7 @@ component
   => ManageArticle m
   => ManageComment m
   => ManageTag m
-  => H.Component HH.HTML Query {} Void m
+  => H.Component Query {} Void m
 component = Connect.component $ H.mkComponent
   { initialState: \{ currentUser } -> { route: Nothing, currentUser }
   , render
@@ -114,7 +114,7 @@ component = Connect.component $ H.mkComponent
   authorize :: Maybe Profile -> H.ComponentHTML Action ChildSlots m -> H.ComponentHTML Action ChildSlots m
   authorize mbProfile html = case mbProfile of
     Nothing ->
-      HH.slot (SProxy :: _ "login") unit Login.component { redirect: false } absurd
+      HH.slot (Proxy :: _ "login") unit Login.component { redirect: false } absurd
     Just _ ->
       html
 
@@ -122,25 +122,25 @@ component = Connect.component $ H.mkComponent
   render { route, currentUser } = case route of
     Just r -> case r of
       Home ->
-        HH.slot (SProxy :: _ "home") unit Home.component {} absurd
+        HH.slot (Proxy :: _ "home") unit Home.component {} absurd
       Login ->
-        HH.slot (SProxy :: _ "login") unit Login.component { redirect: true } absurd
+        HH.slot (Proxy :: _ "login") unit Login.component { redirect: true } absurd
       Register ->
-        HH.slot (SProxy :: _ "register") unit Register.component unit absurd
+        HH.slot (Proxy :: _ "register") unit Register.component unit absurd
       Settings ->
-        HH.slot (SProxy :: _ "settings") unit Settings.component unit absurd
+        HH.slot (Proxy :: _ "settings") unit Settings.component unit absurd
           # authorize currentUser
       Editor ->
-        HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Nothing } absurd
+        HH.slot (Proxy :: _ "editor") unit Editor.component { slug: Nothing } absurd
           # authorize currentUser
       EditArticle slug ->
-        HH.slot (SProxy :: _ "editor") unit Editor.component { slug: Just slug } absurd
+        HH.slot (Proxy :: _ "editor") unit Editor.component { slug: Just slug } absurd
           # authorize currentUser
       ViewArticle slug ->
-        HH.slot (SProxy :: _ "viewArticle") unit ViewArticle.component { slug } absurd
+        HH.slot (Proxy :: _ "viewArticle") unit ViewArticle.component { slug } absurd
       Profile username ->
-        HH.slot (SProxy :: _ "profile") unit Profile.component { username, tab: ArticlesTab } absurd
+        HH.slot (Proxy :: _ "profile") unit Profile.component { username, tab: ArticlesTab } absurd
       Favorites username ->
-        HH.slot (SProxy :: _ "profile") unit Profile.component { username, tab: FavoritesTab } absurd
+        HH.slot (Proxy :: _ "profile") unit Profile.component { username, tab: FavoritesTab } absurd
     Nothing ->
       HH.div_ [ HH.text "Oh no! That page wasn't found." ]

@@ -23,12 +23,13 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype RegisterForm r f = RegisterForm (r
+newtype RegisterForm (r :: Row Type -> Type) f = RegisterForm (r
   ( username :: f V.FormError String Username
   , email :: f V.FormError String Email
   , password :: f V.FormError String String
@@ -44,7 +45,7 @@ component
    . MonadAff m
   => ManageUser m
   => Navigate m
-  => H.Component HH.HTML q Unit o m
+  => H.Component q Unit o m
 component = H.mkComponent
   { initialState: const unit
   , render
@@ -66,7 +67,7 @@ component = H.mkComponent
               [ safeHref Login ]
               [ HH.text "Already have an account?" ]
         ]
-      , HH.slot F._formless unit formComponent unit (Just <<< HandleRegisterForm)
+      , HH.slot F._formless unit formComponent unit HandleRegisterForm
       ]
     where
     container html =
@@ -119,7 +120,7 @@ formComponent = F.component formInput $ F.defaultSpec
 
   renderForm { form } =
     HH.form
-      [ HE.onSubmit \ev -> Just $ F.injAction $ Submit ev ]
+      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
           [ username
           , email
@@ -128,7 +129,7 @@ formComponent = F.component formInput $ F.defaultSpec
       , Field.submit "Sign up"
       ]
     where
-    proxies = F.mkSProxies (F.FormProxy :: _ RegisterForm)
+    proxies = F.mkSProxies (Proxy :: _ RegisterForm)
 
     username =
       Field.input proxies.username form

@@ -19,7 +19,7 @@ import Conduit.Component.HTML.Utils (css)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -43,7 +43,7 @@ favoriteButton
 favoriteButton buttonSize favoriteAct unfavoriteAct article =
   HH.button
     [ css $ "btn btn-sm " <> if article.favorited then "btn-primary" else "btn-outline-primary"
-    , HE.onClick \_ -> Just if article.favorited then unfavoriteAct else favoriteAct
+    , HE.onClick \_ -> if article.favorited then unfavoriteAct else favoriteAct
     ]
     [ HH.i
         [ css "ion-heart" ]
