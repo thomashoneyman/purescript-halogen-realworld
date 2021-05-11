@@ -179,7 +179,7 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     where
     eval act = F.handleAction handleAction handleEvent act
 
-  render st@{ form } =
+  render { form } =
     HH.form
       [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_

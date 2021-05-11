@@ -15,7 +15,6 @@ import Conduit.Data.Username as Username
 import Data.Array (mapWithIndex)
 import Data.Enum (enumFromTo)
 import Data.Foldable (length)
-import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -112,7 +111,7 @@ renderPagination
   -> Int
   -> PaginatedArray ArticleWithMetadata
   -> HH.HTML props act
-renderPagination act currentIndex { body, total } =
+renderPagination act currentIndex { total } =
   whenElem (total > 20) \_ ->
     HH.ul
       [ css "pagination" ]

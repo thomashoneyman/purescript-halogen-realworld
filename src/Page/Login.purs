@@ -58,7 +58,7 @@ component = H.mkComponent
       loginUser fields >>= case _ of
         Nothing ->
           void $ H.query F._formless unit $ F.injQuery $ SetLoginError true unit
-        Just profile -> do
+        Just _ -> do
           void $ H.query F._formless unit $ F.injQuery $ SetLoginError false unit
           st <- H.get
           when st.redirect (navigate Home)

@@ -16,12 +16,12 @@ var marked = require("marked");
 // markdown.
 marked.setOptions({
   pedantic: false,
-  gfm: true
+  gfm: true,
 });
 
 // Finally, we'll export one function that to use from PureScript. It will have a single argument:
 // a markdown string to parse to an HTML string. PureScript does not yet support ES6, so you'll
 // need to stick with ES5 for your foreign imports.
-exports.markedImpl = function(str) {
+exports.markedImpl = function (str) {
   return marked(str);
 };

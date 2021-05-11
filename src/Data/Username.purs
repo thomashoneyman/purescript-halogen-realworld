@@ -18,8 +18,7 @@ import Prelude
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Maybe (Maybe(..))
-import Data.Newtype (class Newtype)
-import Data.Profunctor (wrapIso)
+import Data.Profunctor (dimap)
 
 -- | We'll represent usernames as a newtype wrapper around a string. Newtypes have no performance
 -- | overhead, so they're the fastest way to add a documenting type to a primitive type like
@@ -28,10 +27,9 @@ newtype Username = Username String
 
 derive instance eqUsername :: Eq Username
 derive instance ordUsername :: Ord Username
-derive instance newtypeUsername :: Newtype Username _
 
 codec :: JsonCodec Username
-codec = wrapIso Username CA.string
+codec = dimap (\(Username user) -> user) Username CA.string
 
 -- | This function requires a string to pass some validation before being considered a valid
 -- | `Username`. For now, we'll just enforce a username is non-empty, but we might introduce more

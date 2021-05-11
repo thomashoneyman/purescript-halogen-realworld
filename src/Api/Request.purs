@@ -119,7 +119,7 @@ type RequestOptions =
 -- | request functions defined below and in the `Conduit.Api.Utils` modules.
 defaultRequest :: BaseURL -> Maybe Token -> RequestOptions -> Request Json
 defaultRequest (BaseURL baseUrl) auth { endpoint, method } =
-  { method: Left method
+  { method: Left requestMethod
   , url: baseUrl <> print endpointCodec endpoint
   , headers: case auth of
       Nothing -> []
@@ -132,7 +132,7 @@ defaultRequest (BaseURL baseUrl) auth { endpoint, method } =
   , responseFormat: RF.json
   }
   where
-  Tuple method body = case method of
+  Tuple requestMethod body = case method of
     Get -> Tuple GET Nothing
     Post b -> Tuple POST b
     Put b -> Tuple PUT b

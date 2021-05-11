@@ -12,7 +12,6 @@
 -- | before coming back to this one.
 module Conduit.Data.Article where
 
-
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Profile (Author)

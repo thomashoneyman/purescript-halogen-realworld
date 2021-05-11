@@ -99,7 +99,7 @@ component = Connect.component $ H.mkComponent
       case state.currentUser of
         Nothing ->
           void $ H.fork $ handleAction $ LoadArticles noArticleParams
-        profile -> do
+        _ -> do
           void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
           H.modify_ _ { tab = Feed }
 
@@ -112,7 +112,7 @@ component = Connect.component $ H.mkComponent
       H.modify_ _ { tags = fromMaybe tags }
 
     LoadFeed params -> do
-      st <- H.modify _ { articles = Loading }
+      H.modify_ _ { articles = Loading }
       articles <- getCurrentUserFeed params
       H.modify_ _ { articles = fromMaybe articles }
 
@@ -152,7 +152,7 @@ component = Connect.component $ H.mkComponent
           LoadArticles (noArticleParams { tag = Just tag, limit = Just 20, offset = offset })
 
   render :: forall slots. State -> H.ComponentHTML Action slots m
-  render state@{ tags, articles, currentUser } =
+  render state@{ tags, currentUser } =
     HH.div_
       [ header currentUser Home
       , HH.div
