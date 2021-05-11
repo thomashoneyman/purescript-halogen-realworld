@@ -1,13 +1,12 @@
 let
   pkgs = import (builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/20.03.tar.gz";
+    url = "https://github.com/NixOS/nixpkgs/archive/20.09.tar.gz";
   }) {};
 
   # To update to a newer version of easy-purescript-nix, run:
   # nix-prefetch-git https://github.com/justinwoo/easy-purescript-nix
   #
   # Then, copy the resulting rev and sha256 here.
-  # Last update: 2020-08-01
   pursPkgs = import (pkgs.fetchFromGitHub {
     owner = "justinwoo";
     repo = "easy-purescript-nix";
@@ -21,6 +20,6 @@ in pkgs.stdenv.mkDerivation {
     pursPkgs.purs
     pursPkgs.spago
     pursPkgs.zephyr
-    pkgs.nodejs-12_x
+    pkgs.nodejs-14_x
   ];
 }
