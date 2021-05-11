@@ -21,18 +21,19 @@ import Conduit.Data.Profile (Profile, Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Conduit.Env (UserEnv)
-import Control.Monad.Reader (class MonadAsk, asks)
+import Conduit.Store as Store
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Monoid (guard)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref as Ref
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
+import Halogen.Store.Connect (Connected, connect)
+import Halogen.Store.Monad (class MonadStore)
+import Halogen.Store.Select (selectEq)
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
 import Type.Proxy (Proxy(..))
 import Web.Event.Event (preventDefault)
@@ -40,7 +41,7 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 data Action
   = Initialize
-  | Receive Input
+  | Receive (Connected (Maybe Profile) Input)
   | LoadArticles
   | LoadFavorites
   | LoadAuthor
@@ -72,29 +73,28 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 component
-  :: forall q o m r
+  :: forall q o m
    . MonadAff m
-  => MonadAsk { userEnv :: UserEnv | r } m
+  => MonadStore Store.Action Store.Store m
   => ManageUser m
   => ManageArticle m
   => H.Component q Input o m
-component =
-  H.mkComponent
-    { initialState
-    , render
-    , eval: H.mkEval $ H.defaultEval
-        { handleAction = handleAction
-        , receive = Just <<< Receive
-        , initialize = Just Initialize
-        }
-    }
+component = connect (selectEq _.currentUser) $ H.mkComponent
+  { initialState
+  , render
+  , eval: H.mkEval $ H.defaultEval
+      { handleAction = handleAction
+      , receive = Just <<< Receive
+      , initialize = Just Initialize
+      }
+  }
   where
-  initialState :: Input -> State
-  initialState { username, tab } =
+  initialState :: Connected (Maybe Profile) Input -> State
+  initialState { context: currentUser, input: { username, tab } } =
     { articles: NotAsked
     , favorites: NotAsked
     , author: NotAsked
-    , currentUser: Nothing
+    , currentUser
     , page: 1
     , tab
     , username
@@ -103,14 +103,13 @@ component =
   handleAction :: forall slots. Action -> H.HalogenM State Action slots o m Unit
   handleAction = case _ of
     Initialize -> do
-      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.userEnv.currentUser
-      st <- H.modify _ { currentUser = mbProfile }
+      { tab } <- H.get
       void $ H.fork $ handleAction LoadAuthor
-      void $ H.fork $ case st.tab of
+      void $ H.fork $ case tab of
         ArticlesTab -> handleAction LoadArticles
         FavoritesTab -> handleAction LoadFavorites
 
-    Receive { tab, username } -> do
+    Receive { input: { tab, username }, context: currentUser } -> do
       st <- H.get
       when (st.tab /= tab) do
         H.modify_ _ { tab = tab }
@@ -120,6 +119,8 @@ component =
       when (st.username /= username) do
         H.modify_ _ { username = username }
         void $ H.fork $ handleAction Initialize
+      when (st.currentUser /= currentUser) do
+        H.modify_ _ { currentUser = currentUser }
 
     LoadArticles -> do
       st <- H.modify _ { articles = Loading }

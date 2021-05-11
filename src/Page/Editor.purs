@@ -5,7 +5,6 @@ module Conduit.Page.Editor where
 
 import Prelude
 
-import Component.HigherOrder.Connect as Connect
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, createArticle, getArticle, updateArticle)
 import Conduit.Component.HTML.Header (header)
@@ -15,11 +14,10 @@ import Conduit.Component.TagInput as TagInput
 import Conduit.Data.Article (ArticleWithMetadata, Article)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Conduit.Env (UserEnv)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation (errorToString)
 import Conduit.Form.Validation as V
-import Control.Monad.Reader (class MonadAsk)
+import Conduit.Store as Store
 import Data.Const (Const)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..), isJust)
@@ -31,6 +29,9 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Store.Connect (Connected, connect)
+import Halogen.Store.Monad (class MonadStore)
+import Halogen.Store.Select (selectEq)
 import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Slug (Slug)
 import Type.Proxy (Proxy(..))
@@ -38,7 +39,7 @@ import Web.Event.Event as Event
 
 data Action
   = Initialize
-  | Receive { slug :: Maybe Slug, currentUser :: Maybe Profile }
+  | Receive (Connected (Maybe Profile) (Maybe Slug))
   | HandleEditor Article
 
 type State =
@@ -47,23 +48,24 @@ type State =
   , currentUser :: Maybe Profile
   }
 
-type Input =
-  { slug :: Maybe Slug }
-
 type ChildSlots =
   ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
 
 component
-  :: forall q o m r
+  :: forall q o m
    . MonadAff m
-  => MonadAsk { userEnv :: UserEnv | r } m
+  => MonadStore Store.Action Store.Store m
   => Navigate m
   => ManageArticle m
-  => H.Component q Input o m
-component = Connect.component $ H.mkComponent
+  => H.Component q (Maybe Slug) o m
+component = connect (selectEq _.currentUser) $ H.mkComponent
   -- due to the use of `Connect.component`, our input now also has `currentUser`
   -- in it, even though this component's only input is a slug.
-  { initialState: \{ currentUser, slug } -> { article: NotAsked, currentUser, slug }
+  { initialState: \{ context: currentUser, input: slug } ->
+      { article: NotAsked
+      , currentUser
+      , slug
+      }
   , render
   , eval: H.mkEval $ H.defaultEval
       { handleAction = handleAction
@@ -87,7 +89,7 @@ component = Connect.component $ H.mkComponent
           _ <- H.query F._formless unit $ F.asQuery $ F.loadForm newFields
           pure unit
 
-    Receive { slug, currentUser } -> do
+    Receive { input: slug, context: currentUser } -> do
       st <- H.modify _ { currentUser = currentUser }
       when (slug /= st.slug) do
         handleAction Initialize

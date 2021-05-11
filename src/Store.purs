@@ -34,12 +34,9 @@ type Store =
   , currentUser :: Maybe Profile
   }
 
-initialStore :: LogLevel -> BaseURL -> Store
-initialStore logLevel baseUrl =
-  { logLevel
-  , baseUrl
-  , currentUser: Nothing
-  }
+-- | Ordinarily we'd write an initialStore function, but in our case we construct
+-- | all three values in our initial store during app initialization. For that
+-- | reason, you can see the store get constructed in the `Main` module.
 
 -- | Next, we'll define a data type that represents state updates to our store.
 -- | The log level and base URL should remain constant, but we'll need to be

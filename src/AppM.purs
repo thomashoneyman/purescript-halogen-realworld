@@ -32,23 +32,22 @@ import Conduit.Data.Comment as Comment
 import Conduit.Data.Log as Log
 import Conduit.Data.Profile as Profile
 import Conduit.Data.Route as Route
-import Conduit.Env (Env, LogLevel(..))
-import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
-import Control.Parallel (class Parallel, parallel, sequential)
+import Conduit.Store (Action(..), LogLevel(..), Store)
+import Conduit.Store as Store
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut as Codec
 import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe(..))
-import Effect.Aff (Aff, ParAff)
-import Effect.Aff.Bus as Bus
-import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Effect.Now as Now
-import Effect.Ref as Ref
+import Halogen as H
+import Halogen.Store.Monad (class MonadStore, StoreT, getStore, runStoreT, updateStore)
 import Routing.Duplex (print)
 import Routing.Hash (setHash)
-import Type.Equality (class TypeEquals, from)
+import Safe.Coerce (coerce)
 
 -- | In the capability modules (`Conduit.Capability.*`), we wrote some abstract, high-level
 -- | interfaces for business logic that tends to be highly effectful, like resource management and
@@ -68,50 +67,40 @@ import Type.Equality (class TypeEquals, from)
 -- | is our production monad. We'll implement the monad first, and then we'll provide concrete
 -- | instances for each of our abstract capabilities.
 -- |
--- | Our application monad is going to combine the abilities of the `Aff` (asynchronous effects)
--- | and `Reader` (read-only environment) monads, and then we'll add several more abilities by
--- | writing instances for our various capabilities.
--- |
--- | The `Reader` monad allows us to access some data (`Env`, in our case, as defined in `Env`) using
--- | the `ask` function, without having passed the data as an argument. It will help us avoid
--- | tediously threading commonly-used information throughout the application.
--- |
 -- | The `Aff` monad allows us to run asynchronous effects. When you're in `Aff`, you can write
 -- | code that makes API requests, writes files, and so on. In addition, using the `liftEffect`
 -- | function, you can use any function that relies on the `Effect` monad in `Aff`. For example,
 -- | you can log messages to the console within `Aff` using (liftEffect <<< Console.log). It's
 -- | powerful stuff.
 -- |
--- | `AppM` combines the `Aff` and `Reader` monads under a new type, which we can now use to write
--- | instances for our capabilities. We're able to combine these monads because `ReaderT` is a
+-- | The `StoreT` monad transformer adds the ability to have a central state in our Halogen
+-- | application on top of the abilities of `Aff`. See the `halogen-store` library for more
+-- | details!
+-- |
+-- | `AppM` combines the `Aff` and `Store` monads under a new type, which we can now use to write
+-- | instances for our capabilities. We're able to combine these monads because `StoreT` is a
 -- | monad transformer. Monad transformers are too large a topic to delve into here; for now, it's
 -- | enough to know that they let you combine the abilities of two or more monads.
-newtype AppM a = AppM (ReaderT Env Aff a)
+newtype AppM a = AppM (StoreT Store.Action Store.Store Aff a)
 
--- | Fantastic! We can now implement our custom application monad with our `AppM` type. However,
--- | as described in detail in the `Main` module, Halogen has no idea how to run an application in
--- | our custom monad. It only knows how to run things in `Aff`. For that reason, we need to be able
--- | to transform our custom app monad back into `Aff` when we run the app.
--- |
--- | We can get back to `Aff` by taking two steps. First, we'll unwrap the `AppM` type so that we
--- | can work with `ReaderT` directly. Next, we'll use `runReaderT` along with the environment we
--- | want to supply throughout the application to eliminate `Reader` altogether and get left with
--- | only `Aff`.
--- |
--- | See `Main` for more details as to why this is necessary.
-runAppM :: Env -> AppM ~> Aff
-runAppM env (AppM m) = runReaderT m env
+runAppM :: forall q i o. Store.Store -> H.Component q i o AppM -> Aff (H.Component q i o Aff)
+runAppM store = runStoreT store Store.reduce <<< coerce
 
 -- | We can get a monad out of our `AppM` type essentially for free by deferring to the underlying
 -- | `ReaderT` instances. PureScript allows any newtype to re-use the type class instances of the
 -- | type it wraps with the `derive newtype instance` syntax. It's as if the newtype didn't exist
 -- | and the function was being applied to the type underneath directly.
 -- |
--- | To be a monad, a type must implement the `Functor`, `Apply`, `Applicative`, and `Bind` type
--- | classes. In addition, because we used `Aff` as the base of our custom monad, we can also
--- | derive `MonadEffect` and `MonadAff`, two type classes that let us use any functions that run
+-- | To be a monad, a type must implement the `Functor`, `Apply`, `Applicative`, `Bind`, and
+-- | `Monad` type classes.
+-- |
+-- | In addition, because we used `Aff` as the base of our custom monad, we can also derive
+-- | `MonadEffect` and `MonadAff`, two type classes that let us use any functions that run
 -- | in `Effect` or in `Aff`. Having access to these two type classes lets us perform pretty much
 -- | any effect we see fit, from API requests to local storage access.
+-- |
+-- | Finally, since we're using the `halogen-store` library, we can also derive a `MonadStore`
+-- | constraint that lets us use our central state anywhere in the application.
 -- |
 -- | With the compiler by your side, you don't need to know how to implement a monad from scratch.
 -- | You can derive everything you need! We can now focus just on the instances that matter to us:
@@ -123,38 +112,7 @@ derive newtype instance bindAppM :: Bind AppM
 derive newtype instance monadAppM :: Monad AppM
 derive newtype instance monadEffectAppM :: MonadEffect AppM
 derive newtype instance monadAffAppM :: MonadAff AppM
-
--- | The first instance we'll implement is a little funky. We can't write instances for type
--- | synonyms, and we defined our environment (`Env`) as a type synonym for convenience. To get
--- | around this, we can use `TypeEquals` to assert that types `a` and `b` are in fact the same.
--- |
--- | In our case, we'll write a `MonadAsk` (an alternate name for `Reader`) instance for the type
--- | `e`, and assert it is our `Env` type. This is how we can write a type class instance for a
--- | type synonym, which is otherwise disallowed.
--- |
--- | With this instance, any monad `m` with the `MonadAsk Env m` constraint can read from the
--- | environment we defined. This is done with the `ask` function. For example:
--- |
--- | ```purescript
--- | toggleLogLevel :: forall m. MonadAsk Env m => m LogLevel
--- | toggleLogLevel = do
--- |   env <- ask
--- |  if env.logLevel == Dev then Prod else Dev
--- | ```
-instance monadAskAppM :: TypeEquals e Env => MonadAsk e AppM where
-  ask = AppM $ asks from
-
--- | `ParAppM` allows our `AppM` to be parallelizable in conjunction with `Aff`.
-newtype ParAppM a
-  = ParAppM (ReaderT Env ParAff a)
-
-derive newtype instance functorParAppM :: Functor ParAppM
-derive newtype instance applyParAppM :: Apply ParAppM
-derive newtype instance applicativeParAppM :: Applicative ParAppM
-
-instance parallelAppM :: Parallel ParAppM AppM where
-  parallel (AppM readerT) = ParAppM (parallel readerT)
-  sequential (ParAppM readerT) = AppM (sequential readerT)
+derive newtype instance monadStoreAppM :: MonadStore Action Store AppM
 
 -- | We're finally ready to write concrete implementations for each of our abstract capabilities.
 -- | For an in-depth description of each capability, please refer to the relevant `Capability.*`
@@ -182,8 +140,8 @@ instance nowAppM :: Now AppM where
 -- | (`Dev`) or just important messages (`Prod`).
 instance logMessagesAppM :: LogMessages AppM where
   logMessage log = do
-    env <- ask
-    liftEffect case env.logLevel, Log.reason log of
+    { logLevel } <- getStore
+    liftEffect case logLevel, Log.reason log of
       Prod, Log.Debug -> pure unit
       _, _ -> Console.log $ Log.message log
 
@@ -196,12 +154,8 @@ instance navigateAppM :: Navigate AppM where
     liftEffect <<< setHash <<< print Route.routeCodec
 
   logout = do
-    { currentUser, userBus } <- asks _.userEnv
-    liftEffect do
-      Ref.write Nothing currentUser
-      Request.removeToken
-    liftAff do
-      Bus.write Nothing userBus
+    liftEffect $ Request.removeToken
+    updateStore LogoutUser
     navigate Route.Home
 
 -- | Our first resource class describes what operations we have available to manage users. Logging
