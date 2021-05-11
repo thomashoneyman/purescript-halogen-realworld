@@ -20,6 +20,7 @@
   , "formatters"
   , "halogen"
   , "halogen-formless"
+  , "halogen-store"
   , "halogen-subscriptions"
   , "http-methods"
   , "lists"
