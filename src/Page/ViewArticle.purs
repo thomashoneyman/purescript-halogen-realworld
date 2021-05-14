@@ -23,8 +23,7 @@ import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Profile (Profile, Relation(..), Author)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Conduit.Env (UserEnv)
-import Control.Monad.Reader (class MonadAsk, asks)
+import Conduit.Store as Store
 import Control.Parallel (parTraverse_)
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview)
@@ -32,17 +31,20 @@ import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref as Ref
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Store.Connect (Connected, connect)
+import Halogen.Store.Monad (class MonadStore)
+import Halogen.Store.Select (selectEq)
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
 import Slug (Slug)
 import Type.Proxy (Proxy(..))
 
 data Action
   = Initialize
+  | Receive (Connected (Maybe Profile) Input)
   | GetArticle
   | GetComments
   | AddComment
@@ -53,7 +55,6 @@ data Action
   | UnfavoriteArticle
   | DeleteArticle
   | DeleteComment CommentId
-  | Receive Input
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
@@ -63,23 +64,21 @@ type State =
   , currentUser :: Maybe Profile
   }
 
-type Input =
-  { slug :: Slug
-  }
+type Input = Slug
 
 type ChildSlots =
   ( rawHtml :: OpaqueSlot Unit )
 
 component
-  :: forall q o m r
+  :: forall q o m
    . MonadAff m
+  => MonadStore Store.Action Store.Store m
   => ManageArticle m
   => ManageComment m
   => ManageUser m
-  => MonadAsk { userEnv :: UserEnv | r } m
   => Navigate m
   => H.Component q Input o m
-component = H.mkComponent
+component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState
   , render
   , eval: H.mkEval $ H.defaultEval
@@ -89,12 +88,12 @@ component = H.mkComponent
       }
   }
   where
-  initialState :: Input -> State
-  initialState { slug } =
+  initialState :: Connected (Maybe Profile) Input -> State
+  initialState { context: currentUser, input: slug } =
     { article: NotAsked
     , comments: NotAsked
     , myComment: ""
-    , currentUser: Nothing
+    , currentUser
     , slug
     }
 
@@ -102,8 +101,14 @@ component = H.mkComponent
   handleAction = case _ of
     Initialize -> do
       parTraverse_ H.fork [ handleAction GetArticle, handleAction GetComments ]
-      mbProfile <- H.liftEffect <<< Ref.read =<< asks _.userEnv.currentUser
-      H.modify_ _ { currentUser = mbProfile }
+
+    Receive { context: currentUser, input: slug } -> do
+      st <- H.get
+      if (st.slug /= slug) then do
+        H.modify_ _ { slug = slug, currentUser = currentUser }
+        handleAction Initialize
+      else
+        H.modify_ _ { currentUser = currentUser }
 
     GetArticle -> do
       st <- H.modify _ { article = Loading }
@@ -148,12 +153,6 @@ component = H.mkComponent
       deleteComment st.slug commentId
       comments <- getComments st.slug
       H.modify_ _ { comments = fromMaybe comments }
-
-    Receive { slug } -> do
-      st <- H.get
-      when (st.slug /= slug) do
-        H.modify_ _ { slug = slug }
-        handleAction Initialize
 
   render :: State -> H.ComponentHTML Action ChildSlots m
   render state =

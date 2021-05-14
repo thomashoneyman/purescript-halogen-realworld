@@ -7,8 +7,6 @@ module Conduit.Component.Router where
 
 import Prelude
 
-import Component.HigherOrder.Connect (WithCurrentUser)
-import Component.HigherOrder.Connect as Connect
 import Conduit.Capability.LogMessages (class LogMessages)
 import Conduit.Capability.Navigate (class Navigate, navigate)
 import Conduit.Capability.Now (class Now)
@@ -19,7 +17,6 @@ import Conduit.Capability.Resource.User (class ManageUser)
 import Conduit.Component.Utils (OpaqueSlot)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..), routeCodec)
-import Conduit.Env (UserEnv)
 import Conduit.Page.Editor as Editor
 import Conduit.Page.Home as Home
 import Conduit.Page.Login as Login
@@ -28,7 +25,7 @@ import Conduit.Page.Profile as Profile
 import Conduit.Page.Register as Register
 import Conduit.Page.Settings as Settings
 import Conduit.Page.ViewArticle as ViewArticle
-import Control.Monad.Reader (class MonadAsk)
+import Conduit.Store as Store
 import Data.Either (hush)
 import Data.Foldable (elem)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
@@ -36,21 +33,24 @@ import Effect.Aff.Class (class MonadAff)
 import Halogen (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.Store.Connect (Connected, connect)
+import Halogen.Store.Monad (class MonadStore)
+import Halogen.Store.Select (selectEq)
 import Routing.Duplex as RD
 import Routing.Hash (getHash)
 import Type.Proxy (Proxy(..))
+
+data Query a
+  = Navigate Route a
 
 type State =
   { route :: Maybe Route
   , currentUser :: Maybe Profile
   }
 
-data Query a
-  = Navigate Route a
-
 data Action
   = Initialize
-  | Receive { | WithCurrentUser () }
+  | Receive (Connected (Maybe Profile) Unit)
 
 type ChildSlots =
   ( home :: OpaqueSlot Unit
@@ -63,9 +63,9 @@ type ChildSlots =
   )
 
 component
-  :: forall m r
+  :: forall m
    . MonadAff m
-  => MonadAsk { userEnv :: UserEnv | r } m
+  => MonadStore Store.Action Store.Store m
   => Now m
   => LogMessages m
   => Navigate m
@@ -73,9 +73,9 @@ component
   => ManageArticle m
   => ManageComment m
   => ManageTag m
-  => H.Component Query {} Void m
-component = Connect.component $ H.mkComponent
-  { initialState: \{ currentUser } -> { route: Nothing, currentUser }
+  => H.Component Query Unit Void m
+component = connect (selectEq _.currentUser) $ H.mkComponent
+  { initialState: \{ context: currentUser } -> { route: Nothing, currentUser }
   , render
   , eval: H.mkEval $ H.defaultEval
       { handleQuery = handleQuery
@@ -93,7 +93,7 @@ component = Connect.component $ H.mkComponent
       -- then we'll navigate to the new route (also setting the hash)
       navigate $ fromMaybe Home initialRoute
 
-    Receive { currentUser } ->
+    Receive { context: currentUser } ->
       H.modify_ _ { currentUser = currentUser }
 
   handleQuery :: forall a. Query a -> H.HalogenM State Action ChildSlots Void m (Maybe a)
@@ -122,25 +122,22 @@ component = Connect.component $ H.mkComponent
   render { route, currentUser } = case route of
     Just r -> case r of
       Home ->
-        HH.slot (Proxy :: _ "home") unit Home.component {} absurd
+        HH.slot_ (Proxy :: _ "home") unit Home.component unit
       Login ->
-        HH.slot (Proxy :: _ "login") unit Login.component { redirect: true } absurd
+        HH.slot_ (Proxy :: _ "login") unit Login.component { redirect: true }
       Register ->
-        HH.slot (Proxy :: _ "register") unit Register.component unit absurd
-      Settings ->
-        HH.slot (Proxy :: _ "settings") unit Settings.component unit absurd
-          # authorize currentUser
-      Editor ->
-        HH.slot (Proxy :: _ "editor") unit Editor.component { slug: Nothing } absurd
-          # authorize currentUser
-      EditArticle slug ->
-        HH.slot (Proxy :: _ "editor") unit Editor.component { slug: Just slug } absurd
-          # authorize currentUser
+        HH.slot_ (Proxy :: _ "register") unit Register.component unit
+      Settings -> authorize currentUser do
+        HH.slot_ (Proxy :: _ "settings") unit Settings.component unit
+      Editor -> authorize currentUser do
+        HH.slot_ (Proxy :: _ "editor") unit Editor.component Nothing
+      EditArticle slug -> authorize currentUser do
+        HH.slot_ (Proxy :: _ "editor") unit Editor.component (Just slug)
       ViewArticle slug ->
-        HH.slot (Proxy :: _ "viewArticle") unit ViewArticle.component { slug } absurd
+        HH.slot_ (Proxy :: _ "viewArticle") unit ViewArticle.component slug
       Profile username ->
-        HH.slot (Proxy :: _ "profile") unit Profile.component { username, tab: ArticlesTab } absurd
+        HH.slot_ (Proxy :: _ "profile") unit Profile.component { username, tab: ArticlesTab }
       Favorites username ->
-        HH.slot (Proxy :: _ "profile") unit Profile.component { username, tab: FavoritesTab } absurd
+        HH.slot_ (Proxy :: _ "profile") unit Profile.component { username, tab: FavoritesTab }
     Nothing ->
       HH.div_ [ HH.text "Oh no! That page wasn't found." ]

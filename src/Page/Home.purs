@@ -4,7 +4,6 @@ module Conduit.Page.Home where
 
 import Prelude
 
-import Component.HigherOrder.Connect as Connect
 import Conduit.Api.Endpoint (ArticleParams, Pagination, noArticleParams)
 import Conduit.Capability.Navigate (class Navigate)
 import Conduit.Capability.Resource.Article (class ManageArticle, getArticles, getCurrentUserFeed)
@@ -18,8 +17,7 @@ import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
-import Conduit.Env (UserEnv)
-import Control.Monad.Reader (class MonadAsk)
+import Conduit.Store as Store
 import Data.Lens (Traversal')
 import Data.Lens.Index (ix)
 import Data.Lens.Record (prop)
@@ -30,6 +28,9 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Store.Connect (Connected, connect)
+import Halogen.Store.Monad (class MonadStore)
+import Halogen.Store.Select (selectEq)
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe, toMaybe)
 import Type.Proxy (Proxy(..))
 import Web.Event.Event (preventDefault)
@@ -37,7 +38,7 @@ import Web.UIEvent.MouseEvent (MouseEvent, toEvent)
 
 data Action
   = Initialize
-  | Receive { currentUser :: Maybe Profile }
+  | Receive (Connected (Maybe Profile) Unit)
   | ShowTab Tab
   | LoadFeed Pagination
   | LoadArticles ArticleParams
@@ -62,18 +63,19 @@ data Tab
 derive instance eqTab :: Eq Tab
 
 tabIsTag :: Tab -> Boolean
-tabIsTag (Tag _) = true
-tabIsTag _ = false
+tabIsTag = case _ of
+  Tag _ -> true
+  _ -> false
 
 component
-  :: forall q o m r
+  :: forall q o m
    . MonadAff m
-  => MonadAsk { userEnv :: UserEnv | r } m
+  => MonadStore Store.Action Store.Store m
   => Navigate m
   => ManageTag m
   => ManageArticle m
-  => H.Component q {} o m
-component = Connect.component $ H.mkComponent
+  => H.Component q Unit o m
+component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState
   , render
   , eval: H.mkEval $ H.defaultEval
@@ -83,7 +85,7 @@ component = Connect.component $ H.mkComponent
       }
   }
   where
-  initialState { currentUser } =
+  initialState { context: currentUser } =
     { tags: NotAsked
     , articles: NotAsked
     , tab: Global
@@ -103,7 +105,7 @@ component = Connect.component $ H.mkComponent
           void $ H.fork $ handleAction $ LoadFeed { limit: Just 20, offset: Nothing }
           H.modify_ _ { tab = Feed }
 
-    Receive { currentUser } ->
+    Receive { context: currentUser } ->
       H.modify_ _ { currentUser = currentUser }
 
     LoadTags -> do

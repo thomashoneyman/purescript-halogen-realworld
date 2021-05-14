@@ -11,9 +11,10 @@ import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.AppM (runAppM)
 import Conduit.Component.Router as Router
+import Conduit.Data.Profile (Profile)
 import Conduit.Data.Profile as Profile
 import Conduit.Data.Route (routeCodec)
-import Conduit.Env (Env, LogLevel(..))
+import Conduit.Store (LogLevel(..), Store)
 import Data.Bifunctor (lmap)
 import Data.Codec as Codec
 import Data.Codec.Argonaut (printJsonDecodeError)
@@ -21,11 +22,8 @@ import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
 import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..))
-import Data.Traversable (traverse_)
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
-import Effect.Aff.Bus as Bus
-import Effect.Ref as Ref
+import Effect.Aff (launchAff_)
 import Halogen (liftEffect)
 import Halogen as H
 import Halogen.Aff as HA
@@ -74,49 +72,34 @@ main = HA.runHalogenAff do
     baseUrl = BaseURL "https://conduit.productionready.io"
     logLevel = Dev
 
-  -- We'll now construct our user environment, state that is accessible anywhere in the application.
-  userEnv <- liftEffect do
-    -- Next, we'll maintain a global mutable reference which contains the profile for the currently
-    -- authenticated user (if there is one). To start, we'll fill the mutable reference with `Nothing`
-    -- since we don't yet have the user's profile.
-    currentUser <- Ref.new Nothing
+  -- We'll now construct our central state, available anywhere in the application.
+  -- We already have two of the three fields we'll maintain in state; the third
+  -- is the current user profile. Let's try to fetch one:
+  currentUser :: Maybe Profile <- (liftEffect readToken) >>= case _ of
+    Nothing ->
+      pure Nothing
 
-    -- We'll also create a new bus to broadcast updates when the value of the current user changes;
-    -- that allows all subscribed components to stay in sync about this value.
-    userBus <- Bus.make
-
-    -- Finally, we'll attempt to fill the reference with the user profile associated with the token in
-    -- local storage (if there is one). We'll read the token, request the user's profile if we can, and
-    -- if we get a valid result, we'll write it to our mutable reference.
-    --
-    -- Note: this is quite a verbose request because it uses none of our helper functions. They're
-    -- designed to be run in `AppM` (we're in `Effect`). This is the only request run outside `AppM`,
-    -- so it's OK to be a little verbose.
-    readToken >>= traverse_ \token -> do
+    Just token -> do
       let requestOptions = { endpoint: User, method: Get }
-      launchAff_ do
-        res <- request $ defaultRequest baseUrl (Just token) requestOptions
+      res <- request $ defaultRequest baseUrl (Just token) requestOptions
 
-        let
-          user :: Either String _
-          user = case res of
-            Left e ->
-              Left (printError e)
-            Right v -> lmap printJsonDecodeError do
-              u <- Codec.decode (CAR.object "User" { user: CA.json }) v.body
-              CA.decode Profile.profileCodec u.user
+      let
+        user :: Either String Profile
+        user = case res of
+          Left e ->
+            Left (printError e)
+          Right v -> lmap printJsonDecodeError do
+            u <- Codec.decode (CAR.object "User" { user: CA.json }) v.body
+            CA.decode Profile.profileCodec u.user
 
-        liftEffect (Ref.write (hush user) currentUser)
-
-    -- We can now return our constructed user environment.
-    pure { currentUser, userBus }
+      pure $ hush user
 
   -- We now have the three pieces of information necessary to configure our app. Let's create
   -- a record that matches the `Env` type our application requires by filling in these three
   -- fields. If our environment type ever changes, we'll get a compiler error here.
   let
-    environment :: Env
-    environment = { baseUrl, logLevel, userEnv }
+    initialStore :: Store
+    initialStore = { baseUrl, logLevel, currentUser }
 
   -- With our app environment ready to go, we can prepare the router to run as our root component.
   --
@@ -126,19 +109,8 @@ main = HA.runHalogenAff do
   --
   -- But Halogen only knows how to run components in the `Aff` (asynchronous effects) monad. `Aff`
   -- has no idea how to interpret our capabilities. We need a way to change our router component so
-  -- that it runs in `Aff` instead of `AppM`.
-  --
-  -- We can do this with the `hoist` function. We'll provide it with a function from `AppM` to `Aff`
-  -- and the component we want to transform (the router). This will make our root component (the router)
-  -- ready to run as a Halogen application.
-  --
-  -- The `runAppM` function we wrote in the `Conduit.AppM` module provides this transformation from
-  -- `AppM` to `Aff`, so long as you provide it with the proper environment -- which we have!
-  --
-  -- Let's put it all together. With `hoist`, `runAppM`, our environment, and our router component,
-  -- we can produce a proper root component for Halogen to run.
-    rootComponent :: H.Component Router.Query {} Void Aff
-    rootComponent = H.hoist (runAppM environment) Router.component
+  -- that it runs in `Aff` instead of `AppM`. We can do that with `runAppM`:
+  rootComponent <- runAppM initialStore Router.component
 
   -- Now we have the two things we need to run a Halogen application: a reference to an HTML element
   -- and the component to run there.
@@ -153,7 +125,7 @@ main = HA.runHalogenAff do
   -- Note: Since our root component is our router, the "queries" and "messages" above refer to the
   -- `Query` and `Message` types defined in the `Conduit.Router` module. Only those queries and
   -- messages can be used, or else you'll get a compiler error.
-  halogenIO <- runUI rootComponent {} body
+  halogenIO <- runUI rootComponent unit body
 
   -- Fantastic! Our app is running and we're almost done. All that's left is to notify the router
   -- any time the location changes in the URL.
