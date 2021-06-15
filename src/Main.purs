@@ -61,10 +61,9 @@ main = HA.runHalogenAff do
   -- Our router component requires some information about its environment in order to run, so let's
   -- get that handled before we do anything else.
 
-  -- Our environment is a small record type, `Env`, defined in the `Conduit.Env` module. It
-  -- requires four fields: the profile of the currently-authenticated user (if there is one), the
-  -- base URL of the application, the log level, and the channel used to broadcast changes in the
-  -- value of the current user.
+  -- Our environment is a small record type, `Store`, defined in the `Conduit.Store` module. It
+  -- requires three fields: the profile of the currently-authenticated user (if there is one), the
+  -- base URL of the application, and the log level.
 
   -- This is a small MVP, so we'll just define pure values like our base URL and log level as
   -- constants. But it's also common to read configuration like this from the build environment.
@@ -95,7 +94,7 @@ main = HA.runHalogenAff do
       pure $ hush user
 
   -- We now have the three pieces of information necessary to configure our app. Let's create
-  -- a record that matches the `Env` type our application requires by filling in these three
+  -- a record that matches the `Store` type our application requires by filling in these three
   -- fields. If our environment type ever changes, we'll get a compiler error here.
   let
     initialStore :: Store
