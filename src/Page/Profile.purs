@@ -72,13 +72,13 @@ data Tab
 
 derive instance eqTab :: Eq Tab
 
-component ::
-  forall q o m.
-  MonadAff m =>
-  MonadStore Store.Action Store.Store m =>
-  ManageUser m =>
-  ManageArticle m =>
-  H.Component q Input o m
+component
+  :: forall q o m
+   . MonadAff m
+  => MonadStore Store.Action Store.Store m
+  => ManageUser m
+  => ManageArticle m
+  => H.Component q Input o m
 component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState
   , render

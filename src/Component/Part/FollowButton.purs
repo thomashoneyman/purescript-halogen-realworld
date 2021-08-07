@@ -57,28 +57,28 @@ followButton followAct unfollowAct author = case author.relation of
 -- | The following two functions will handle safely making the request, logging errors, and updating
 -- | state with the result.
 
-follow ::
-  forall st act slots msg m.
-  ManageUser m =>
-  Traversal' st Author ->
-  H.HalogenM st act slots msg m Unit
+follow
+  :: forall st act slots msg m
+   . ManageUser m
+  => Traversal' st Author
+  -> H.HalogenM st act slots msg m Unit
 follow _author = act (eq NotFollowing <<< _.relation) followUser _author
 
-unfollow ::
-  forall st act slots msg m.
-  ManageUser m =>
-  Traversal' st Author ->
-  H.HalogenM st act slots msg m Unit
+unfollow
+  :: forall st act slots msg m
+   . ManageUser m
+  => Traversal' st Author
+  -> H.HalogenM st act slots msg m Unit
 unfollow _author = act (eq Following <<< _.relation) unfollowUser _author
 
 -- | This will be kept internal, as it is only used to implement `follow` and `unfollow`.
-act ::
-  forall st act slots msg m.
-  ManageUser m =>
-  (Author -> Boolean) ->
-  (Username -> m (Maybe Author)) ->
-  Traversal' st Author ->
-  H.HalogenM st act slots msg m Unit
+act
+  :: forall st act slots msg m
+   . ManageUser m
+  => (Author -> Boolean)
+  -> (Username -> m (Maybe Author))
+  -> Traversal' st Author
+  -> H.HalogenM st act slots msg m Unit
 act cond f _author = do
   st <- H.get
   for_ (preview _author st) \author -> do

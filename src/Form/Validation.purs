@@ -88,21 +88,21 @@ errorToString = case _ of
 -- | The first validator we'll write verifies that the input is not empty. The same validator can
 -- | apply to any input value that is a monoid, as the `Monoid` type class represents 'emptiness'
 -- | with the `mempty` value. We'll just check whether the input is the empty value.
-required :: ∀ form m a. Eq a => Monoid a => Monad m => F.Validation form m FormError a a
+required :: forall form m a. Eq a => Monoid a => Monad m => F.Validation form m FormError a a
 required = F.hoistFnE_ $ cond (_ /= mempty) Required
 
 -- | This validator ensures that an input string is longer than the provided lower limit.
-minLength :: ∀ form m. Monad m => Int -> F.Validation form m FormError String String
+minLength :: forall form m. Monad m => Int -> F.Validation form m FormError String String
 minLength n = F.hoistFnE_ $ cond (\str -> String.length str > n) TooShort
 
 -- | This validator ensures that an input string is shorter than the provided upper limit.
-maxLength :: ∀ form m. Monad m => Int -> F.Validation form m FormError String String
+maxLength :: forall form m. Monad m => Int -> F.Validation form m FormError String String
 maxLength n = F.hoistFnE_ $ cond (\str -> String.length str <= n) TooLong
 
 -- | This validator ensures that an input string is a valid email address, using a fairly naive
 -- | requirement that it at least includes the `@` symbol. This is our first example of a validator
 -- | that returns a different output value than its input value.
-emailFormat :: ∀ form m. Monad m => F.Validation form m FormError String Email
+emailFormat :: forall form m. Monad m => F.Validation form m FormError String Email
 emailFormat = F.hoistFnE_ $ map Email <<< cond (String.contains (String.Pattern "@")) InvalidEmail
 
 -- | This validator ensures that an input string is a valid username. Usernames in Conduit use the
@@ -110,12 +110,12 @@ emailFormat = F.hoistFnE_ $ map Email <<< cond (String.contains (String.Pattern 
 -- | to the `parse` helper function exported by `Conduit.Data.Username`. Since that function returns
 -- | a `Maybe` value, we'll use the `note` helper from `Data.Either` to turn the `Nothing` case into
 -- | an error.
-usernameFormat :: ∀ form m. Monad m => F.Validation form m FormError String Username
+usernameFormat :: forall form m. Monad m => F.Validation form m FormError String Username
 usernameFormat = F.hoistFnE_ $ note InvalidUsername <<< Username.parse
 
 -- | Our avatar validator follows the same pattern, validating and transforming an input string into
 -- | an `Avatar`.
-avatarFormat :: ∀ form m. Monad m => F.Validation form m FormError String Avatar
+avatarFormat :: forall form m. Monad m => F.Validation form m FormError String Avatar
 avatarFormat = F.hoistFnE_ $ note InvalidAvatar <<< Avatar.parse
 
 -- Utilities
@@ -133,13 +133,13 @@ cond f err a = if f a then pure a else Left err
 -- |
 -- | This helper function lets us transform a set of validation rules so that they only apply when
 -- | the input is not empty. It isn't used in this module, but is used in the various forms.
-toOptional ::
-  ∀ form m a b.
-  Monoid a =>
-  Eq a =>
-  Monad m =>
-  F.Validation form m FormError a b ->
-  F.Validation form m FormError a (Maybe b)
+toOptional
+  :: forall form m a b
+   . Monoid a
+  => Eq a
+  => Monad m
+  => F.Validation form m FormError a b
+  -> F.Validation form m FormError a (Maybe b)
 toOptional v = F.Validation \form val ->
   case val == mempty of
     true -> pure (pure Nothing)

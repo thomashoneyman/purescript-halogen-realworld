@@ -62,18 +62,18 @@ type ChildSlots =
   , profile :: OpaqueSlot Unit
   )
 
-component ::
-  forall m.
-  MonadAff m =>
-  MonadStore Store.Action Store.Store m =>
-  Now m =>
-  LogMessages m =>
-  Navigate m =>
-  ManageUser m =>
-  ManageArticle m =>
-  ManageComment m =>
-  ManageTag m =>
-  H.Component Query Unit Void m
+component
+  :: forall m
+   . MonadAff m
+  => MonadStore Store.Action Store.Store m
+  => Now m
+  => LogMessages m
+  => Navigate m
+  => ManageUser m
+  => ManageArticle m
+  => ManageComment m
+  => ManageTag m
+  => H.Component Query Unit Void m
 component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState: \{ context: currentUser } -> { route: Nothing, currentUser }
   , render

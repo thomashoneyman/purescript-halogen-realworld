@@ -26,12 +26,12 @@ import Halogen.Store.Monad (class MonadStore, getStore, updateStore)
 -- | This function performs a request that does not require authentication by pulling the base URL
 -- | out of the app environment and running an asynchronous request. This function only requires the
 -- | `baseUrl` field from the app environment. See `Conduit.AppM` for examples of this in action.
-mkRequest ::
-  forall m.
-  MonadAff m =>
-  MonadStore Action Store m =>
-  RequestOptions ->
-  m (Maybe Json)
+mkRequest
+  :: forall m
+   . MonadAff m
+  => MonadStore Action Store m
+  => RequestOptions
+  -> m (Maybe Json)
 mkRequest opts = do
   { baseUrl } <- getStore
   response <- liftAff $ request $ defaultRequest baseUrl Nothing opts
@@ -40,12 +40,12 @@ mkRequest opts = do
 -- | This function performs a request that requires authentication by pulling the base URL out
 -- | of the app environment, reading the auth token from local storage, and then performing
 -- | the asynchronous request. See `Conduit.AppM` for examples of this in action.
-mkAuthRequest ::
-  forall m.
-  MonadAff m =>
-  MonadStore Action Store m =>
-  RequestOptions ->
-  m (Maybe Json)
+mkAuthRequest
+  :: forall m
+   . MonadAff m
+  => MonadStore Action Store m
+  => RequestOptions
+  -> m (Maybe Json)
 mkAuthRequest opts = do
   { baseUrl } <- getStore
   token <- liftEffect readToken
@@ -56,15 +56,15 @@ mkAuthRequest opts = do
 -- | and writing the auth token to local storage. This helper function makes it easy to layer those
 -- | behaviors on top of the request. This also performs the work of broadcasting changes in the
 -- | current user to all subscribed components.
-authenticate ::
-  forall m a.
-  MonadAff m =>
-  MonadStore Action Store m =>
-  LogMessages m =>
-  Now m =>
-  (BaseURL -> a -> m (Either String (Tuple Token Profile))) ->
-  a ->
-  m (Maybe Profile)
+authenticate
+  :: forall m a
+   . MonadAff m
+  => MonadStore Action Store m
+  => LogMessages m
+  => Now m
+  => (BaseURL -> a -> m (Either String (Tuple Token Profile)))
+  -> a
+  -> m (Maybe Profile)
 authenticate req fields = do
   { baseUrl } <- getStore
   req baseUrl fields >>= case _ of
@@ -90,15 +90,15 @@ decode codec (Just json) = case CA.decode codec json of
 -- | you are the author, you follow the author, or you don't follow the author. This utility
 -- | handles the mechanics of retrieving the current user and providing the username to the
 -- | provided decoder.
-decodeWithUser ::
-  forall m a.
-  MonadEffect m =>
-  MonadStore Action Store m =>
-  LogMessages m =>
-  Now m =>
-  (Maybe Username -> JsonCodec a) ->
-  Maybe Json ->
-  m (Maybe a)
+decodeWithUser
+  :: forall m a
+   . MonadEffect m
+  => MonadStore Action Store m
+  => LogMessages m
+  => Now m
+  => (Maybe Username -> JsonCodec a)
+  -> Maybe Json
+  -> m (Maybe a)
 decodeWithUser codec json = do
   { currentUser } <- getStore
   decode (codec (_.username <$> currentUser)) json

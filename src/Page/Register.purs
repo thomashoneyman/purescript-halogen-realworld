@@ -42,12 +42,12 @@ derive instance newtypeRegisterForm :: Newtype (RegisterForm r f) _
 data Action
   = HandleRegisterForm RegisterFields
 
-component ::
-  forall q o m.
-  MonadAff m =>
-  ManageUser m =>
-  Navigate m =>
-  H.Component q Unit o m
+component
+  :: forall q o m
+   . MonadAff m
+  => ManageUser m
+  => Navigate m
+  => H.Component q Unit o m
 component = H.mkComponent
   { initialState: const unit
   , render
@@ -91,10 +91,10 @@ component = H.mkComponent
 
 data FormAction = Submit Event.Event
 
-formComponent ::
-  forall formQuery formSlots formInput m.
-  MonadAff m =>
-  F.Component RegisterForm formQuery formSlots formInput RegisterFields m
+formComponent
+  :: forall formQuery formSlots formInput m
+   . MonadAff m
+  => F.Component RegisterForm formQuery formSlots formInput RegisterFields m
 formComponent = F.component formInput $ F.defaultSpec
   { render = renderForm
   , handleEvent = handleEvent

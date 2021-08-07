@@ -67,14 +67,14 @@ tabIsTag = case _ of
   Tag _ -> true
   _ -> false
 
-component ::
-  forall q o m.
-  MonadAff m =>
-  MonadStore Store.Action Store.Store m =>
-  Navigate m =>
-  ManageTag m =>
-  ManageArticle m =>
-  H.Component q Unit o m
+component
+  :: forall q o m
+   . MonadAff m
+  => MonadStore Store.Action Store.Store m
+  => Navigate m
+  => ManageTag m
+  => ManageArticle m
+  => H.Component q Unit o m
 component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState
   , render

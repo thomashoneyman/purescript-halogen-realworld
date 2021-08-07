@@ -38,12 +38,12 @@ type Input =
 type ChildSlots =
   (formless :: F.Slot LoginForm FormQuery () LoginFields Unit)
 
-component ::
-  forall q o m.
-  MonadAff m =>
-  Navigate m =>
-  ManageUser m =>
-  H.Component q Input o m
+component
+  :: forall q o m
+   . MonadAff m
+  => Navigate m
+  => ManageUser m
+  => H.Component q Input o m
 component = H.mkComponent
   { initialState: identity
   , render
@@ -115,10 +115,10 @@ derive instance functorFormQuery :: Functor FormQuery
 data FormAction
   = Submit Event.Event
 
-formComponent ::
-  forall i slots m.
-  MonadAff m =>
-  F.Component LoginForm FormQuery slots i LoginFields m
+formComponent
+  :: forall i slots m
+   . MonadAff m
+  => F.Component LoginForm FormQuery slots i LoginFields m
 formComponent = F.component formInput $ F.defaultSpec
   { render = renderLogin
   , handleEvent = handleEvent

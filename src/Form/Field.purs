@@ -58,17 +58,17 @@ submit buttonText =
 -- | type `String` at the label `sym` in the row `fields`. In short, we require at compile-time
 -- | that an input field of the correct type exists in our form state at the key we provided as
 -- | the function's first argument.
-input ::
-  forall form act slots m sym fields inputs out t0 t1.
-  IsSymbol sym =>
-  Newtype (form Record F.FormField) { | fields } =>
-  Newtype (form Variant F.InputFunction) (Variant inputs) =>
-  Row.Cons sym (F.FormField V.FormError String out) t0 fields =>
-  Row.Cons sym (F.InputFunction V.FormError String out) t1 inputs =>
-  Proxy sym ->
-  form Record F.FormField ->
-  Array (HH.IProp HTMLinput (F.Action form act)) ->
-  F.ComponentHTML form act slots m
+input
+  :: forall form act slots m sym fields inputs out t0 t1
+   . IsSymbol sym
+  => Newtype (form Record F.FormField) { | fields }
+  => Newtype (form Variant F.InputFunction) (Variant inputs)
+  => Row.Cons sym (F.FormField V.FormError String out) t0 fields
+  => Row.Cons sym (F.InputFunction V.FormError String out) t1 inputs
+  => Proxy sym
+  -> form Record F.FormField
+  -> Array (HH.IProp HTMLinput (F.Action form act))
+  -> F.ComponentHTML form act slots m
 input sym form props =
   HH.fieldset
     [ css "form-group" ]

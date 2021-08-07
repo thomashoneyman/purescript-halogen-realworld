@@ -54,12 +54,12 @@ data Action
 type State =
   { profile :: RemoteData String ProfileWithEmail }
 
-component ::
-  forall q o m.
-  MonadAff m =>
-  Navigate m =>
-  ManageUser m =>
-  H.Component q Unit o m
+component
+  :: forall q o m
+   . MonadAff m
+  => Navigate m
+  => ManageUser m
+  => H.Component q Unit o m
 component = H.mkComponent
   { initialState: \_ -> { profile: NotAsked }
   , render
@@ -130,10 +130,10 @@ component = H.mkComponent
 
 data FormAction = Submit Event.Event
 
-formComponent ::
-  forall formQuery formSlots formInput m.
-  MonadAff m =>
-  F.Component SettingsForm formQuery formSlots formInput UpdateProfileFields m
+formComponent
+  :: forall formQuery formSlots formInput m
+   . MonadAff m
+  => F.Component SettingsForm formQuery formSlots formInput UpdateProfileFields m
 formComponent = F.component formInput $ F.defaultSpec
   { render = renderForm
   , handleEvent = handleEvent

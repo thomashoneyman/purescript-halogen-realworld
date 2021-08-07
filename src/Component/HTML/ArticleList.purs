@@ -22,12 +22,12 @@ import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..))
 import Web.UIEvent.MouseEvent (MouseEvent)
 
-articleList ::
-  forall props act.
-  (Int -> act) ->
-  (Int -> act) ->
-  RemoteData String (PaginatedArray ArticleWithMetadata) ->
-  HH.HTML props act
+articleList
+  :: forall props act
+   . (Int -> act)
+  -> (Int -> act)
+  -> RemoteData String (PaginatedArray ArticleWithMetadata)
+  -> HH.HTML props act
 articleList favoriteAct unfavoriteAct = case _ of
   NotAsked ->
     text "Articles not yet loaded"
@@ -46,13 +46,13 @@ articleList favoriteAct unfavoriteAct = case _ of
       [ css "article-preview" ]
       [ HH.text str ]
 
-articlePreview ::
-  forall props act.
-  (Int -> act) ->
-  (Int -> act) ->
-  Int ->
-  ArticleWithMetadata ->
-  HH.HTML props act
+articlePreview
+  :: forall props act
+   . (Int -> act)
+  -> (Int -> act)
+  -> Int
+  -> ArticleWithMetadata
+  -> HH.HTML props act
 articlePreview favoriteAct unfavoriteAct ix article =
   HH.div
     [ css "article-preview" ]
@@ -105,24 +105,24 @@ renderTag tag =
 
 -- Pagination
 
-renderPagination ::
-  forall props act.
-  (Int -> MouseEvent -> act) ->
-  Int ->
-  PaginatedArray ArticleWithMetadata ->
-  HH.HTML props act
+renderPagination
+  :: forall props act
+   . (Int -> MouseEvent -> act)
+  -> Int
+  -> PaginatedArray ArticleWithMetadata
+  -> HH.HTML props act
 renderPagination act currentIndex { total } =
   whenElem (total > 20) \_ ->
     HH.ul
       [ css "pagination" ]
       (renderPageLink act currentIndex <$> enumFromTo 1 (total / 20))
 
-renderPageLink ::
-  forall props act.
-  (Int -> MouseEvent -> act) ->
-  Int ->
-  Int ->
-  HH.HTML props act
+renderPageLink
+  :: forall props act
+   . (Int -> MouseEvent -> act)
+  -> Int
+  -> Int
+  -> HH.HTML props act
 renderPageLink act activeIndex index =
   HH.li
     [ css $ "page-item" <> guard (activeIndex == index) " active" ]

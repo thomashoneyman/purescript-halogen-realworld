@@ -51,13 +51,13 @@ type State =
 type ChildSlots =
   (formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit)
 
-component ::
-  forall q o m.
-  MonadAff m =>
-  MonadStore Store.Action Store.Store m =>
-  Navigate m =>
-  ManageArticle m =>
-  H.Component q (Maybe Slug) o m
+component
+  :: forall q o m
+   . MonadAff m
+  => MonadStore Store.Action Store.Store m
+  => Navigate m
+  => ManageArticle m
+  => H.Component q (Maybe Slug) o m
 component = connect (selectEq _.currentUser) $ H.mkComponent
   -- due to the use of `Connect.component`, our input now also has `currentUser`
   -- in it, even though this component's only input is a slug.
@@ -144,11 +144,11 @@ data FormAction
   = HandleTagInput TagInput.Message
   | Submit Event.Event
 
-formComponent ::
-  forall q i m.
-  MonadAff m =>
-  Maybe ArticleWithMetadata ->
-  F.Component EditorFields q FormChildSlots i Article m
+formComponent
+  :: forall q i m
+   . MonadAff m
+  => Maybe ArticleWithMetadata
+  -> F.Component EditorFields q FormChildSlots i Article m
 formComponent mbArticle = F.component formInput $ F.defaultSpec
   { render = render
   , handleAction = handleAction

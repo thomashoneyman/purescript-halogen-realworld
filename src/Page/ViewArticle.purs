@@ -69,15 +69,15 @@ type Input = Slug
 type ChildSlots =
   (rawHtml :: OpaqueSlot Unit)
 
-component ::
-  forall q o m.
-  MonadAff m =>
-  MonadStore Store.Action Store.Store m =>
-  ManageArticle m =>
-  ManageComment m =>
-  ManageUser m =>
-  Navigate m =>
-  H.Component q Input o m
+component
+  :: forall q o m
+   . MonadAff m
+  => MonadStore Store.Action Store.Store m
+  => ManageArticle m
+  => ManageComment m
+  => ManageUser m
+  => Navigate m
+  => H.Component q Input o m
 component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState
   , render
