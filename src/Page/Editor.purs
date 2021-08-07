@@ -137,6 +137,11 @@ newtype EditorFields (r :: Row Type -> Type) f = EditorFields
   )
 derive instance newtypeEditorFields :: Newtype (EditorFields r f) _
 
+_title = Proxy :: Proxy "title"
+_description = Proxy :: Proxy "description"
+_body = Proxy :: Proxy "body"
+_tagList = Proxy :: Proxy "tagList"
+
 type FormChildSlots =
   (tagInput :: H.Slot (Const Void) TagInput.Message Unit)
 
@@ -166,8 +171,6 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     , initialInputs: Nothing
     }
 
-  proxies = F.mkSProxies (Proxy :: _ EditorFields)
-
   handleEvent = F.raiseResult
 
   handleAction = case _ of
@@ -177,9 +180,9 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
 
     HandleTagInput msg -> case msg of
       TagInput.TagAdded _ set ->
-        eval $ F.set proxies.tagList (Set.toUnfoldable set)
+        eval $ F.set _tagList (Set.toUnfoldable set)
       TagInput.TagRemoved _ set ->
-        eval $ F.set proxies.tagList (Set.toUnfoldable set)
+        eval $ F.set _tagList (Set.toUnfoldable set)
     where
     eval act = F.handleAction handleAction handleEvent act
 
@@ -200,14 +203,14 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     handler = F.injAction <<< HandleTagInput
 
     tags =
-      Set.fromFoldable $ F.getInput proxies.tagList form
+      Set.fromFoldable $ F.getInput _tagList form
 
     title =
-      Field.input proxies.title form
+      Field.input _title form
         [ HP.placeholder "Article Title", HP.type_ HP.InputText ]
 
     description =
-      Field.input proxies.description form
+      Field.input _description form
         [ HP.placeholder "What's this article about?", HP.type_ HP.InputText ]
 
     body =
@@ -216,11 +219,11 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
         [ HH.textarea
             [ css "form-control form-control-lg"
             , HP.placeholder "Write your article (in markdown)"
-            , HP.value $ F.getInput proxies.body form
+            , HP.value $ F.getInput _body form
             , HP.rows 8
-            , HE.onValueInput $ F.setValidate proxies.body
+            , HE.onValueInput $ F.setValidate _body
             ]
-        , maybeElem (F.getError proxies.body form) \err ->
+        , maybeElem (F.getError _body form) \err ->
             HH.div
               [ css "error-messages" ]
               [ HH.text $ errorToString err ]

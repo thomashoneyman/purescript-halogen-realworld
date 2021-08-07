@@ -174,14 +174,12 @@ formComponent = F.component formInput $ F.defaultSpec
           ]
       ]
     where
-    proxies = F.mkSProxies (Proxy :: _ SettingsForm)
-
     image =
-      Field.input proxies.image form
+      Field.input (Proxy :: Proxy "image") form
         [ HP.placeholder "URL of profile picture", HP.type_ HP.InputText ]
 
     username =
-      Field.input proxies.username form
+      Field.input (Proxy :: Proxy "username") form
         [ HP.placeholder "Your name", HP.type_ HP.InputText ]
 
     bio =
@@ -191,15 +189,15 @@ formComponent = F.component formInput $ F.defaultSpec
             [ css "form-control form-control-lg"
             , HP.placeholder "Short bio about you"
             , HP.rows 8
-            , HP.value $ F.getInput proxies.bio form
-            , HE.onValueInput $ F.setValidate proxies.bio
+            , HP.value $ F.getInput (Proxy :: Proxy "bio") form
+            , HE.onValueInput $ F.setValidate (Proxy :: Proxy "bio")
             ]
         ]
 
     email =
-      Field.input proxies.email form
+      Field.input (Proxy :: Proxy "email") form
         [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
 
     password =
-      Field.input proxies.password form
+      Field.input (Proxy :: Proxy "password") form
         [ HP.placeholder "Password", HP.type_ HP.InputPassword ]

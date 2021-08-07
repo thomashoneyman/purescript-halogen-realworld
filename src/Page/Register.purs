@@ -131,16 +131,14 @@ formComponent = F.component formInput $ F.defaultSpec
       , Field.submit "Sign up"
       ]
     where
-    proxies = F.mkSProxies (Proxy :: _ RegisterForm)
-
     username =
-      Field.input proxies.username form
+      Field.input (Proxy :: Proxy "username") form
         [ HP.placeholder "Username", HP.type_ HP.InputText ]
 
     email =
-      Field.input proxies.email form
+      Field.input (Proxy :: Proxy "email") form
         [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
 
     password =
-      Field.input proxies.password form
+      Field.input (Proxy :: Proxy "password") form
         [ HP.placeholder "Password", HP.type_ HP.InputPassword ]

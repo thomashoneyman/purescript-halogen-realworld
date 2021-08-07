@@ -151,8 +151,6 @@ formComponent = F.component formInput $ F.defaultSpec
       H.modify_ _ { loginError = bool }
       pure (Just a)
 
-  proxies = F.mkSProxies (Proxy :: _ LoginForm)
-
   renderLogin { form, loginError } =
     HH.form
       [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
@@ -161,11 +159,11 @@ formComponent = F.component formInput $ F.defaultSpec
             [ css "error-messages" ]
             [ HH.text "Email or password is invalid" ]
       , HH.fieldset_
-          [ Field.input proxies.email form
+          [ Field.input (Proxy :: Proxy "email") form
               [ HP.placeholder "Email"
               , HP.type_ HP.InputEmail
               ]
-          , Field.input proxies.password form
+          , Field.input (Proxy :: Proxy "password") form
               [ HP.placeholder "Password"
               , HP.type_ HP.InputPassword
               ]
