@@ -133,12 +133,13 @@ cond f err a = if f a then pure a else Left err
 -- |
 -- | This helper function lets us transform a set of validation rules so that they only apply when
 -- | the input is not empty. It isn't used in this module, but is used in the various forms.
-toOptional :: ∀ form m a b
-   . Monoid a
-  => Eq a
-  => Monad m
-  => F.Validation form m FormError a b
-  -> F.Validation form m FormError a (Maybe b)
+toOptional ::
+  ∀ form m a b.
+  Monoid a =>
+  Eq a =>
+  Monad m =>
+  F.Validation form m FormError a b ->
+  F.Validation form m FormError a (Maybe b)
 toOptional v = F.Validation \form val ->
   case val == mempty of
     true -> pure (pure Nothing)

@@ -72,13 +72,13 @@ data Tab
 
 derive instance eqTab :: Eq Tab
 
-component
-  :: forall q o m
-   . MonadAff m
-  => MonadStore Store.Action Store.Store m
-  => ManageUser m
-  => ManageArticle m
-  => H.Component q Input o m
+component ::
+  forall q o m.
+  MonadAff m =>
+  MonadStore Store.Action Store.Store m =>
+  ManageUser m =>
+  ManageArticle m =>
+  H.Component q Input o m
 component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState
   , render
@@ -133,7 +133,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
       H.modify_ _ { articles = fromMaybe articles }
 
     LoadFavorites -> do
-      st <- H.modify _ { favorites = Loading}
+      st <- H.modify _ { favorites = Loading }
       let
         params = noArticleParams
           { favorited = Just st.username
@@ -185,7 +185,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
     where
     userInfo =
       HH.div
-        [ css "user-info"]
+        [ css "user-info" ]
         [ HH.div
             [ css "container" ]
             [ HH.div

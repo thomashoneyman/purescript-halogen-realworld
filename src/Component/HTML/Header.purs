@@ -22,44 +22,44 @@ header currentUser route =
   HH.nav
     [ css "navbar navbar-light" ]
     [ HH.div
-      [ css "container" ]
-      [ HH.a
-        [ css "navbar-brand"
-        , safeHref Home
+        [ css "container" ]
+        [ HH.a
+            [ css "navbar-brand"
+            , safeHref Home
+            ]
+            [ HH.text "conduit" ]
+        , HH.ul
+            [ css "nav navbar-nav pull-xs-right" ]
+            [ navItem Home
+                [ HH.text "Home" ]
+            , whenElem (isJust currentUser) \_ ->
+                navItem Editor
+                  [ HH.i
+                      [ css "ion-compose" ]
+                      [ HH.text " New Post" ]
+                  ]
+            , whenElem (isJust currentUser) \_ ->
+                navItem Settings
+                  [ HH.i
+                      [ css "ion-gear-a" ]
+                      [ HH.text " Settings" ]
+                  ]
+            , maybeElem currentUser \profile ->
+                navItem (Profile profile.username)
+                  [ HH.img
+                      [ css "user-pic"
+                      , HP.src $ Avatar.toStringWithDefault profile.image
+                      ]
+                  , HH.text $ Username.toString profile.username
+                  ]
+            , whenElem (isNothing currentUser) \_ ->
+                navItem Login
+                  [ HH.text "Log in" ]
+            , whenElem (isNothing currentUser) \_ ->
+                navItem Register
+                  [ HH.text "Sign up" ]
+            ]
         ]
-        [ HH.text "conduit" ]
-      , HH.ul
-        [ css "nav navbar-nav pull-xs-right" ]
-        [ navItem Home
-            [ HH.text "Home" ]
-        , whenElem (isJust currentUser) \_ ->
-            navItem Editor
-              [ HH.i
-                [ css "ion-compose" ]
-                [ HH.text " New Post" ]
-              ]
-        , whenElem (isJust currentUser) \_ ->
-            navItem Settings
-              [ HH.i
-                [ css "ion-gear-a" ]
-                [ HH.text " Settings" ]
-              ]
-        , maybeElem currentUser \profile ->
-            navItem (Profile profile.username)
-              [ HH.img
-                [ css "user-pic"
-                , HP.src $ Avatar.toStringWithDefault profile.image
-                ]
-              , HH.text $ Username.toString profile.username
-              ]
-        , whenElem (isNothing currentUser) \_ ->
-            navItem Login
-              [ HH.text "Log in" ]
-        , whenElem (isNothing currentUser) \_ ->
-            navItem Register
-              [ HH.text "Sign up" ]
-        ]
-      ]
     ]
 
   where
@@ -68,8 +68,8 @@ header currentUser route =
     HH.li
       [ css "nav-item" ]
       [ HH.a
-        [ css $ "nav-link" <> guard (route == r) " active"
-        , safeHref r
-        ]
-        html
+          [ css $ "nav-link" <> guard (route == r) " active"
+          , safeHref r
+          ]
+          html
       ]

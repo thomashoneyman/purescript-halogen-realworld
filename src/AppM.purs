@@ -210,8 +210,10 @@ instance manageCommentAppM :: ManageComment AppM where
       $ decodeWithUser (\u -> CAR.object "Comments" { comments: CA.array (Comment.codec u) }) mbJson
 
   createComment slug body =
-    let method = Post $ Just $ Codec.encode (CAR.object "CommentBody" { body: CA.string }) { body }
-     in void $ mkAuthRequest { endpoint: Comments slug, method }
+    let
+      method = Post $ Just $ Codec.encode (CAR.object "CommentBody" { body: CA.string }) { body }
+    in
+      void $ mkAuthRequest { endpoint: Comments slug, method }
 
   deleteComment slug id =
     void $ mkAuthRequest { endpoint: Comment slug id, method: Delete }

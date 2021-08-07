@@ -67,14 +67,14 @@ tabIsTag = case _ of
   Tag _ -> true
   _ -> false
 
-component
-  :: forall q o m
-   . MonadAff m
-  => MonadStore Store.Action Store.Store m
-  => Navigate m
-  => ManageTag m
-  => ManageArticle m
-  => H.Component q Unit o m
+component ::
+  forall q o m.
+  MonadAff m =>
+  MonadStore Store.Action Store.Store m =>
+  Navigate m =>
+  ManageTag m =>
+  ManageArticle m =>
+  H.Component q Unit o m
 component = connect (selectEq _.currentUser) $ H.mkComponent
   { initialState
   , render
@@ -109,7 +109,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
       H.modify_ _ { currentUser = currentUser }
 
     LoadTags -> do
-      H.modify_ _ { tags = Loading}
+      H.modify_ _ { tags = Loading }
       tags <- getAllTags
       H.modify_ _ { tags = fromMaybe tags }
 
@@ -186,11 +186,11 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
         [ HH.div
             [ css "feed-toggle" ]
             [ HH.ul
-              [ css "nav nav-pills outline-active" ]
-              [ whenElem (isJust state.currentUser) \_ -> tab Feed
-              , tab Global
-              , whenElem (tabIsTag state.tab) \_ -> tab state.tab
-              ]
+                [ css "nav nav-pills outline-active" ]
+                [ whenElem (isJust state.currentUser) \_ -> tab Feed
+                , tab Global
+                , whenElem (tabIsTag state.tab) \_ -> tab state.tab
+                ]
             ]
         , articleList FavoriteArticle UnfavoriteArticle state.articles
         , maybeElem (toMaybe state.articles) \paginated ->
@@ -225,8 +225,8 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
                 [ HH.text "Global Feed" ]
               Tag tag ->
                 [ HH.i
-                  [ css "ion-pound" ]
-                  []
+                    [ css "ion-pound" ]
+                    []
                 , HH.text $ "#" <> tag
                 ]
         ]

@@ -35,7 +35,7 @@ type PaginationRep =
   )
 
 -- | This record type is useful for endpoints that only need pagination information.
-type Pagination = { | PaginationRep  }
+type Pagination = { | PaginationRep }
 
 -- | When we request articles we can include a few parameters to filter the results. Two of those
 -- | parameters control pagination, so we'll re-use our pagination row defined above.
@@ -100,7 +100,7 @@ endpointCodec = root $ prefix "api" $ sum
   { "Login": "users" / "login" / noArgs
   , "User": "user" / noArgs
   , "Users": "users" / noArgs
-  , "Follow": "profiles" / uname segment/ "follow"
+  , "Follow": "profiles" / uname segment / "follow"
   , "Article": "articles" / slug segment
   , "Comments": "articles" / slug segment / "comments"
   , "Comment": "articles" / slug segment / "comments" / commentId

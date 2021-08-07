@@ -173,15 +173,19 @@ loginCodec =
 -- | minimal profile.
 login :: forall m. MonadAff m => BaseURL -> LoginFields -> m (Either String (Tuple Token Profile))
 login baseUrl fields =
-  let method = Post $ Just $ Codec.encode (CAR.object "User" { user: loginCodec }) { user: fields }
-   in requestUser baseUrl { endpoint: Login, method }
+  let
+    method = Post $ Just $ Codec.encode (CAR.object "User" { user: loginCodec }) { user: fields }
+  in
+    requestUser baseUrl { endpoint: Login, method }
 
 -- | This function registers a user (if they don't already exist), returning an auth token and the
 -- | user's minimal profile.
 register :: forall m. MonadAff m => BaseURL -> RegisterFields -> m (Either String (Tuple Token Profile))
 register baseUrl fields =
-  let method = Post $ Just $ Codec.encode (CAR.object "User" { user: registerCodec }) { user: fields }
-   in requestUser baseUrl { endpoint: Users, method }
+  let
+    method = Post $ Just $ Codec.encode (CAR.object "User" { user: registerCodec }) { user: fields }
+  in
+    requestUser baseUrl { endpoint: Users, method }
 
 -- | The login and registration requests share the same underlying implementation, just a different
 -- | endpoint. This function can be re-used by both requests.

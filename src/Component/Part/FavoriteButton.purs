@@ -33,13 +33,13 @@ data ButtonSize
 
 derive instance eqButtonSize :: Eq ButtonSize
 
-favoriteButton
-  :: forall props act
-   . ButtonSize
-  -> act
-  -> act
-  -> ArticleWithMetadata
-  -> HH.HTML props act
+favoriteButton ::
+  forall props act.
+  ButtonSize ->
+  act ->
+  act ->
+  ArticleWithMetadata ->
+  HH.HTML props act
 favoriteButton buttonSize favoriteAct unfavoriteAct article =
   HH.button
     [ css $ "btn btn-sm " <> if article.favorited then "btn-primary" else "btn-outline-primary"
@@ -64,29 +64,29 @@ favoriteButton buttonSize favoriteAct unfavoriteAct article =
 
 -- Eval
 
-favorite
-  :: forall st act slots msg m
-   . ManageArticle m
-  => Traversal' st ArticleWithMetadata
-  -> H.HalogenM st act slots msg m Unit
+favorite ::
+  forall st act slots msg m.
+  ManageArticle m =>
+  Traversal' st ArticleWithMetadata ->
+  H.HalogenM st act slots msg m Unit
 favorite _article = act (not <<< _.favorited) favoriteArticle _article
 
-unfavorite
-  :: forall st act slots msg m
-   . ManageArticle m
-  => Traversal' st ArticleWithMetadata
-  -> H.HalogenM st act slots msg m Unit
+unfavorite ::
+  forall st act slots msg m.
+  ManageArticle m =>
+  Traversal' st ArticleWithMetadata ->
+  H.HalogenM st act slots msg m Unit
 unfavorite _article = act _.favorited unfavoriteArticle _article
 
 -- This will be kept internal.
 
-act
-  :: forall st act slots msg m
-   . ManageArticle m
-  => (ArticleWithMetadata -> Boolean)
-  -> (Slug -> m (Maybe ArticleWithMetadata))
-  -> Traversal' st ArticleWithMetadata
-  -> H.HalogenM st act slots msg m Unit
+act ::
+  forall st act slots msg m.
+  ManageArticle m =>
+  (ArticleWithMetadata -> Boolean) ->
+  (Slug -> m (Maybe ArticleWithMetadata)) ->
+  Traversal' st ArticleWithMetadata ->
+  H.HalogenM st act slots msg m Unit
 act cond f _article = do
   st <- H.get
   for_ (preview _article st) \article -> do

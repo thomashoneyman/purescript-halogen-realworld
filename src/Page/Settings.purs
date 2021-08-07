@@ -34,13 +34,15 @@ import Web.Event.Event as Event
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype SettingsForm (r :: Row Type -> Type) f = SettingsForm (r
-  ( image :: f V.FormError String (Maybe Avatar)
-  , username :: f V.FormError String Username
-  , bio :: f Void String (Maybe String)
-  , email :: f V.FormError String Email
-  , password :: f V.FormError String (Maybe String)
-  ))
+newtype SettingsForm (r :: Row Type -> Type) f = SettingsForm
+  ( r
+      ( image :: f V.FormError String (Maybe Avatar)
+      , username :: f V.FormError String Username
+      , bio :: f Void String (Maybe String)
+      , email :: f V.FormError String Email
+      , password :: f V.FormError String (Maybe String)
+      )
+  )
 
 derive instance newtypeSettingsForm :: Newtype (SettingsForm r f) _
 
@@ -52,12 +54,12 @@ data Action
 type State =
   { profile :: RemoteData String ProfileWithEmail }
 
-component
-  :: forall q o m
-   . MonadAff m
-  => Navigate m
-  => ManageUser m
-  => H.Component q Unit o m
+component ::
+  forall q o m.
+  MonadAff m =>
+  Navigate m =>
+  ManageUser m =>
+  H.Component q Unit o m
 component = H.mkComponent
   { initialState: \_ -> { profile: NotAsked }
   , render
@@ -98,7 +100,7 @@ component = H.mkComponent
   render { profile } =
     container
       [ HH.h1
-          [ css "text-xs-center"]
+          [ css "text-xs-center" ]
           [ HH.text "Your Settings" ]
       , HH.slot F._formless unit formComponent unit HandleForm
       , HH.hr_
@@ -128,10 +130,10 @@ component = H.mkComponent
 
 data FormAction = Submit Event.Event
 
-formComponent
-  :: forall formQuery formSlots formInput m
-   . MonadAff m
-  => F.Component SettingsForm formQuery formSlots formInput UpdateProfileFields m
+formComponent ::
+  forall formQuery formSlots formInput m.
+  MonadAff m =>
+  F.Component SettingsForm formQuery formSlots formInput UpdateProfileFields m
 formComponent = F.component formInput $ F.defaultSpec
   { render = renderForm
   , handleEvent = handleEvent
@@ -163,13 +165,13 @@ formComponent = F.component formInput $ F.defaultSpec
     HH.form
       [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
-        [ image
-        , username
-        , bio
-        , email
-        , password
-        , Field.submit "Update settings"
-        ]
+          [ image
+          , username
+          , bio
+          , email
+          , password
+          , Field.submit "Update settings"
+          ]
       ]
     where
     proxies = F.mkSProxies (Proxy :: _ SettingsForm)
