@@ -16,7 +16,7 @@ jobs:
 
       - uses: thomashoneyman/setup-purescript@main
         with:
-          purescript: "0.14.1"
+          purescript: "0.14.3"
           spago: "0.20.2"
           zephyr: "0.3.2"
 
@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@v1
         with:
-          node-version: "12.x"
+          node-version: "14.x"
 
       - name: Cache node modules
         uses: actions/cache@v2
