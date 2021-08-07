@@ -49,7 +49,7 @@ type State =
   }
 
 type ChildSlots =
-  ( formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit )
+  (formless :: F.Slot EditorFields (Const Void) FormChildSlots Article Unit)
 
 component
   :: forall q o m
@@ -108,17 +108,17 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
     HH.div_
       [ header currentUser Editor
       , HH.div
-        [ css "editor-page" ]
-        [ HH.div
-            [ css "container page" ]
-            [ HH.div
-              [ css "row" ]
+          [ css "editor-page" ]
+          [ HH.div
+              [ css "container page" ]
               [ HH.div
-                [ css "col-md-10 offset-md-1 col-xs-12" ]
-                [ HH.slot F._formless unit (formComponent (toMaybe article)) unit HandleEditor ]
+                  [ css "row" ]
+                  [ HH.div
+                      [ css "col-md-10 offset-md-1 col-xs-12" ]
+                      [ HH.slot F._formless unit (formComponent (toMaybe article)) unit HandleEditor ]
+                  ]
               ]
-            ]
-        ]
+          ]
       ]
 
 -----
@@ -127,16 +127,18 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype EditorFields (r :: Row Type -> Type) f = EditorFields (r
-  ( title :: f V.FormError String String
-  , description :: f V.FormError String String
-  , body :: f V.FormError String String
-  , tagList :: f Void (Array Tag) (Array String)
-  ))
+newtype EditorFields (r :: Row Type -> Type) f = EditorFields
+  ( r
+      ( title :: f V.FormError String String
+      , description :: f V.FormError String String
+      , body :: f V.FormError String String
+      , tagList :: f Void (Array Tag) (Array String)
+      )
+  )
 derive instance newtypeEditorFields :: Newtype (EditorFields r f) _
 
 type FormChildSlots =
-  ( tagInput :: H.Slot (Const Void) TagInput.Message Unit )
+  (tagInput :: H.Slot (Const Void) TagInput.Message Unit)
 
 data FormAction
   = HandleTagInput TagInput.Message
@@ -185,15 +187,14 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
     HH.form
       [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
-        [ title
-        , description
-        , body
-        , HH.slot (Proxy :: _ "tagInput") unit TagInput.component { tags } handler
-        , Field.submit do
-            if isJust mbArticle
-              then "Commit changes"
+          [ title
+          , description
+          , body
+          , HH.slot (Proxy :: _ "tagInput") unit TagInput.component { tags } handler
+          , Field.submit do
+              if isJust mbArticle then "Commit changes"
               else "Publish"
-        ]
+          ]
       ]
     where
     handler = F.injAction <<< HandleTagInput
@@ -219,8 +220,8 @@ formComponent mbArticle = F.component formInput $ F.defaultSpec
             , HP.rows 8
             , HE.onValueInput $ F.setValidate proxies.body
             ]
-          , maybeElem (F.getError proxies.body form) \err ->
-              HH.div
-                [ css "error-messages" ]
-                [ HH.text $ errorToString err ]
-          ]
+        , maybeElem (F.getError proxies.body form) \err ->
+            HH.div
+              [ css "error-messages" ]
+              [ HH.text $ errorToString err ]
+        ]

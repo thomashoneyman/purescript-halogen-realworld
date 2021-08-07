@@ -72,7 +72,7 @@ reason (Log { reason: r }) = r
 -- | relies on our `Now` capability to grab the current time and write it as an additional piece
 -- | of metadata. Our application monad will retrieve the current time effectfully, but we'll
 -- | write our tests using a hard-coded time so they can be deterministic.
-mkLog :: ∀ m. Now m => LogReason -> String -> m Log
+mkLog :: forall m. Now m => LogReason -> String -> m Log
 mkLog logReason inputMessage = do
   now <- nowDateTime
 

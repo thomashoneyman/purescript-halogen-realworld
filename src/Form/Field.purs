@@ -73,13 +73,13 @@ input sym form props =
   HH.fieldset
     [ css "form-group" ]
     [ HH.input
-      ( append
-          [ css "form-control form-control-lg"
-          , HP.value $ F.getInput sym form
-          , HE.onValueInput $ F.setValidate sym
-          ]
-          props
-      )
+        ( append
+            [ css "form-control form-control-lg"
+            , HP.value $ F.getInput sym form
+            , HE.onValueInput $ F.setValidate sym
+            ]
+            props
+        )
     , maybeElem (F.getError sym form) \err ->
         HH.div
           [ css "error-messages" ]

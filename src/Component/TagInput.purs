@@ -97,9 +97,9 @@ component = H.mkComponent
       HH.span
         [ css "tag-default tag-pill" ]
         [ HH.i
-          [ css "ion-close-round"
-          , HE.onClick \_ -> RemoveTag tag
-          ]
-          [ ]
+            [ css "ion-close-round"
+            , HE.onClick \_ -> RemoveTag tag
+            ]
+            []
         , HH.text (unwrap tag)
         ]

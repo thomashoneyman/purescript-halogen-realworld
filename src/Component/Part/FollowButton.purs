@@ -40,7 +40,7 @@ followButton followAct unfollowAct author = case author.relation of
       , HE.onClick \_ -> followAct
       ]
       [ HH.i
-          [ css "ion-plus-round"]
+          [ css "ion-plus-round" ]
           []
       , HH.text $ " Follow " <> Username.toString author.username
       ]

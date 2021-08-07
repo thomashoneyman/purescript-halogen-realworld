@@ -34,13 +34,15 @@ import Web.Event.Event as Event
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype SettingsForm (r :: Row Type -> Type) f = SettingsForm (r
-  ( image :: f V.FormError String (Maybe Avatar)
-  , username :: f V.FormError String Username
-  , bio :: f Void String (Maybe String)
-  , email :: f V.FormError String Email
-  , password :: f V.FormError String (Maybe String)
-  ))
+newtype SettingsForm (r :: Row Type -> Type) f = SettingsForm
+  ( r
+      ( image :: f V.FormError String (Maybe Avatar)
+      , username :: f V.FormError String Username
+      , bio :: f Void String (Maybe String)
+      , email :: f V.FormError String Email
+      , password :: f V.FormError String (Maybe String)
+      )
+  )
 
 derive instance newtypeSettingsForm :: Newtype (SettingsForm r f) _
 
@@ -98,7 +100,7 @@ component = H.mkComponent
   render { profile } =
     container
       [ HH.h1
-          [ css "text-xs-center"]
+          [ css "text-xs-center" ]
           [ HH.text "Your Settings" ]
       , HH.slot F._formless unit formComponent unit HandleForm
       , HH.hr_
@@ -163,13 +165,13 @@ formComponent = F.component formInput $ F.defaultSpec
     HH.form
       [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
       [ HH.fieldset_
-        [ image
-        , username
-        , bio
-        , email
-        , password
-        , Field.submit "Update settings"
-        ]
+          [ image
+          , username
+          , bio
+          , email
+          , password
+          , Field.submit "Update settings"
+          ]
       ]
     where
     proxies = F.mkSProxies (Proxy :: _ SettingsForm)

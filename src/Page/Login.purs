@@ -36,7 +36,7 @@ type Input =
   { redirect :: Boolean }
 
 type ChildSlots =
-  ( formless :: F.Slot LoginForm FormQuery () LoginFields Unit )
+  (formless :: F.Slot LoginForm FormQuery () LoginFields Unit)
 
 component
   :: forall q o m
@@ -67,14 +67,14 @@ component = H.mkComponent
   render _ =
     container
       [ HH.h1
-          [ css "text-xs-center"]
+          [ css "text-xs-center" ]
           [ HH.text "Sign In" ]
       , HH.p
           [ css "text-xs-center" ]
           [ HH.a
               [ safeHref Register ]
               [ HH.text "Need an account?" ]
-        ]
+          ]
       , HH.slot F._formless unit formComponent unit HandleLoginForm
       ]
     where
@@ -96,10 +96,12 @@ component = H.mkComponent
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype LoginForm (r :: Row Type -> Type) f = LoginForm (r
-  ( email :: f V.FormError String Email
-  , password :: f V.FormError String String
-  ))
+newtype LoginForm (r :: Row Type -> Type) f = LoginForm
+  ( r
+      ( email :: f V.FormError String Email
+      , password :: f V.FormError String String
+      )
+  )
 
 derive instance newtypeLoginForm :: Newtype (LoginForm r f) _
 

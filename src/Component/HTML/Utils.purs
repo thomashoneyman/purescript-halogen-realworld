@@ -10,12 +10,12 @@ import Routing.Duplex (print)
 
 -- | I get annoyed writing `class_ $ ClassName "..."` over and over again. This small utility saves
 -- | a few characters all over our HTML.
-css :: forall r i. String -> HH.IProp ( class :: String | r ) i
+css :: forall r i. String -> HH.IProp (class :: String | r) i
 css = HP.class_ <<< HH.ClassName
 
 -- | We must provide a `String` to the "href" attribute, but we represent routes with the much
 -- | better `Route` type. This utility is a drop-in replacement for `href` that uses `Route`.
-safeHref :: forall r i. Route -> HH.IProp ( href :: String | r) i
+safeHref :: forall r i. Route -> HH.IProp (href :: String | r) i
 safeHref = HP.href <<< append "#" <<< print routeCodec
 
 -- | Sometimes we need to deal with elements which may or may not exist. This function lets us

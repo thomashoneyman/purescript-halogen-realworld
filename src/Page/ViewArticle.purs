@@ -67,7 +67,7 @@ type State =
 type Input = Slug
 
 type ChildSlots =
-  ( rawHtml :: OpaqueSlot Unit )
+  (rawHtml :: OpaqueSlot Unit)
 
 component
   :: forall q o m
@@ -169,7 +169,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
 
     banner article =
       HH.div
-        [ css "banner"]
+        [ css "banner" ]
         [ HH.div
             [ css "container" ]
             [ HH.h1_
@@ -196,37 +196,37 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
                 [ HH.div
                     [ css "col-xs-12 col-md-8 offset-md-2" ]
                     ( append
-                      [ maybeElem state.currentUser \profile ->
-                          HH.form
-                            [ css "card comment-form"
-                            , HE.onSubmit \_ -> AddComment
-                            ]
-                            [ HH.div
-                                [ css "card-block" ]
-                                [ HH.textarea
-                                    [ css "form-control"
-                                    , HP.placeholder "Write a comment..."
-                                    , HP.rows 3
-                                    , HE.onValueInput UpdateCommentText
-                                    ]
-                                ]
-                            , HH.div
-                                [ css "card-footer" ]
-                                [ HH.img
-                                    [ css "comment-author-img"
-                                    , HP.src $ Avatar.toStringWithDefault profile.image
-                                    ]
-                                , HH.button
-                                    [ css "btn btn-sm btn-primary"
-                                    , HP.type_ HP.ButtonSubmit
-                                    ]
-                                    [ HH.text "Post Comment" ]
-                                ]
-                            ]
-                      ]
-                      case preview _Success state.comments of
-                        Nothing -> [ HH.text "" ]
-                        Just arr -> viewComment <$> arr
+                        [ maybeElem state.currentUser \profile ->
+                            HH.form
+                              [ css "card comment-form"
+                              , HE.onSubmit \_ -> AddComment
+                              ]
+                              [ HH.div
+                                  [ css "card-block" ]
+                                  [ HH.textarea
+                                      [ css "form-control"
+                                      , HP.placeholder "Write a comment..."
+                                      , HP.rows 3
+                                      , HE.onValueInput UpdateCommentText
+                                      ]
+                                  ]
+                              , HH.div
+                                  [ css "card-footer" ]
+                                  [ HH.img
+                                      [ css "comment-author-img"
+                                      , HP.src $ Avatar.toStringWithDefault profile.image
+                                      ]
+                                  , HH.button
+                                      [ css "btn btn-sm btn-primary"
+                                      , HP.type_ HP.ButtonSubmit
+                                      ]
+                                      [ HH.text "Post Comment" ]
+                                  ]
+                              ]
+                        ]
+                        case preview _Success state.comments of
+                          Nothing -> [ HH.text "" ]
+                          Just arr -> viewComment <$> arr
                     )
                 ]
             ]
@@ -243,7 +243,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
         [ HH.a
             [ safeHref $ Profile username ]
             [ HH.img
-              [ HP.src $ Avatar.toStringWithDefault avatar ]
+                [ HP.src $ Avatar.toStringWithDefault avatar ]
             ]
         , HH.div
             [ css "info" ]
@@ -275,7 +275,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
                     ]
                     [ HH.i
                         [ css "ion-trash-a" ]
-                        [ ]
+                        []
                     , HH.text " Delete Article"
                     ]
                 ]
@@ -300,36 +300,36 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
                 [ HH.text comment.body ]
             ]
         , HH.div
-          [ css "card-footer" ]
-          [ HH.a
-              [ css "comment-author"
-              , safeHref $ Profile comment.author.username
-              ]
-              [ HH.img
-                  [ css "comment-author-img"
-                  , HP.src $ Avatar.toStringWithDefault comment.author.image
-                  ]
-              ]
-          , HH.text " "
-          , HH.a
-              [ css "comment-author"
-              , safeHref $ Profile comment.author.username
-              ]
-              [ HH.text $ Username.toString comment.author.username ]
-          , HH.text " "
-          , HH.span
-              [ css "date-posted" ]
-              [ HH.text $ PDT.toDisplayMonthDayYear comment.createdAt ]
-          , whenElem (comment.author.relation == You) \_ ->
-              HH.span
-                [ css "mod-options" ]
-                [ HH.i
-                    [ css "ion-trash-a"
-                    , HE.onClick \_ -> DeleteComment comment.id
-                    ]
-                    []
+            [ css "card-footer" ]
+            [ HH.a
+                [ css "comment-author"
+                , safeHref $ Profile comment.author.username
                 ]
-          ]
+                [ HH.img
+                    [ css "comment-author-img"
+                    , HP.src $ Avatar.toStringWithDefault comment.author.image
+                    ]
+                ]
+            , HH.text " "
+            , HH.a
+                [ css "comment-author"
+                , safeHref $ Profile comment.author.username
+                ]
+                [ HH.text $ Username.toString comment.author.username ]
+            , HH.text " "
+            , HH.span
+                [ css "date-posted" ]
+                [ HH.text $ PDT.toDisplayMonthDayYear comment.createdAt ]
+            , whenElem (comment.author.relation == You) \_ ->
+                HH.span
+                  [ css "mod-options" ]
+                  [ HH.i
+                      [ css "ion-trash-a"
+                      , HE.onClick \_ -> DeleteComment comment.id
+                      ]
+                      []
+                  ]
+            ]
         ]
 
   _author :: Traversal' State Author

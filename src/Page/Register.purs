@@ -29,11 +29,13 @@ import Web.Event.Event as Event
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype RegisterForm (r :: Row Type -> Type) f = RegisterForm (r
-  ( username :: f V.FormError String Username
-  , email :: f V.FormError String Email
-  , password :: f V.FormError String String
-  ))
+newtype RegisterForm (r :: Row Type -> Type) f = RegisterForm
+  ( r
+      ( username :: f V.FormError String Username
+      , email :: f V.FormError String Email
+      , password :: f V.FormError String String
+      )
+  )
 
 derive instance newtypeRegisterForm :: Newtype (RegisterForm r f) _
 
@@ -59,14 +61,14 @@ component = H.mkComponent
   render _ =
     container
       [ HH.h1
-          [ css "text-xs-center"]
+          [ css "text-xs-center" ]
           [ HH.text "Sign Up" ]
       , HH.p
           [ css "text-xs-center" ]
           [ HH.a
               [ safeHref Login ]
               [ HH.text "Already have an account?" ]
-        ]
+          ]
       , HH.slot F._formless unit formComponent unit HandleRegisterForm
       ]
     where
@@ -141,4 +143,4 @@ formComponent = F.component formInput $ F.defaultSpec
 
     password =
       Field.input proxies.password form
-        [ HP.placeholder "Password" , HP.type_ HP.InputPassword ]
+        [ HP.placeholder "Password", HP.type_ HP.InputPassword ]

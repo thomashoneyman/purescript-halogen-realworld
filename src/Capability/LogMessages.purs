@@ -41,11 +41,11 @@ logDebug :: forall m. LogMessages m => Now m => String -> m Unit
 logDebug = log Debug
 
 -- | Log a message to convey non-error information
-logInfo :: forall m. LogMessages m =>  Now m =>String -> m Unit
+logInfo :: forall m. LogMessages m => Now m => String -> m Unit
 logInfo = log Info
 
 -- | Log a message as a warning
-logWarn :: forall m. LogMessages m =>  Now m =>String -> m Unit
+logWarn :: forall m. LogMessages m => Now m => String -> m Unit
 logWarn = log Warn
 
 -- | Log a message as an error
