@@ -71,11 +71,11 @@ main = HA.runHalogenAff do
     baseUrl = BaseURL "https://conduit.productionready.io"
     logLevel = Dev
 
-  -- We'll now get an authentication token from Window.localStorage through the readToken function.
-  -- With the authentication token we can get the user profile and construct our central state.
-  -- The cenral state will be available anywhere in the application.
-  -- We already have two of the three fields we'll maintain in state; the third
-  -- is the current user profile. Let's try to fetch one:
+  -- We have two of the three fields we need to create our central state. The
+  -- third field is the current user profile. We'll try to retrieve it in a few steps.
+  -- First, we'll use `readToken` to read an authentication token out of local 
+  -- storage. If we can read one, we'll use it to try and get a new user (which
+  -- will fail if the token isn't valid).
   currentUser :: Maybe Profile <- (liftEffect readToken) >>= case _ of
     Nothing ->
       pure Nothing
