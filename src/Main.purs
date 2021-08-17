@@ -72,6 +72,7 @@ main = HA.runHalogenAff do
     logLevel = Dev
 
   -- We'll now construct our central state, available anywhere in the application.
+  -- The central state is loaded from Window.localStorage through the use of the readToken function.
   -- We already have two of the three fields we'll maintain in state; the third
   -- is the current user profile. Let's try to fetch one:
   currentUser :: Maybe Profile <- (liftEffect readToken) >>= case _ of
