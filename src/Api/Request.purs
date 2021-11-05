@@ -69,6 +69,7 @@ newtype Token = Token String
 -- | No `newtype` instance allowed! That would allow us to use the `wrap` and `unwrap` functions to
 -- | access the string within the `Token` constructor.
 derive instance eqToken :: Eq Token
+
 derive instance ordToken :: Ord Token
 
 -- | We won't derive a `Show` instance, either, because we don't ever want to reveal the token.

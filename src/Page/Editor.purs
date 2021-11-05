@@ -135,6 +135,7 @@ newtype EditorFields (r :: Row Type -> Type) f = EditorFields
       , tagList :: f Void (Array Tag) (Array String)
       )
   )
+
 derive instance newtypeEditorFields :: Newtype (EditorFields r f) _
 
 _title = Proxy :: Proxy "title"
