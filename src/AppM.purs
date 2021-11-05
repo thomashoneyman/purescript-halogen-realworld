@@ -106,6 +106,7 @@ runAppM store = runStoreT store Store.reduce <<< coerce
 -- | You can derive everything you need! We can now focus just on the instances that matter to us:
 -- | our app environment and our capabilities.
 derive newtype instance functorAppM :: Functor AppM
+
 derive newtype instance applyAppM :: Apply AppM
 derive newtype instance applicativeAppM :: Applicative AppM
 derive newtype instance bindAppM :: Bind AppM
