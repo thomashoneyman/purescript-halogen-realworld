@@ -68,7 +68,7 @@ main = HA.runHalogenAff do
   -- This is a small MVP, so we'll just define pure values like our base URL and log level as
   -- constants. But it's also common to read configuration like this from the build environment.
   let
-    baseUrl = BaseURL "https://conduit.productionready.io"
+    baseUrl = BaseURL "https://api.realworld.io"
     logLevel = Dev
 
   -- We have two of the three fields we need to create our central state. The
