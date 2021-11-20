@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "http-server": "^13.0.0",
+    "lmdb-store": "^1.6.14",
     "parcel": "^2.0.0-rc.0",
     "purescript-psa": "^0.8.2",
     "purs-tidy": "^0.1.1"
