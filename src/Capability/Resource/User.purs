@@ -15,7 +15,7 @@ import Prelude
 
 import Conduit.Api.Request (LoginFields, RegisterFields)
 import Conduit.Data.Email (Email)
-import Conduit.Data.Profile (Profile, ProfileRep, ProfileWithEmail, Author)
+import Conduit.Data.Profile (Author, Profile, ProfileRep, ProfileWithEmail)
 import Conduit.Data.Username (Username)
 import Data.Maybe (Maybe)
 import Halogen (HalogenM, lift)

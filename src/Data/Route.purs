@@ -13,10 +13,10 @@ module Conduit.Data.Route where
 
 import Prelude hiding ((/))
 
-import Data.Either (note)
-import Data.Generic.Rep (class Generic)
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
+import Data.Either (note)
+import Data.Generic.Rep (class Generic)
 import Routing.Duplex (RouteDuplex', as, root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))

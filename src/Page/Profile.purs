@@ -17,7 +17,7 @@ import Conduit.Component.Part.FollowButton (follow, followButton, unfollow)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.PaginatedArray (PaginatedArray)
-import Conduit.Data.Profile (Profile, Author)
+import Conduit.Data.Profile (Author, Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username

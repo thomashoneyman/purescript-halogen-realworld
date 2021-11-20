@@ -1,9 +1,9 @@
 -- | This module exports a pure HTML function to render a consistent footer throughout the app.
 module Conduit.Component.HTML.Footer where
 
+import Conduit.Component.HTML.Utils (css)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import Conduit.Component.HTML.Utils (css)
 
 footer :: forall i p. HH.HTML i p
 footer =

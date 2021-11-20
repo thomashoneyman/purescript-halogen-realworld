@@ -11,7 +11,7 @@ import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css, maybeElem)
 import Conduit.Component.TagInput (Tag(..))
 import Conduit.Component.TagInput as TagInput
-import Conduit.Data.Article (ArticleWithMetadata, Article)
+import Conduit.Data.Article (Article, ArticleWithMetadata)
 import Conduit.Data.Profile (Profile)
 import Conduit.Data.Route (Route(..))
 import Conduit.Form.Field as Field

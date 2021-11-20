@@ -10,18 +10,20 @@ let
   pursPkgs = import (pkgs.fetchFromGitHub {
     owner = "justinwoo";
     repo = "easy-purescript-nix";
-    rev = "eb64583e3e15749b3ae56573b2aebbaa9cbab4eb";
-    sha256 = "0hr7smk7avdgc5nm1r3drq91j1hf8wimp7sg747832345c8vq19a";
+    rev = "82f901ce0a2d86327e2d65993a75c2ea74f229f2";
+    sha256 = "0qsq8bj76y3bxdl2iphknjib139z0jw75xlaih7viv9kvfm9b1lx";
   }) { inherit pkgs; };
 
 in pkgs.stdenv.mkDerivation {
   name = "halogen-realworld";
   buildInputs = with pursPkgs; [
     pursPkgs.purs
+    pursPkgs.purs-tidy
     pursPkgs.spago
     pursPkgs.zephyr
-    pkgs.nodejs-14_x
+    pkgs.nodejs-16_x
   ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+    # Apple M1
     Cocoa
     CoreServices
   ]);

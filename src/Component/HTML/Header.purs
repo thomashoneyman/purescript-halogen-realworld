@@ -8,7 +8,7 @@ import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Profile (ProfileRep)
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
-import Data.Maybe (Maybe, isNothing, isJust)
+import Data.Maybe (Maybe, isJust, isNothing)
 import Data.Monoid (guard)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP

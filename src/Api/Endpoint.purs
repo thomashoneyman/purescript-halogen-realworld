@@ -13,12 +13,12 @@ module Conduit.Api.Endpoint where
 
 import Prelude hiding ((/))
 
-import Data.Generic.Rep (class Generic)
-import Data.Lens.Iso.Newtype (_Newtype)
-import Data.Maybe (Maybe(..))
 import Conduit.Data.Comment (CommentId)
 import Conduit.Data.Route (slug, uname)
 import Conduit.Data.Username (Username)
+import Data.Generic.Rep (class Generic)
+import Data.Lens.Iso.Newtype (_Newtype)
+import Data.Maybe (Maybe(..))
 import Routing.Duplex (RouteDuplex', int, optional, prefix, root, segment, string)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))

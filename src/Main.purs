@@ -6,7 +6,7 @@ module Main where
 
 import Prelude
 
-import Affjax (request, printError)
+import Affjax (printError, request)
 import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.AppM (runAppM)

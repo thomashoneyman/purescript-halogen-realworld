@@ -40,8 +40,7 @@ import Routing.Duplex as RD
 import Routing.Hash (getHash)
 import Type.Proxy (Proxy(..))
 
-data Query a
-  = Navigate Route a
+data Query a = Navigate Route a
 
 type State =
   { route :: Maybe Route

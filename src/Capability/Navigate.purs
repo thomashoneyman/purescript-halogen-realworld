@@ -8,8 +8,8 @@ module Conduit.Capability.Navigate where
 
 import Prelude
 
-import Control.Monad.Trans.Class (lift)
 import Conduit.Data.Route (Route)
+import Control.Monad.Trans.Class (lift)
 import Halogen (HalogenM)
 
 -- | This capability represents the ability to move around the application. The `navigate` function

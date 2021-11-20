@@ -5,7 +5,7 @@ module Conduit.Component.HTML.ArticleList where
 import Prelude
 
 import Conduit.Component.HTML.Utils (css, safeHref, whenElem)
-import Conduit.Component.Part.FavoriteButton (favoriteButton, ButtonSize(..))
+import Conduit.Component.Part.FavoriteButton (ButtonSize(..), favoriteButton)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.PaginatedArray (PaginatedArray)

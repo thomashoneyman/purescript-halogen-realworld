@@ -20,7 +20,7 @@ import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
 import Conduit.Data.Comment (Comment, CommentId)
 import Conduit.Data.PreciseDateTime as PDT
-import Conduit.Data.Profile (Profile, Relation(..), Author)
+import Conduit.Data.Profile (Author, Profile, Relation(..))
 import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username as Username
 import Conduit.Store as Store

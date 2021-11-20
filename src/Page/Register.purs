@@ -39,8 +39,7 @@ newtype RegisterForm (r :: Row Type -> Type) f = RegisterForm
 
 derive instance newtypeRegisterForm :: Newtype (RegisterForm r f) _
 
-data Action
-  = HandleRegisterForm RegisterFields
+data Action = HandleRegisterForm RegisterFields
 
 component
   :: forall q o m

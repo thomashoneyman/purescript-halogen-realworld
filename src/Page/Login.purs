@@ -24,8 +24,7 @@ import Halogen.HTML.Properties as HP
 import Type.Proxy (Proxy(..))
 import Web.Event.Event as Event
 
-data Action
-  = HandleLoginForm LoginFields
+data Action = HandleLoginForm LoginFields
 
 -- Should this component redirect to home after login or not? If the login page is loaded
 -- at the login route, then yes; if not, then it is guarding another route and should not.
@@ -107,13 +106,11 @@ derive instance newtypeLoginForm :: Newtype (LoginForm r f) _
 
 -- We can extend our form to receive more queries than it supports by default. Here, we'll
 -- set a login error from the parent.
-data FormQuery a
-  = SetLoginError Boolean a
+data FormQuery a = SetLoginError Boolean a
 
 derive instance functorFormQuery :: Functor FormQuery
 
-data FormAction
-  = Submit Event.Event
+data FormAction = Submit Event.Event
 
 formComponent
   :: forall i slots m
