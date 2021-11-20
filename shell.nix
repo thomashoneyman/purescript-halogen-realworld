@@ -21,5 +21,8 @@ in pkgs.stdenv.mkDerivation {
     pursPkgs.spago
     pursPkgs.zephyr
     pkgs.nodejs-14_x
-  ];
+  ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+    Cocoa
+    CoreServices
+  ]);
 }
