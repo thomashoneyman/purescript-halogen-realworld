@@ -5,7 +5,7 @@ module Conduit.Page.Settings where
 import Prelude
 
 import Conduit.Capability.Navigate (class Navigate, logout)
-import Conduit.Capability.Resource.User (class ManageUser, UpdateProfileFields, getCurrentUser, updateUser)
+import Conduit.Capability.Resource.User (class ManageUser, getCurrentUser, updateUser)
 import Conduit.Component.HTML.Header (header)
 import Conduit.Component.HTML.Utils (css)
 import Conduit.Data.Avatar (Avatar)
@@ -16,11 +16,12 @@ import Conduit.Data.Route (Route(..))
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Conduit.Form.Field as Field
+import Conduit.Form.Validation (FormError)
 import Conduit.Form.Validation as V
 import Data.Lens (preview)
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (unwrap)
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
@@ -28,44 +29,47 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
-import Type.Proxy (Proxy(..))
-import Web.Event.Event as Event
 
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
 
-newtype SettingsForm (r :: Row Type -> Type) f = SettingsForm
-  ( r
-      ( image :: f V.FormError String (Maybe Avatar)
-      , username :: f V.FormError String Username
-      , bio :: f Void String (Maybe String)
-      , email :: f V.FormError String Email
-      , password :: f V.FormError String (Maybe String)
-      )
+type Form :: (Type -> Type -> Type -> Type) -> Row Type
+type Form f =
+  ( image :: f String FormError (Maybe Avatar)
+  , username :: f String FormError Username
+  , bio :: f String FormError (Maybe String)
+  , email :: f String FormError Email
+  , password :: f String FormError (Maybe String)
   )
 
-derive instance newtypeSettingsForm :: Newtype (SettingsForm r f) _
+type FormContext = F.FormContext (Form F.FieldState) (Form (F.FieldAction Action)) Unit Action
+type FormlessAction = F.FormlessAction (Form F.FieldState)
 
 data Action
   = Initialize
-  | HandleForm UpdateProfileFields
+  | Receive FormContext
+  | Eval FormlessAction
   | LogUserOut
 
 type State =
-  { profile :: RemoteData String ProfileWithEmail }
+  { profile :: RemoteData String ProfileWithEmail
+  , form :: FormContext
+  }
 
 component
-  :: forall q o m
+  :: forall query output m
    . MonadAff m
   => Navigate m
   => ManageUser m
-  => H.Component q Unit o m
-component = H.mkComponent
-  { initialState: \_ -> { profile: NotAsked }
+  => H.Component query Unit output m
+component = F.formless { liftAction: Eval } mempty $ H.mkComponent
+  { initialState: \form -> { profile: NotAsked, form }
   , render
   , eval: H.mkEval $ H.defaultEval
-      { handleAction = handleAction
-      , initialize = Just Initialize
+      { initialize = Just Initialize
+      , receive = Just <<< Receive
+      , handleAction = handleAction
+      , handleQuery = handleQuery
       }
   }
   where
@@ -80,29 +84,79 @@ component = H.mkComponent
       case mbProfileWithEmail of
         Nothing -> logout
         Just profile -> do
+          { formActions, fields } <- H.gets _.form
+
           let
-            newInputs = F.wrapInputFields
-              { image: Maybe.fromMaybe "" $ Avatar.toString <$> profile.image
-              , username: Username.toString profile.username
-              , bio: Maybe.fromMaybe "" profile.bio
-              , email: unwrap profile.email
-              , password: ""
+            newFields = fields
+              { image { value = Maybe.fromMaybe "" $ Avatar.toString <$> profile.image }
+              , username { value = Username.toString profile.username }
+              , bio { value = Maybe.fromMaybe "" profile.bio }
+              , email { value = unwrap profile.email }
+              , password { value = "" }
               }
-          void $ H.query F._formless unit $ F.asQuery $ F.loadForm newInputs
 
-    HandleForm fields -> do
-      updateUser fields
-      mbProfileWithEmail <- getCurrentUser
-      H.modify_ _ { profile = fromMaybe mbProfileWithEmail }
+          handleAction $ formActions.setFields newFields
 
-    LogUserOut -> logout
+    Receive context ->
+      H.modify_ _ { form = context }
 
-  render { profile } =
+    Eval action ->
+      F.eval action
+
+    LogUserOut ->
+      logout
+
+  handleQuery :: forall a. F.FormQuery _ _ _ _ a -> H.HalogenM _ _ _ _ m (Maybe a)
+  handleQuery = do
+    let
+      onSubmit :: { | Form F.FieldOutput } -> H.HalogenM _ _ _ _ m Unit
+      onSubmit fields = do
+        updateUser fields
+        mbProfileWithEmail <- getCurrentUser
+        H.modify_ _ { profile = fromMaybe mbProfileWithEmail }
+
+      validation :: { | Form F.FieldValidation }
+      validation =
+        { image: V.toOptional V.avatarFormat
+        , username: V.required >=> V.minLength 3 >=> V.maxLength 20 >=> V.usernameFormat
+        , bio: pure <<< Just
+        , email: V.required >=> V.minLength 3 >=> V.maxLength 50 >=> V.emailFormat
+        , password: V.toOptional $ V.minLength 3 >=> V.maxLength 20
+        }
+
+    F.handleSubmitValidate onSubmit F.validate validation
+
+  render :: State -> H.ComponentHTML Action () m
+  render { profile, form: { formActions, fields, actions } } =
     container
       [ HH.h1
           [ css "text-xs-center" ]
           [ HH.text "Your Settings" ]
-      , HH.slot F._formless unit formComponent unit HandleForm
+      , HH.form
+          [ HE.onSubmit formActions.handleSubmit ]
+          [ HH.fieldset_
+              [ Field.textInput
+                  { state: fields.image, action: actions.image }
+                  [ HP.placeholder "URL of profile picture" ]
+              , Field.textInput
+                  { state: fields.username, action: actions.username }
+                  [ HP.placeholder "Your name" ]
+              , Field.textarea
+                  { state: fields.bio, action: actions.bio }
+                  [ HP.placeholder "Short bio about you" ]
+              , Field.textInput
+                  { state: fields.email, action: actions.email }
+                  [ HP.placeholder "Email"
+                  , HP.type_ HP.InputEmail
+                  ]
+              , Field.textInput
+                  { state: fields.password, action: actions.password }
+                  [ HP.placeholder "Password"
+                  , HP.type_ HP.InputPassword
+                  ]
+              , Field.submitButton "Update settings"
+              ]
+          ]
       , HH.hr_
       , HH.button
           [ css "btn btn-outline-danger"
@@ -127,77 +181,3 @@ component = H.mkComponent
                 ]
             ]
         ]
-
-data FormAction = Submit Event.Event
-
-formComponent
-  :: forall formQuery formSlots formInput m
-   . MonadAff m
-  => F.Component SettingsForm formQuery formSlots formInput UpdateProfileFields m
-formComponent = F.component formInput $ F.defaultSpec
-  { render = renderForm
-  , handleEvent = handleEvent
-  , handleAction = handleAction
-  }
-  where
-  formInput :: formInput -> F.Input' SettingsForm m
-  formInput _ =
-    { validators: SettingsForm
-        { image: V.toOptional V.avatarFormat
-        , username: V.required >>> V.minLength 3 >>> V.maxLength 20 >>> V.usernameFormat
-        , bio: F.hoistFn_ pure
-        , email: V.required >>> V.minLength 3 >>> V.maxLength 50 >>> V.emailFormat
-        , password: V.toOptional $ V.minLength 3 >>> V.maxLength 20
-        }
-    , initialInputs: Nothing
-    }
-
-  handleEvent = F.raiseResult
-
-  handleAction = case _ of
-    Submit event -> do
-      H.liftEffect $ Event.preventDefault event
-      eval F.submit
-    where
-    eval act = F.handleAction handleAction handleEvent act
-
-  renderForm { form } =
-    HH.form
-      [ HE.onSubmit \ev -> F.injAction $ Submit ev ]
-      [ HH.fieldset_
-          [ image
-          , username
-          , bio
-          , email
-          , password
-          , Field.submit "Update settings"
-          ]
-      ]
-    where
-    image =
-      Field.input (Proxy :: Proxy "image") form
-        [ HP.placeholder "URL of profile picture", HP.type_ HP.InputText ]
-
-    username =
-      Field.input (Proxy :: Proxy "username") form
-        [ HP.placeholder "Your name", HP.type_ HP.InputText ]
-
-    bio =
-      HH.fieldset
-        [ css "form-group" ]
-        [ HH.textarea
-            [ css "form-control form-control-lg"
-            , HP.placeholder "Short bio about you"
-            , HP.rows 8
-            , HP.value $ F.getInput (Proxy :: Proxy "bio") form
-            , HE.onValueInput $ F.setValidate (Proxy :: Proxy "bio")
-            ]
-        ]
-
-    email =
-      Field.input (Proxy :: Proxy "email") form
-        [ HP.placeholder "Email", HP.type_ HP.InputEmail ]
-
-    password =
-      Field.input (Proxy :: Proxy "password") form
-        [ HP.placeholder "Password", HP.type_ HP.InputPassword ]

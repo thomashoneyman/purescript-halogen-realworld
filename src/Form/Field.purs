@@ -10,78 +10,90 @@ module Conduit.Form.Field where
 import Prelude
 
 import Conduit.Component.HTML.Utils (css, maybeElem)
-import Conduit.Form.Validation (errorToString)
-import Conduit.Form.Validation as V
-import DOM.HTML.Indexed (HTMLinput)
-import Data.Newtype (class Newtype)
-import Data.Symbol (class IsSymbol)
-import Data.Variant (Variant)
+import Conduit.Form.Validation (FormError, errorToString)
+import DOM.HTML.Indexed (HTMLinput, HTMLtextarea)
+import Data.Either (either)
+import Data.Maybe (Maybe(..))
 import Formless as F
+import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Type.Proxy (Proxy)
-import Type.Row as Row
+
+-- | This helper type can be used to define form fields that take a `String`
+-- | input, produce validation errors of type `FormError`, and parse to the
+-- | provided output type. For example, this form field:
+-- |
+-- | ```purs
+-- | type Form f = ( name :: f String FormError Username )
+-- | ```
+-- |
+-- | could be rewritten using this helper type:
+-- |
+-- | ```purs
+-- | type Form f = ( name :: StringField f Username )
+-- | ```
+type StringField :: (Type -> Type -> Type -> Type) -> Type -> Type
+type StringField f output = f String FormError output
 
 -- | This small helper function that creates a submit button with customizable
 -- | text. Since all submit buttons in the Conduit application look the same,
 -- | we can just use this throughout the app.
-submit :: forall i p. String -> HH.HTML i p
-submit buttonText =
+submitButton :: forall i p. String -> HH.HTML i p
+submitButton label =
   HH.input
     [ css "btn btn-lg btn-primary pull-xs-right"
     , HP.type_ HP.InputSubmit
-    , HP.value buttonText
+    , HP.value label
     ]
 
--- | This helper function creates an input field hooked up with Formless, including styles,
--- | events, error handling, and more. The function ensures at compile-time that the field we
--- | want actually exists in the form, that the input, error, and output types of the field are
--- | compatible, that the only properties you attempt to set on the HTML are actual valid <input>
--- | properties, and more.
--- |
--- | Let's deconstruct the type.
--- |
--- | First, the `IsSymbol` constraint requires that our first argument, `sym`, is a type-level
--- | string. You've seen these all over the place -- record labels are one example. We'll use
--- | this any time we need to talk about a value existing at a particular key in a record or
--- | a variant.
--- |
--- | Next, the two `Newtype` constraints require that you can use the `unwrap` function to
--- | transform the first type into the second type. In other words, the first type has to have
--- | a `Newtype` instance. This is how we'll unpack our self-defined Formless form type into
--- | either a raw record or variant we can work with.
--- |
--- | Next, the two `Cons` constraints require that there exists a value of the type given in
--- | the second argument at the label `sym` in the record or variant given in the last argument.
--- | For instance, we require that there's a field with an error type `FormError` and an input
--- | type `String` at the label `sym` in the row `fields`. In short, we require at compile-time
--- | that an input field of the correct type exists in our form state at the key we provided as
--- | the function's first argument.
-input
-  :: forall form act slots m sym fields inputs out t0 t1
-   . IsSymbol sym
-  => Newtype (form Record F.FormField) { | fields }
-  => Newtype (form Variant F.InputFunction) (Variant inputs)
-  => Row.Cons sym (F.FormField V.FormError String out) t0 fields
-  => Row.Cons sym (F.InputFunction V.FormError String out) t1 inputs
-  => Proxy sym
-  -> form Record F.FormField
-  -> Array (HH.IProp HTMLinput (F.Action form act))
-  -> F.ComponentHTML form act slots m
-input sym form props =
+type TextInput action output =
+  { state :: F.FieldState String FormError output
+  , action :: F.FieldAction action String FormError output
+  }
+
+-- | Our application ought to define a set of reusable, styled form controls that
+-- | are compatible with Formless. This helper function constructs an input field
+-- | with styles, events, error handling, and more, given a Formless field.
+textInput
+  :: forall output action slots m
+   . TextInput action output
+  -> Array (HP.IProp HTMLinput action)
+  -> H.ComponentHTML action slots m
+textInput { state, action } props =
   HH.fieldset
     [ css "form-group" ]
     [ HH.input
         ( append
             [ css "form-control form-control-lg"
-            , HP.value $ F.getInput sym form
-            , HE.onValueInput $ F.setValidate sym
+            , HP.value state.value
+            , HE.onValueInput action.handleChange
+            , HE.onBlur action.handleBlur
             ]
             props
         )
-    , maybeElem (F.getError sym form) \err ->
+    , maybeElem (state.result >>= either pure (const Nothing)) \err ->
         HH.div
           [ css "error-messages" ]
           [ HH.text $ errorToString err ]
+    ]
+
+textarea
+  :: forall output action slots m
+   . TextInput action output
+  -> Array (HP.IProp HTMLtextarea action)
+  -> H.ComponentHTML action slots m
+textarea { state, action } props =
+  HH.fieldset
+    [ css "form-group" ]
+    [ HH.textarea
+        ( append
+            [ css "form-control form-control-lg"
+            , HP.rows 8
+            , HP.value state.value
+            , HE.onValueInput action.handleChange
+            , HE.onBlur action.handleBlur
+            ]
+            props
+        )
     ]
