@@ -78,7 +78,7 @@ component = F.formless { liftAction: Eval } mempty $ connect (selectEq _.current
   -- Due to the use of `connect`, our input now also has `currentUser`
   -- in it, and due to the use of `formless`, our input also has all our form
   -- fields available, despite the component's only public input being the slug.
-  { initialState: \{ context: (currentUser :: Maybe Profile), input: (formContext :: FormContext) } ->
+  { initialState: \{ context: currentUser, input: formContext } ->
       { article: NotAsked
       , currentUser
       , form: formContext
