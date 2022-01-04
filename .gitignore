@@ -10,14 +10,16 @@ node_modules
 .purs-repl
 .psc-ide-port
 .cache
-.parcel-cache
 
 # IDE files
 *.code-workspace
 .vscode
+
 # Generated
 output
 dce-output
-dist
 *.lock
 *.map
+
+# Dist
+dist/*.js

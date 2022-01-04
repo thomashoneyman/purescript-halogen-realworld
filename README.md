@@ -62,20 +62,16 @@ And, once bundled, you can run a local server to use Conduit (defaults to [port 
 ```sh
 npm run serve
 ```
+
 ## Dev mode
 
-To run it in dev mode where saving your changes rebuilds and reloads the app, you can run the command below (which calls `spago build --watch`) 
-
-```sh
-npm run watch
-```
-
-And run the application with
+To run the application in dev mode, you can run the command below:
 
 ```sh
 npm run serve-dev
 ```
-This will open your default browser at [port 1234](http://localhost:1234)
+
+When you reload the application in the browser, `esbuild` will re-bundle the application using the latest compiled PureScript in the `output` directory. If you're using the PureScript language server, then this directory will be updated when you save files via incremental compilation.
 
 ## Learning PureScript
 

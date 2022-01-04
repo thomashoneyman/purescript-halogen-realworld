@@ -1,2 +1,2 @@
-var Main = require("./dce-output/Main");
-Main.main();
+const { main } = require("./dce-output/Main");
+main();

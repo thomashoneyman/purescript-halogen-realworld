@@ -5,36 +5,28 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "spago install",
-    "clean": "rm -rf node_modules output dce-output .spago dist/* *.lock .cache",
+    "clean": "rm -rf node_modules output dce-output .spago dist/*.js *.lock .cache",
     "build": "spago build",
-    "watch": "spago build --watch",
-    "serve": "http-server dist",
-    "serve-dev": "parcel --target dev --open",
     "test": "spago test",
+    "esbuild": "esbuild --external:url --external:xhr2 --outfile=dist/main.js",
     "bundle:build": "spago build --purs-args '--codegen corefn'",
     "bundle:dce": "zephyr -f Main.main",
-    "bundle:parcel": "parcel build assets/index.html --public-url '.' --no-source-maps",
-    "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:parcel"
+    "bundle:esbuild": "npm run esbuild -- --bundle index.js --minify",
+    "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:esbuild",
+    "serve-dev": "npm run esbuild -- --bundle index-dev.js --servedir=dist",
+    "serve-prod": "http-server dist"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thomashoneyman/purescript-halogen-realworld.git"
   },
-  "devDependencies": {
-    "http-server": "^14.0.0",
-    "lmdb-store": "^1.6.14",
-    "parcel": "^2.0.1"
-  },
   "dependencies": {
     "decimal.js": "^10.3.1",
     "marked": "^4.0.8"
   },
-  "targets": {
-    "dev": {
-      "source": "dev/index.html",
-      "includeNodeModules": {
-        "xhr2": false
-      }
-    }
+  "devDependencies": {
+    "esbuild": "^0.14.10",
+    "http-server": "^14.0.0",
+    "lmdb-store": "^1.6.14"
   }
 }
