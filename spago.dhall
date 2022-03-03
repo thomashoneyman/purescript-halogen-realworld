@@ -40,7 +40,6 @@
   , "transformers"
   , "tuples"
   , "typelevel-prelude"
-  , "variant"
   , "web-events"
   , "web-html"
   , "web-storage"

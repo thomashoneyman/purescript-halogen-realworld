@@ -3,9 +3,6 @@
 -- | provides generic validation that can be used in all sorts of different forms, like validating
 -- | an input string is long enough, that a username is well-formed, or that a required field is
 -- | filled in.
--- |
--- | For more details on how to write validators in Formless, see the official guide:
--- | https://github.com/thomashoneyman/purescript-halogen-formless/blob/v0.5.2/readme.md
 module Conduit.Form.Validation where
 
 import Prelude
@@ -18,7 +15,6 @@ import Conduit.Data.Username as Username
 import Data.Either (Either(..), note)
 import Data.Maybe (Maybe(..))
 import Data.String as String
-import Formless as F
 
 -- | This short list of errors represent the only ways in which validation could have failed
 -- | on a given field. As our application grows, we might revise this type so that each form
@@ -51,80 +47,47 @@ errorToString = case _ of
 -- | validation.
 -- |
 -- | For a more structured introduction to Formless and validation, consider reading the official guide:
--- | https://github.com/thomashoneyman/purescript-halogen-formless/blob/v0.5.2/readme.md
+-- | https://github.com/thomashoneyman/purescript-halogen-formless
 -- |
--- | In order to validate a particular field, we need to give Formless a value of type `Validation`,
--- | which takes several type parameters:
--- |
--- | `form`, which represents the fields of the particular form the validation is meant for. This lets
--- |   you do things like compare the value of one field to the value of another, checked at
--- |   compile-time. Unless your validation relies on a different field from the one being validated,
--- |   you'll usually leave this parameter open.
--- | `m`, which represents which monad the Formless is being run in. This lets you perform effectful
--- |   computations like asynchronously runnning some server-side validation. Once again, unless you
--- |   need a specific monadic ability, this is usually left open.
--- | `e`, which represents the possible error type which can result from the validator. For Conduit
--- |   we'll always fill this in with our custom `FormError` type.
--- | `i`, which represents the input type being validated. For a validator that operates on strings,
--- |   this would be `String`, for a validator that operates on numbers, this would be `Number`, and
--- |   so on. This is usually filled in with a concrete type or a constraint like `Monoid`.
--- | `o`, which represents the parsed output that will result from successful validation. If your
--- |   validator checks whether a username is valid, it might have an input type of `String` and
--- |   an output type of `Username`. This is usually filled in with a concrete type, or asserted
--- |   to be the same as the input type.
--- |
--- | For the most part, the generic validation functions we'll write just need to transform some
--- | input into some output, possibly failing, without the need to refer to any other values in the
--- | form or perform effects. When you have a simple function of this form...
--- |
--- | ```purescript
--- | check:: forall i e o. i -> Either e o
--- | ```
--- |
--- | ...then you can use the `hoistFnE_` helper from Formless to automatically turn it into the
--- | correct `Validation` type. We'll use this helper to write several simple, pure validators and
--- | then make them compatible with Formless.
 
--- | The first validator we'll write verifies that the input is not empty. The same validator can
--- | apply to any input value that is a monoid, as the `Monoid` type class represents 'emptiness'
--- | with the `mempty` value. We'll just check whether the input is the empty value.
-required :: forall form m a. Eq a => Monoid a => Monad m => F.Validation form m FormError a a
-required = F.hoistFnE_ $ cond (_ /= mempty) Required
+-- | Ensure the input is not empty by comparing the input value to the 'empty'
+-- | value represented by the `Monoid` class.
+required :: forall a. Eq a => Monoid a => a -> Either FormError a
+required = check (_ /= mempty) Required
 
--- | This validator ensures that an input string is longer than the provided lower limit.
-minLength :: forall form m. Monad m => Int -> F.Validation form m FormError String String
-minLength n = F.hoistFnE_ $ cond (\str -> String.length str > n) TooShort
+-- | Ensure that an input string is longer than the provided lower limit.
+minLength :: Int -> String -> Either FormError String
+minLength n = check (\str -> String.length str > n) TooShort
 
--- | This validator ensures that an input string is shorter than the provided upper limit.
-maxLength :: forall form m. Monad m => Int -> F.Validation form m FormError String String
-maxLength n = F.hoistFnE_ $ cond (\str -> String.length str <= n) TooLong
+-- | Ensure that an input string is shorter than the provided upper limit.
+maxLength :: Int -> String -> Either FormError String
+maxLength n = check (\str -> String.length str <= n) TooLong
 
--- | This validator ensures that an input string is a valid email address, using a fairly naive
--- | requirement that it at least includes the `@` symbol. This is our first example of a validator
--- | that returns a different output value than its input value.
-emailFormat :: forall form m. Monad m => F.Validation form m FormError String Email
-emailFormat = F.hoistFnE_ $ map Email <<< cond (String.contains (String.Pattern "@")) InvalidEmail
+-- | Ensure that an input string is a valid email address, using a fairly naive
+-- | requirement that it at least includes the `@` symbol.
+emailFormat :: String -> Either FormError Email
+emailFormat = map Email <<< check (String.contains (String.Pattern "@")) InvalidEmail
 
--- | This validator ensures that an input string is a valid username. Usernames in Conduit use the
--- | smart constructor pattern, so we can't construct a username directly -- we'll need to defer
--- | to the `parse` helper function exported by `Conduit.Data.Username`. Since that function returns
--- | a `Maybe` value, we'll use the `note` helper from `Data.Either` to turn the `Nothing` case into
+-- | Ensure that an input string is a valid username. Usernames in Conduit use
+-- | the smart constructor pattern, so we can't construct a username directly --
+-- | we'll need to defer to the `parse` helper function exported by
+-- | `Conduit.Data.Username`. Since that function returns a `Maybe` value, we'll
+-- | use the `note` helper from `Data.Either` to turn the `Nothing` case into
 -- | an error.
-usernameFormat :: forall form m. Monad m => F.Validation form m FormError String Username
-usernameFormat = F.hoistFnE_ $ note InvalidUsername <<< Username.parse
+usernameFormat :: String -> Either FormError Username
+usernameFormat = note InvalidUsername <<< Username.parse
 
--- | Our avatar validator follows the same pattern, validating and transforming an input string into
--- | an `Avatar`.
-avatarFormat :: forall form m. Monad m => F.Validation form m FormError String Avatar
-avatarFormat = F.hoistFnE_ $ note InvalidAvatar <<< Avatar.parse
+-- | Our avatar validator follows the same pattern, validating and transforming
+-- | an input string into an `Avatar`.
+avatarFormat :: String -> Either FormError Avatar
+avatarFormat = note InvalidAvatar <<< Avatar.parse
 
--- Utilities
-
--- | Validation often relies on a true/false function (a predicate), where `true` should return the
--- | input value and `false` should return the correct error. This pattern happens often enough that
--- | I've created a small helper, `cond`, which abstracts the pattern.
-cond :: forall a. (a -> Boolean) -> FormError -> a -> Either FormError a
-cond f err a = if f a then pure a else Left err
+-- | A small helper function for writing validation functions that rely on a
+-- | true/false predicate.
+check :: forall a. (a -> Boolean) -> FormError -> a -> Either FormError a
+check f err a
+  | f a = Right a
+  | otherwise = Left err
 
 -- | Sometimes we'd like to validate an input only if it isn't empty. This is useful for optional
 -- | fields: if you've provided a value, we'll validate it, but if you haven't, then you should
@@ -134,13 +97,13 @@ cond f err a = if f a then pure a else Left err
 -- | This helper function lets us transform a set of validation rules so that they only apply when
 -- | the input is not empty. It isn't used in this module, but is used in the various forms.
 toOptional
-  :: forall form m a b
+  :: forall a b
    . Monoid a
   => Eq a
-  => Monad m
-  => F.Validation form m FormError a b
-  -> F.Validation form m FormError a (Maybe b)
-toOptional v = F.Validation \form val ->
-  case val == mempty of
-    true -> pure (pure Nothing)
-    _ -> (map <<< map) Just (F.runValidation v form val)
+  => (a -> Either FormError b)
+  -> (a -> Either FormError (Maybe b))
+toOptional k = \value ->
+  if value == mempty then
+    Right Nothing
+  else
+    map Just $ k value
