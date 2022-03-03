@@ -19,7 +19,7 @@ jobs:
           purescript: "0.14.5"
           spago: "0.20.3"
           zephyr: "0.3.2"
-          purs-tidy: "latest"
+          purs-tidy: "0.6.4"
 
       - name: Cache PureScript dependencies
         uses: actions/cache@v2
