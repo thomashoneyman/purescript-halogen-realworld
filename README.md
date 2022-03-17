@@ -60,7 +60,7 @@ npm run bundle
 And, once bundled, you can run a local server to use Conduit (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
 
 ```sh
-npm run serve
+npm run serve-prod
 ```
 
 ## Dev mode
