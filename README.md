@@ -34,7 +34,7 @@ You can enter a development shell with all non-JavaScript dependencies via Nix:
 nix-shell
 ```
 
-> Alternately, you can install PureScript, Spago, and Zephyr manually. You can use NPM to install PureScript and Spago, and you can install the Zephyr binary [from its releases page](https://github.com/coot/zephyr/releases) -- ensure it exists in your PATH by moving it to `usr/bin/local`.
+> Alternately, you can install PureScript, Spago, and Zephyr manually. You can use NPM to install PureScript and Spago, and you can install the Zephyr binary [from its releases page](https://github.com/coot/zephyr/releases)—ensure it exists in your PATH by moving it to `usr/bin/local`.
 
 Next, install JavaScript dependencies:
 
@@ -71,7 +71,7 @@ To run the application in dev mode, you can run the command below:
 npm run serve-dev
 ```
 
-When you reload the application in the browser, `esbuild` will re-bundle the application using the latest compiled PureScript in the `output` directory. If you're using the PureScript language server, then this directory will be updated when you save files via incremental compilation.
+When you reload the application in the browser, `esbuild` will re-bundle the application using the latest compiled PureScript in the `output` directory. If you’re using the PureScript language server, then this directory will be updated when you save files via incremental compilation.
 
 ## Learning PureScript
 
