@@ -72,7 +72,7 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
   handleQuery :: forall a. F.FormQuery _ _ _ _ a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = do
     let
-      -- loginUser also handles broadcasting the user changes to subscribed components
+      -- onSubmit also handles broadcasting the user changes to subscribed components
       -- so they receive the up-to-date value (see AppM and the `authenticate` function.)
       onSubmit = loginUser >=> case _ of
         Nothing ->
