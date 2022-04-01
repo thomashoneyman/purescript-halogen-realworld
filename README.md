@@ -23,23 +23,26 @@ If you have found this repository and the guide useful, please consider [becomin
 
 First, clone the repository:
 
-```sh
-git clone https://github.com/thomashoneyman/purescript-halogen-realworld
-cd purescript-halogen-realworld
+```console
+$ git clone https://github.com/thomashoneyman/purescript-halogen-realworld
+Cloning into 'purescript-halogen-realworld'...
+...
+Resolving deltas: 100% (...), done.
+$ cd purescript-halogen-realworld
 ```
 
 You can enter a development shell with all non-JavaScript dependencies via Nix:
 
-```sh
-nix-shell
+```console
+$ nix-shell
 ```
 
 > Alternately, you can install PureScript, Spago, and Zephyr manually. You can use NPM to install PureScript and Spago, and you can install the Zephyr binary [from its releases page](https://github.com/coot/zephyr/releases) -- ensure it exists in your PATH by moving it to `usr/bin/local`.
 
 Next, install JavaScript dependencies:
 
-```sh
-npm install
+```console
+$ npm install
 ```
 
 ## Building and running
@@ -47,28 +50,28 @@ npm install
 Next, build the project (this command will run `spago build`; see the [`package.json`](package.json) file to see
 all helper scripts for the project):
 
-```sh
-npm run build
+```console
+$ npm run build
 ```
 
 You can bundle the JS for production:
 
-```sh
-npm run bundle
+```console
+$ npm run bundle
 ```
 
 And, once bundled, you can run a local server to use Conduit (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
 
-```sh
-npm run serve-prod
+```console
+$ npm run serve-prod
 ```
 
 ## Dev mode
 
 To run the application in dev mode, you can run the command below:
 
-```sh
-npm run serve-dev
+```console
+$ npm run serve-dev
 ```
 
 When you reload the application in the browser, `esbuild` will re-bundle the application using the latest compiled PureScript in the `output` directory. If you're using the PureScript language server, then this directory will be updated when you save files via incremental compilation.
