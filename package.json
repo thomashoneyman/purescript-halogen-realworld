@@ -5,16 +5,12 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "spago install",
-    "clean": "rm -rf node_modules output dce-output .spago dist/*.js *.lock .cache",
+    "clean": "rm -rf node_modules output .spago dist/*.js *.lock .cache",
     "build": "spago build",
     "test": "spago test",
-    "esbuild": "esbuild --external:url --external:xhr2 --outfile=dist/main.js",
-    "bundle:build": "spago build --purs-args '--codegen corefn'",
-    "bundle:dce": "zephyr -f Main.main",
-    "bundle:esbuild": "npm run esbuild -- --bundle index.js --minify",
-    "bundle": "npm run bundle:build && npm run bundle:dce && npm run bundle:esbuild",
-    "serve-dev": "npm run esbuild -- --bundle index-dev.js --servedir=dist",
-    "serve-prod": "http-server dist"
+    "esbuild": "esbuild --bundle index.js",
+    "bundle": "npm run build && npm run esbuild -- --minify --outfile=dist/main.js",
+    "serve": "npm run esbuild -- --servedir=dist"
   },
   "repository": {
     "type": "git",
@@ -22,11 +18,9 @@
   },
   "dependencies": {
     "decimal.js": "^10.3.1",
-    "marked": "^4.0.10"
+    "marked": "^4.0.15"
   },
   "devDependencies": {
-    "esbuild": "^0.14.10",
-    "http-server": "^14.0.0",
-    "lmdb-store": "^1.6.14"
+    "esbuild": "^0.14.38"
   }
 }

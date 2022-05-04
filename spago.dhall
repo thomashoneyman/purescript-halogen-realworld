@@ -3,6 +3,7 @@
 , dependencies =
   [ "aff"
   , "affjax"
+  , "affjax-web"
   , "argonaut-core"
   , "arrays"
   , "bifunctors"

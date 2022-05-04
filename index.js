@@ -1,2 +1,3 @@
-const { main } = require("./dce-output/Main");
+import { main } from "./output/Main";
+
 main();

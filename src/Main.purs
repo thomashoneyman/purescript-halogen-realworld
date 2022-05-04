@@ -6,7 +6,7 @@ module Main where
 
 import Prelude
 
-import Affjax (printError, request)
+import Affjax.Web (printError, request)
 import Conduit.Api.Endpoint (Endpoint(..))
 import Conduit.Api.Request (BaseURL(..), RequestMethod(..), defaultRequest, readToken)
 import Conduit.AppM (runAppM)
@@ -73,7 +73,7 @@ main = HA.runHalogenAff do
 
   -- We have two of the three fields we need to create our central state. The
   -- third field is the current user profile. We'll try to retrieve it in a few steps.
-  -- First, we'll use `readToken` to read an authentication token out of local 
+  -- First, we'll use `readToken` to read an authentication token out of local
   -- storage. If we can read one, we'll use it to try and get a new user (which
   -- will fail if the token isn't valid).
   currentUser :: Maybe Profile <- (liftEffect readToken) >>= case _ of
@@ -142,5 +142,6 @@ main = HA.runHalogenAff do
   -- https://github.com/slamdata/purescript-routing/blob/v8.0.0/GUIDE.md
   -- https://github.com/natefaubion/purescript-routing-duplex/blob/v0.2.0/README.md
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
-    when (old /= Just new) do
-      launchAff_ $ halogenIO.query $ H.mkTell $ Router.Navigate new
+    when (old /= Just new) $ launchAff_ do
+      _response <- halogenIO.query $ H.mkTell $ Router.Navigate new
+      pure unit

@@ -5,7 +5,7 @@ module Conduit.Api.Utils where
 
 import Prelude
 
-import Affjax (request)
+import Affjax.Web (request)
 import Conduit.Api.Request (BaseURL, RequestOptions, Token, defaultRequest, readToken, writeToken)
 import Conduit.Capability.LogMessages (class LogMessages, logError)
 import Conduit.Capability.Now (class Now)
