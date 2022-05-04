@@ -9,7 +9,7 @@
 // Let's get started!
 
 // First, we import the relevant JS library.
-var marked = require("marked");
+import marked from "marked";
 
 // Next, we'll perform any setup necessary before exporting functions. In our case, we'll turn off
 // the 'pedantic' option to be more lenient with parsing, and we'll enable GitHub-flavored
@@ -20,8 +20,5 @@ marked.setOptions({
 });
 
 // Finally, we'll export one function that to use from PureScript. It will have a single argument:
-// a markdown string to parse to an HTML string. PureScript does not yet support ES6, so you'll
-// need to stick with ES5 for your foreign imports.
-exports.markedImpl = function (str) {
-  return marked(str);
-};
+// a markdown string to parse to an HTML string.
+export const markedImpl = (str) => marked(str);
