@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   build:
@@ -16,10 +15,9 @@ jobs:
 
       - uses: thomashoneyman/setup-purescript@main
         with:
-          purescript: "0.14.7"
-          spago: "0.20.3"
-          zephyr: "0.3.2"
-          purs-tidy: "0.6.4"
+          purescript: "0.15.0"
+          spago: "0.20.9"
+          purs-tidy: "0.8.0"
 
       - name: Cache PureScript dependencies
         uses: actions/cache@v2
