@@ -1,7 +1,7 @@
 let
   pkgs = import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/21.11.tar.gz";
-  }) {};
+  }) { };
 
   # To update to a newer version of easy-purescript-nix, run:
   # nix-prefetch-git https://github.com/justinwoo/easy-purescript-nix
@@ -21,12 +21,14 @@ in pkgs.mkShell {
     pursPkgs.purs-tidy
     pursPkgs.psa
     pursPkgs.spago
+    pursPkgs.purescript-language-server
 
     pkgs.nodejs-16_x
     pkgs.nixfmt
-  ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
-    # Apple M1
-    Cocoa
-    CoreServices
-  ]);
+  ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin
+    (with pkgs.darwin.apple_sdk.frameworks; [
+      # Apple M1
+      Cocoa
+      CoreServices
+    ]);
 }

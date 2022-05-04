@@ -4,18 +4,17 @@
 [![CI](https://github.com/thomashoneyman/purescript-halogen-realworld/workflows/CI/badge.svg?branch=main)](https://github.com/thomashoneyman/purescript-halogen-realworld/actions?query=workflow%3ACI+branch%3Amain)
 [![Maintainer: thomashoneyman](https://img.shields.io/badge/maintainer-thomashoneyman-teal.svg)](http://github.com/thomashoneyman)
 
-[PureScript](https://github.com/purescript) is a delightful purely-functional language that offers pragmatic and powerful tools to manage complexity and help you design, build, and refactor reliable apps of any size. This repository demonstrates the principles I apply at work every day in more than 2,000 lines of thoroughly commented code.
+[PureScript](https://github.com/purescript) is a delightful pure functional language that offers pragmatic and powerful tools to help you design, build, and refactor reliable apps of any size. This repository demonstrates the principles I apply at work every day in more than 2,000 lines of thoroughly commented code.
 
 I’m a developer at [Awake Security](https://github.com/awakesecurity) (and previously at [CitizenNet](https://citizennet.com)). Both companies have large production PureScript applications that have remained reliable, understandable, and maintainable as they scale.
 
 This repository follows the [RealWorld](https://github.com/gothinkster/realworld) spec to implement a Medium clone called Conduit using [Halogen](https://github.com/purescript-halogen/purescript-halogen). It’s large enough to demonstrate real world examples (CRUD, state management, scalable architecture, type classes, components, etc.) but not so large as to be overwhelming.
 
-The source code covers Halogen 6. This repository also covers previous versions of Halogen with the following resources:
+The source code currently covers Halogen 7 with PureScript 0.15, but there are versions for versions going back to Halogen 4:
 
-- [The PR that migrated from Halogen 5 to Halogen 6](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/82)
-- [This application written using Halogen 5](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v2.0.0)
-- [The PR that migrated from Halogen 4 to Halogen 5](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/26)
-- [This application written using Halogen 4](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v1.0.0)
+- [Halogen 6 implementation](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v3.0.0) and [PR migrating from Halogen 5](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/82)
+- [Halogen 5 implementation](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v2.0.0) and [PR migrating from Halogen 4](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/26)
+- [Halogen 4 implementation](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v1.0.0)
 
 If you have found this repository and the guide useful, please consider [becoming a sponsor](https://github.com/sponsors/thomashoneyman)!
 
@@ -37,7 +36,7 @@ You can enter a development shell with all non-JavaScript dependencies via Nix:
 $ nix-shell
 ```
 
-> Alternately, you can install PureScript, Spago, and Zephyr manually. You can use NPM to install PureScript and Spago, and you can install the Zephyr binary [from its releases page](https://github.com/coot/zephyr/releases) -- ensure it exists in your PATH by moving it to `usr/bin/local`.
+> Alternately, you can install `purescript`, `spago`, `purs-tidy`, `purescript-psa`, and the PureScript language server from NPM.
 
 Next, install JavaScript dependencies:
 
@@ -60,18 +59,13 @@ You can bundle the JS for production:
 $ npm run bundle
 ```
 
-And, once bundled, you can run a local server to use Conduit (defaults to [port 8080](http://127.0.0.1:8080), but if this port is already in use it will increment to 8081, etc.):
+You can run a dev server to use Conduit:
 
 ```console
-$ npm run serve-prod
-```
-
-## Dev mode
-
-To run the application in dev mode, you can run the command below:
-
-```console
-$ npm run serve-dev
+$ npm run serve
+...
+ > Local:   http://127.0.0.1:8000/
+ > Network: http://192.168.1.67:8000/
 ```
 
 When you reload the application in the browser, `esbuild` will re-bundle the application using the latest compiled PureScript in the `output` directory. If you're using the PureScript language server, then this directory will be updated when you save files via incremental compilation.
@@ -84,12 +78,13 @@ PureScript is a delightful language that becomes only more interesting and rewar
 
 ### Resources
 
-The PureScript community is overwhelmingly warm and helpful. If you would like some help getting started, please consider joining the [official Discourse](https://discourse.purescript.org) and [functional programming Slack](https://functionalprogramming.slack.com) ([invite link](https://fpchat-invite.herokuapp.com)). You may also want to check out:
+The PureScript community is warm and helpful. If you would like some help getting started, please consider joining the [official Discourse](https://discourse.purescript.org) and [official chat](https://purescript.org/chat). You may also want to check out:
 
-1. [PureScript by Example](https://github.com/dwhitney/purescript-book), which will teach you PureScript from scratch and was written by the language’s creator, Phil Freeman. While the official book has not been updated for the latest version of the compiler, this link is to an up-to-date fork of the book.
-2. Jordan Martinez’s [PureScript reference](https://github.com/JordanMartinez/purescript-jordans-reference), which has a broad overview of dozens of topics in PureScript and functional programming.
-3. The (warning: currently in rough draft form) [handbook which explains the theory & principles at work in this application in-depth](https://thomashoneyman.com/guides/real-world-halogen), which will be useful to help take you from advanced beginner to advanced intermediate in the language.
-4. The [official Halogen guide](https://github.com/slamdata/purescript-halogen), which will teach you how to use the Halogen framework to write components.
+1. The (warning: currently in rough draft form) [handbook which explains the theory & principles at work in this application in-depth](https://thomashoneyman.com/guides/real-world-halogen), which will be useful to help take you from advanced beginner to advanced intermediate in the language.
+1. The [official Halogen guide](https://github.com/purescript-halogen/purescript-halogen), which will teach you how to use the Halogen framework to write components.
+1. [PureScript by Example](https://github.com/purescript-contrib/purescript-book), which will teach you PureScript from scratch and was written by the language’s creator, Phil Freeman. While the official book has not been updated for the latest version of the compiler, this link is to an up-to-date fork of the book.
+1. [Functional Programming Made Easier](https://leanpub.com/fp-made-easier), a book by Charles Scalfani that teaches functional programming using PureScript.
+1. Jordan Martinez’s [PureScript reference](https://github.com/JordanMartinez/purescript-jordans-reference), which has a broad overview of dozens of topics in PureScript and functional programming.
 
 ## Contributing
 
