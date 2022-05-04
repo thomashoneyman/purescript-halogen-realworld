@@ -8,10 +8,9 @@
     "clean": "rm -rf node_modules output .spago dist/*.js *.lock .cache",
     "build": "spago build",
     "test": "spago test",
-    "esbuild": "esbuild --external:url --external:xhr2 --outfile=dist/main.js",
-    "bundle": "npm run esbuild -- --bundle index.js --minify",
-    "serve-dev": "npm run esbuild -- --bundle index-dev.js --servedir=dist",
-    "serve-prod": "http-server dist"
+    "esbuild": "esbuild --bundle index.js",
+    "bundle": "npm run build && npm run esbuild -- --minify --outfile=dist/main.js",
+    "serve": "npm run esbuild -- --servedir=dist"
   },
   "repository": {
     "type": "git",
@@ -22,8 +21,6 @@
     "marked": "^4.0.15"
   },
   "devDependencies": {
-    "esbuild": "^0.14.38",
-    "http-server": "^14.1.0",
-    "lmdb-store": "^1.6.14"
+    "esbuild": "^0.14.38"
   }
 }

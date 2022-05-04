@@ -9,7 +9,7 @@
 // Let's get started!
 
 // First, we import the relevant JS library.
-import marked from "marked";
+import { marked } from "marked";
 
 // Next, we'll perform any setup necessary before exporting functions. In our case, we'll turn off
 // the 'pedantic' option to be more lenient with parsing, and we'll enable GitHub-flavored
