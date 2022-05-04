@@ -12,6 +12,7 @@ This repository follows the [RealWorld](https://github.com/gothinkster/realworld
 
 The source code currently covers Halogen 7 with PureScript 0.15, but there are versions for versions going back to Halogen 4:
 
+- [PR migrating from Halogen 6 implementation to Halogen 7](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/112)
 - [Halogen 6 implementation](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v3.0.0) and [PR migrating from Halogen 5](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/82)
 - [Halogen 5 implementation](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v2.0.0) and [PR migrating from Halogen 4](https://github.com/thomashoneyman/purescript-halogen-realworld/pull/26)
 - [Halogen 4 implementation](https://github.com/thomashoneyman/purescript-halogen-realworld/tree/v1.0.0)
