@@ -22,10 +22,10 @@ module Conduit.Api.Request
 
 import Prelude
 
-import Affjax (Request, printError, request)
 import Affjax.RequestBody as RB
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
+import Affjax.Web (Request, printError, request)
 import Conduit.Api.Endpoint (Endpoint(..), endpointCodec)
 import Conduit.Data.Email (Email)
 import Conduit.Data.Email as Email
