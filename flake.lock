@@ -13,7 +13,6 @@
       "original": {
         "owner": "justinwoo",
         "repo": "easy-purescript-nix",
-        "rev": "0ad5775c1e80cdd952527db2da969982e39ff592",
         "type": "github"
       }
     },

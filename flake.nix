@@ -4,9 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-21.11";
     easy-purescript-nix = {
-      # when it’s time for v0.15.x, rev should be removed
-      url =
-        "github:justinwoo/easy-purescript-nix?rev=0ad5775c1e80cdd952527db2da969982e39ff592";
+      url = "github:justinwoo/easy-purescript-nix";
       flake = false;
     };
     flake-compat = {
@@ -19,7 +17,11 @@
     let
       name = "halogen-realworld";
 
-      supportedSystems = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" ];
+      supportedSystems = [
+        "aarch64-darwin"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
 
       forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
     in
