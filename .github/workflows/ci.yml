@@ -15,7 +15,7 @@ jobs:
 
       - uses: thomashoneyman/setup-purescript@main
         with:
-          purescript: "0.15.0"
+          purescript: "0.15.3-1"
           spago: "0.20.9"
           purs-tidy: "0.8.0"
 
