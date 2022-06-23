@@ -8,7 +8,7 @@
 
 I’m a developer at [Awake Security](https://github.com/awakesecurity) (and previously at [CitizenNet](https://citizennet.com)). Both companies have large production PureScript applications that have remained reliable, understandable, and maintainable as they scale.
 
-This repository follows the [RealWorld](https://github.com/gothinkster/realworld) spec to implement a Medium clone called Conduit using [Halogen](https://github.com/purescript-halogen/purescript-halogen). It’s large enough to demonstrate real world examples (CRUD, state management, scalable architecture, type classes, components, etc.) but not so large as to be overwhelming.
+This repository follows the [RealWorld](https://github.com/gothinkster/realworld) spec to implement a Medium clone called Conduit using [Halogen](https://github.com/purescript-halogen/purescript-halogen). It’s large enough to demonstrate real world examples (CRUD, state management, scalable architecture, type classes, components, etc.) but not so large as to be overwhelming. There is also a [Real World PureScript React](https://github.com/jonasbuntinx/purescript-react-realworld) project that demonstrates the same project using React bindings from PureScript.
 
 The source code currently covers Halogen 7 with PureScript 0.15, but there are versions for versions going back to Halogen 4:
 
