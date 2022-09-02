@@ -34,29 +34,10 @@ $ cd purescript-halogen-realworld
 You can enter a development shell with all non-JavaScript dependencies via Nix:
 
 ```console
-$ nix-shell
-```
-
-Or with Nix Flakes:
-
-```console
 $ nix develop
 ```
 
-Or automatic shell support via [direnv](https://github.com/direnv/direnv) with an `.envrc` file in your root:
-
-```bash
-if type nix &>/dev/null; then
-  # https://github.com/nix-community/nix-direnv
-  if nix flake metadata &>/dev/null; then
-    use flake
-  else
-    use nix
-  fi
-fi
-```
-
-> Alternately, you can install `purescript`, `spago`, `purs-tidy`, `purescript-psa`, and the PureScript language server from NPM.
+Alternately, you can install `purescript`, `spago`, `purs-tidy`, `purescript-psa`, and the PureScript language server from NPM.
 
 Next, install JavaScript dependencies:
 
