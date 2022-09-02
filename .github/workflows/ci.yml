@@ -15,9 +15,9 @@ jobs:
 
       - uses: thomashoneyman/setup-purescript@main
         with:
-          purescript: "0.15.0"
+          purescript: "0.15.4"
           spago: "0.20.9"
-          purs-tidy: "0.8.0"
+          purs-tidy: "0.9.0"
 
       - name: Cache PureScript dependencies
         uses: actions/cache@v2

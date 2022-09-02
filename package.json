@@ -8,9 +8,8 @@
     "clean": "rm -rf node_modules output .spago dist/*.js *.lock .cache",
     "build": "spago build",
     "test": "spago test",
-    "esbuild": "esbuild --bundle index.js",
-    "bundle": "npm run build && npm run esbuild -- --minify --outfile=dist/main.js",
-    "serve": "npm run esbuild -- --servedir=dist"
+    "serve": "spago build && esbuild --bundle index.js --servedir=dist",
+    "bundle": "spago -x spago.production.dhall build && purs-backend-es bundle-app --main Main --minify --no-build --to dist/main.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +20,7 @@
     "marked": "^4.0.15"
   },
   "devDependencies": {
-    "esbuild": "^0.14.38"
+    "esbuild": "^0.14.38",
+    "purs-backend-es": "^1.1.0"
   }
 }

@@ -18,6 +18,7 @@ node_modules
 # Generated
 output
 dce-output
+output-es
 *.lock
 *.map
 
