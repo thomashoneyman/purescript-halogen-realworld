@@ -181,11 +181,12 @@ instance manageUserAppM :: ManageUser AppM where
     map (map _.profile)
       $ decodeWithUser (\u -> CAR.object "Profile" { profile: Profile.authorCodec u }) mbJson
 
-  updateUser fields =
-    void $ mkAuthRequest
-      { endpoint: User
-      , method: Put (Just (Codec.encode Profile.profileWithEmailPasswordCodec fields))
-      }
+  updateUser user = do
+    let
+      codec = CAR.object "User" { user: Profile.profileWithEmailPasswordCodec }
+      method = Put $ Just $ Codec.encode codec { user }
+
+    void $ mkAuthRequest { endpoint: User, method: method }
 
   followUser username = do
     mbJson <- mkAuthRequest { endpoint: Follow username, method: Post Nothing }
@@ -208,13 +209,16 @@ instance manageCommentAppM :: ManageComment AppM where
   getComments slug = do
     mbJson <- mkRequest { endpoint: Comments slug, method: Get }
     map (map _.comments)
-      $ decodeWithUser (\u -> CAR.object "Comments" { comments: CA.array (Comment.codec u) }) mbJson
+      $ decodeWithUser (\u -> CAR.object "Comments" { comments: CA.array (Comment.commentWithMetadataCodec u) }) mbJson
 
-  createComment slug body =
+  createComment slug comment = do
     let
-      method = Post $ Just $ Codec.encode (CAR.object "CommentBody" { body: CA.string }) { body }
-    in
-      void $ mkAuthRequest { endpoint: Comments slug, method }
+      codec = CAR.object "Comment" { comment: Comment.commentCodec }
+      method = Post $ Just $ Codec.encode codec { comment }
+
+    mbJson <- mkAuthRequest { endpoint: Comments slug, method }
+    map (map _.comment)
+      $ decodeWithUser (\u -> CAR.object "Comment" { comment: Comment.commentWithMetadataCodec u }) mbJson
 
   deleteComment slug id =
     void $ mkAuthRequest { endpoint: Comment slug id, method: Delete }
