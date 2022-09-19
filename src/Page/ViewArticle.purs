@@ -18,7 +18,7 @@ import Conduit.Component.RawHTML as RawHTML
 import Conduit.Component.Utils (OpaqueSlot)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Comment (Comment, CommentId)
+import Conduit.Data.Comment (Comment, CommentWithMetadata, CommentId)
 import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Profile (Author, Profile, Relation(..))
 import Conduit.Data.Route (Route(..))
@@ -41,13 +41,15 @@ import Halogen.Store.Select (selectEq)
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
 import Slug (Slug)
 import Type.Proxy (Proxy(..))
+import Web.Event.Event (Event)
+import Web.Event.Event as Event
 
 data Action
   = Initialize
   | Receive (Connected (Maybe Profile) Input)
   | GetArticle
   | GetComments
-  | AddComment
+  | AddComment Event
   | UpdateCommentText String
   | FollowAuthor
   | UnfollowAuthor
@@ -58,7 +60,7 @@ data Action
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
-  , comments :: RemoteData String (Array Comment)
+  , comments :: RemoteData String (Array CommentWithMetadata)
   , myComment :: String
   , slug :: Slug
   , currentUser :: Maybe Profile
@@ -120,13 +122,19 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
       comments <- getComments st.slug
       H.modify_ _ { comments = fromMaybe comments }
 
-    AddComment -> do
+    AddComment event -> do
+      H.liftEffect $ Event.preventDefault event
       st <- H.get
       when (st.myComment /= "") do
         for_ (preview _Success st.article) \article -> do
-          void $ createComment article.slug st.myComment
-          comments <- getComments st.slug
-          H.modify_ _ { comments = fromMaybe comments, myComment = "" }
+          let
+            comment :: Comment
+            comment = { body: st.myComment }
+          void $ createComment article.slug comment
+
+          _ <- H.modify _ { comments = Loading }
+          mbComments <- getComments st.slug
+          H.modify_ _ { comments = fromMaybe mbComments, myComment = "" }
 
     UpdateCommentText str ->
       H.modify_ _ { myComment = str }
@@ -199,7 +207,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
                         [ maybeElem state.currentUser \profile ->
                             HH.form
                               [ css "card comment-form"
-                              , HE.onSubmit \_ -> AddComment
+                              , HE.onSubmit \ev -> AddComment ev
                               ]
                               [ HH.div
                                   [ css "card-block" ]
@@ -207,6 +215,7 @@ component = connect (selectEq _.currentUser) $ H.mkComponent
                                       [ css "form-control"
                                       , HP.placeholder "Write a comment..."
                                       , HP.rows 3
+                                      , HP.value state.myComment
                                       , HE.onValueInput UpdateCommentText
                                       ]
                                   ]

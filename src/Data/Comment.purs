@@ -28,16 +28,22 @@ derive instance ordCommentId :: Ord CommentId
 -- | Next, we'll define our larger comment type. A comment consists of a persistent unique
 -- | identifier, a timestamp, a user-created body, and information about the user who created
 -- | the comment.
-type Comment =
+type Comment = { body :: String }
+
+type CommentWithMetadata =
   { id :: CommentId
   , createdAt :: PreciseDateTime
   , body :: String
   , author :: Author
   }
 
-codec :: Maybe Username -> JsonCodec Comment
-codec mbUsername =
-  CAR.object "Comment"
+commentCodec :: JsonCodec Comment
+commentCodec =
+  CAR.object "Comment" { body: CA.string }
+
+commentWithMetadataCodec :: Maybe Username -> JsonCodec CommentWithMetadata
+commentWithMetadataCodec mbUsername =
+  CAR.object "CommentWithMetadata"
     { id: wrapIso CommentId CA.int
     , createdAt: PDT.codec
     , body: CA.string
