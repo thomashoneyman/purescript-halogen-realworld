@@ -18,7 +18,7 @@ import Conduit.Component.RawHTML as RawHTML
 import Conduit.Component.Utils (OpaqueSlot)
 import Conduit.Data.Article (ArticleWithMetadata)
 import Conduit.Data.Avatar as Avatar
-import Conduit.Data.Comment (Comment, CommentWithMetadata, CommentId)
+import Conduit.Data.Comment (Comment, CommentId, CommentWithMetadata)
 import Conduit.Data.PreciseDateTime as PDT
 import Conduit.Data.Profile (Author, Profile, Relation(..))
 import Conduit.Data.Route (Route(..))

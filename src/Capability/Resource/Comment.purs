@@ -13,7 +13,7 @@ module Conduit.Capability.Resource.Comment where
 
 import Prelude
 
-import Conduit.Data.Comment (Comment, CommentWithMetadata, CommentId)
+import Conduit.Data.Comment (Comment, CommentId, CommentWithMetadata)
 import Data.Maybe (Maybe)
 import Halogen (HalogenM, lift)
 import Slug (Slug)
