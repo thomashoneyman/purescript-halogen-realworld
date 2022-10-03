@@ -44,7 +44,7 @@
             spago
             purescript-language-server
           ]) ++ (pkgs.lib.optionals (system == "aarch64-darwin")
-            (with pkgs.darwin.apple_sdk.framework; [
+            (with pkgs.darwin.apple_sdk.frameworks; [
               Cocoa
               CoreServices
             ]));
