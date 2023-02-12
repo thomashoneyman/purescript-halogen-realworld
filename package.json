@@ -9,7 +9,7 @@
     "build": "spago build",
     "test": "spago test",
     "serve": "spago build && esbuild --bundle index.js --servedir=dist",
-    "bundle": "spago -x spago.production.dhall build && purs-backend-es bundle-app --main Main --minify --no-build --to dist/main.js"
+    "bundle": "spago -x spago.production.dhall build && purs-backend-es bundle-app --main Main --minify --no-build --to dist/index.js"
   },
   "repository": {
     "type": "git",
