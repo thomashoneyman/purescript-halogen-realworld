@@ -20,6 +20,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Data.Either (Either(..))
 
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
@@ -42,10 +43,12 @@ type FormlessAction = F.FormlessAction (Form F.FieldState)
 data Action
   = Receive FormContext
   | Eval FormlessAction
+  | DisableOnClick
 
 type State =
   { form :: FormContext
   , loginError :: Boolean
+  , click :: Boolean
   }
 
 component
@@ -55,7 +58,7 @@ component
   => ManageUser m
   => H.Component query Input output m
 component = F.formless { liftAction: Eval } mempty $ H.mkComponent
-  { initialState: \context -> { form: context, loginError: false }
+  { initialState: \context -> { form: context, loginError: false, click: true }
   , render
   , eval: H.mkEval $ H.defaultEval
       { receive = Just <<< Receive
@@ -68,6 +71,7 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
   handleAction = case _ of
     Receive context -> H.modify_ _ { form = context }
     Eval action -> F.eval action
+    DisableOnClick ->  H.modify_ \st -> st { click = false }
 
   handleQuery :: forall a. F.FormQuery _ _ _ _ a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = do
@@ -90,7 +94,7 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
     F.handleSubmitValidate onSubmit F.validate validation
 
   render :: State -> H.ComponentHTML Action () m
-  render { loginError, form: { formActions, fields, actions } } =
+  render { loginError, form: { formActions, fields, actions }, click } =
     container
       [ HH.h1
           [ css "text-xs-center" ]
@@ -118,7 +122,11 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
                   [ HP.placeholder "Password"
                   , HP.type_ HP.InputPassword
                   ]
-              , Field.submitButton "Log in"
+              , Field.submitButton "Log in" (case
+                 fields.email.result, fields.password.result, click of
+                   Just (Right _) , Just (Right _) , true -> true
+                   _ , _ , _ -> false
+              ) DisableOnClick
               ]
           ]
       ]

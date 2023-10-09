@@ -19,7 +19,7 @@ import Conduit.Form.Validation (FormError)
 import Conduit.Form.Validation as V
 import Conduit.Store as Store
 import Data.Const (Const)
-import Data.Either (either)
+import Data.Either (either, Either(..))
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
@@ -58,11 +58,13 @@ data Action
   | Receive (Connected (Maybe Profile) FormContext)
   | Eval FormlessAction
   | HandleTagInput TagInput.Message
+  | DisableOnClick
 
 type State =
   { article :: RemoteData String ArticleWithMetadata
   , currentUser :: Maybe Profile
   , form :: FormContext
+  , click :: Boolean
   }
 
 type ChildSlots = (tagInput :: H.Slot (Const Void) TagInput.Message Unit)
@@ -82,6 +84,7 @@ component = F.formless { liftAction: Eval } mempty $ connect (selectEq _.current
       { article: NotAsked
       , currentUser
       , form: formContext
+      , click: true
       }
   , render
   , eval: H.mkEval $ H.defaultEval
@@ -129,6 +132,8 @@ component = F.formless { liftAction: Eval } mempty $ connect (selectEq _.current
         tagList <- H.gets _.form.actions.tagList
         handleAction $ tagList.handleChange (Set.toUnfoldable set)
 
+    DisableOnClick ->  H.modify_ \st -> st { click = false }
+
   handleQuery :: forall a. F.FormQuery _ _ _ _ a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = do
     let
@@ -152,7 +157,7 @@ component = F.formless { liftAction: Eval } mempty $ connect (selectEq _.current
     F.handleSubmitValidate onSubmit F.validate validation
 
   render :: State -> H.ComponentHTML Action ChildSlots m
-  render { currentUser, article, form: { formActions, fields, actions } } =
+  render { currentUser, article, form: { formActions, fields, actions }, click } =
     HH.div_
       [ header currentUser Editor
       , container
@@ -179,9 +184,13 @@ component = F.formless { liftAction: Eval } mempty $ connect (selectEq _.current
                             [ HH.text $ V.errorToString err ]
                       ]
                   , HH.slot (Proxy :: _ "tagInput") unit TagInput.component { tags: Set.fromFoldable fields.tagList.value } HandleTagInput
-                  , Field.submitButton $ case toMaybe article of
+                  , Field.submitButton ( case toMaybe article of
                       Nothing -> "Publish"
-                      Just _ -> "Commit changes"
+                      Just _  -> "Commit changes") (case
+                        fields.body.result, fields.title.result, fields.description.result , fields.tagList.result, click of
+                          Just (Right _) , Just (Right _) , Just (Right _) , Just (Right _) , true -> true
+                          _ , _ , _ , _ , _-> false
+                      ) DisableOnClick
                   ]
               ]
           ]

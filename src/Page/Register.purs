@@ -14,6 +14,7 @@ import Conduit.Data.Username (Username)
 import Conduit.Form.Field as Field
 import Conduit.Form.Validation (FormError)
 import Conduit.Form.Validation as V
+import Data.Either (Either(..))
 import Data.Foldable (traverse_)
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff)
@@ -39,6 +40,12 @@ type FormlessAction = F.FormlessAction (Form F.FieldState)
 data Action
   = Receive FormContext
   | Eval FormlessAction
+  | DisableOnClick
+
+type State =
+  { form :: FormContext
+  , click :: Boolean
+  }
 
 component
   :: forall query output m
@@ -47,7 +54,7 @@ component
   => Navigate m
   => H.Component query Unit output m
 component = F.formless { liftAction: Eval } mempty $ H.mkComponent
-  { initialState: \context -> context
+  { initialState: \form -> { form , click: true}
   , render
   , eval: H.mkEval $ H.defaultEval
       { receive = Just <<< Receive
@@ -58,8 +65,9 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
   where
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction = case _ of
-    Receive context -> H.put context
+    Receive context -> H.modify_ \st -> st { form = context }
     Eval action -> F.eval action
+    DisableOnClick -> H.modify_ \st -> st { click = false }
 
   handleQuery :: forall a. F.FormQuery _ _ _ _ a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery = do
@@ -73,8 +81,8 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
 
     F.handleSubmitValidate onSubmit F.validate validation
 
-  render :: FormContext -> H.ComponentHTML Action () m
-  render { formActions, fields, actions } =
+  render :: State -> H.ComponentHTML Action () m
+  render  { click, form : { formActions, fields, actions }} =
     container
       [ HH.h1
           [ css "text-xs-center" ]
@@ -101,7 +109,9 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
                   [ HP.placeholder "Password "
                   , HP.type_ HP.InputPassword
                   ]
-              , Field.submitButton "Sign up"
+              , Field.submitButton  "Sign Up" (case fields.password.result , fields.email.result , fields.username.result, click of
+                  Just (Right _) , Just (Right _) , Just (Right _) , true -> true
+                  _ , _ , _ , _ -> false) DisableOnClick
               ]
           ]
       ]

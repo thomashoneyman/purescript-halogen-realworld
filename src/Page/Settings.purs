@@ -29,6 +29,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
+import Data.Either (Either(..))
 
 -- | See the Formless tutorial to learn how to build your own forms:
 -- | https://github.com/thomashoneyman/purescript-halogen-formless
@@ -50,10 +51,12 @@ data Action
   | Receive FormContext
   | Eval FormlessAction
   | LogUserOut
+  | DisableOnClick
 
 type State =
   { profile :: RemoteData String ProfileWithEmail
   , form :: FormContext
+  , click :: Boolean
   }
 
 component
@@ -63,7 +66,7 @@ component
   => ManageUser m
   => H.Component query Unit output m
 component = F.formless { liftAction: Eval } mempty $ H.mkComponent
-  { initialState: \form -> { profile: NotAsked, form }
+  { initialState: \form -> { profile: NotAsked, form , click: true }
   , render
   , eval: H.mkEval $ H.defaultEval
       { initialize = Just Initialize
@@ -106,6 +109,8 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
     LogUserOut ->
       logout
 
+    DisableOnClick -> pure unit
+
   handleQuery :: forall a. F.FormQuery _ _ _ _ a -> H.HalogenM _ _ _ _ m (Maybe a)
   handleQuery = do
     let
@@ -127,7 +132,7 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
     F.handleSubmitValidate onSubmit F.validate validation
 
   render :: State -> H.ComponentHTML Action () m
-  render { profile, form: { formActions, fields, actions } } =
+  render { click, profile, form: { formActions, fields, actions } } =
     container
       [ HH.h1
           [ css "text-xs-center" ]
@@ -154,7 +159,11 @@ component = F.formless { liftAction: Eval } mempty $ H.mkComponent
                   [ HP.placeholder "Password"
                   , HP.type_ HP.InputPassword
                   ]
-              , Field.submitButton "Update settings"
+              , Field.submitButton "Update settings" (case
+                   fields.password.result, fields.email.result, fields.username.result, fields.image.result, click of
+                      Just (Right _) , Just (Right _) , Just (Right _) , Just (Right _) , true -> true
+                      _ , _ , _ , _ , _ -> false
+              ) DisableOnClick
               ]
           ]
       , HH.hr_

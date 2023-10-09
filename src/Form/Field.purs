@@ -39,11 +39,13 @@ type StringField f output = f String FormError output
 -- | This small helper function that creates a submit button with customizable
 -- | text. Since all submit buttons in the Conduit application look the same,
 -- | we can just use this throughout the app.
-submitButton :: forall i p. String -> HH.HTML i p
-submitButton label =
+submitButton :: forall i p. String -> Boolean -> p -> HH.HTML i p
+submitButton label bool action =
   HH.input
     [ css "btn btn-lg btn-primary pull-xs-right"
     , HP.type_ HP.InputSubmit
+    , HP.enabled bool
+    , HE.onClick \_ -> action
     , HP.value label
     ]
 
