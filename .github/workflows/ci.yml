@@ -10,42 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # SETUP
       - uses: actions/checkout@v2
 
-      - uses: thomashoneyman/setup-purescript@main
-        with:
-          purescript: "0.15.4"
-          spago: "0.20.9"
-          purs-tidy: "0.9.0"
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v2
 
       - name: Cache PureScript dependencies
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-spago-${{ hashFiles('**/*.dhall') }}
+          key: ${{ runner.os }}-spago-${{ hashFiles('**/spago.yaml') }}
           path: |
             .spago
             output
 
-      - uses: actions/setup-node@v2
-        with:
-          node-version: "16.x"
-          cache: "npm"
+      - name: Load Nix environment
+        run: nix develop
 
       - name: Install NPM dependencies
-        run: npm ci
+        run: nix develop --command npm ci
 
       - name: Build source
-        run: spago build
+        run: nix develop --command npm run build
 
       - name: Run tests
-        run: spago test --no-install
+        run: nix develop --command npm run test
 
       - name: Check formatting
-        run: purs-tidy check src test
+        run: nix develop --command purs-tidy check src test
 
       - name: Run bundle
-        run: npm run bundle
+        run: nix develop --command npm run bundle
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

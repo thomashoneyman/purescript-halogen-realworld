@@ -23,7 +23,6 @@ import Conduit.Data.Email (Email)
 import Conduit.Data.Email as Email
 import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
-import Data.Codec (mapCodec)
 import Data.Codec.Argonaut (JsonCodec, JsonDecodeError)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Compat as CAC
@@ -108,12 +107,13 @@ profileWithEmailPasswordCodec =
     }
 
 authorCodec :: Maybe Username -> JsonCodec Author
-authorCodec mbUsername = mapCodec to from codec
+authorCodec mbUsername = CA.codec' (to <=< CA.decode codec) (CA.encode codec <<< from)
   where
   -- We'll stay faithful to our input JSON in the first codec. Then, we'll adjust the result of our
   -- codec using mapCodec so that we can use our Relation type instead of a simple following boolean.
   -- The reason we do that in a separate step is because it depends on having already successfully
   -- parsed the username field.
+  codec :: JsonCodec { | ProfileRep (following :: Boolean) }
   codec =
     CAR.object "Author"
       { username: Username.codec
