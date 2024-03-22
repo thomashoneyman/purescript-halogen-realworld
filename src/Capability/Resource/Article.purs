@@ -17,8 +17,8 @@ import Conduit.Api.Endpoint (ArticleParams, Pagination)
 import Conduit.Data.Article (Article, ArticleWithMetadata)
 import Conduit.Data.PaginatedArray (PaginatedArray)
 import Data.Maybe (Maybe)
+import Data.Slug (Slug)
 import Halogen (HalogenM, lift)
-import Slug (Slug)
 
 -- | This capability represents the ability to manage articles in our system. Each function
 -- | represents a simple process to read, write, update, delete, favorite, or take some other action

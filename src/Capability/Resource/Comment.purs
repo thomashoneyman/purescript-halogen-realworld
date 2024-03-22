@@ -15,8 +15,8 @@ import Prelude
 
 import Conduit.Data.Comment (Comment, CommentId, CommentWithMetadata)
 import Data.Maybe (Maybe)
+import Data.Slug (Slug)
 import Halogen (HalogenM, lift)
-import Slug (Slug)
 
 -- | This capability represents the ability to manage comments in our system. Currently we only
 -- | need to get all comments, create a comment, or delete a comment, all of which must be

@@ -17,11 +17,11 @@ import Conduit.Data.Username (Username)
 import Conduit.Data.Username as Username
 import Data.Either (note)
 import Data.Generic.Rep (class Generic)
+import Data.Slug (Slug)
+import Data.Slug as Slug
 import Routing.Duplex (RouteDuplex', as, root, segment)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
-import Slug (Slug)
-import Slug as Slug
 
 -- | We'll represent routes in our application with a simple sum type. As the application grows,
 -- | you might want to swap this out with an extensible sum type with `Variant` and have several

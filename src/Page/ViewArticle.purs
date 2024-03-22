@@ -30,6 +30,7 @@ import Data.Lens (Traversal', preview)
 import Data.Lens.Record (prop)
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
+import Data.Slug (Slug)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
@@ -39,7 +40,6 @@ import Halogen.Store.Connect (Connected, connect)
 import Halogen.Store.Monad (class MonadStore)
 import Halogen.Store.Select (selectEq)
 import Network.RemoteData (RemoteData(..), _Success, fromMaybe)
-import Slug (Slug)
 import Type.Proxy (Proxy(..))
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
