@@ -24,3 +24,6 @@ output-es
 
 # Dist
 dist/*.js
+
+# Keep spago.lock
+!spago.lock

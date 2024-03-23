@@ -23,6 +23,7 @@ import Data.Either (either)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
+import Data.Slug (Slug)
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
@@ -34,7 +35,6 @@ import Halogen.Store.Monad (class MonadStore)
 import Halogen.Store.Select (selectEq)
 import Network.RemoteData (RemoteData(..), fromMaybe, toMaybe)
 import Safe.Coerce (coerce)
-import Slug (Slug)
 import Type.Proxy (Proxy(..))
 
 type Input = Maybe Slug

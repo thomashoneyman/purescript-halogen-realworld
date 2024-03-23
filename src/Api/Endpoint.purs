@@ -19,10 +19,10 @@ import Conduit.Data.Username (Username)
 import Data.Generic.Rep (class Generic)
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Maybe (Maybe(..))
+import Data.Slug (Slug)
 import Routing.Duplex (RouteDuplex', int, optional, prefix, root, segment, string)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/), (?))
-import Slug (Slug)
 
 -- | First, let's define a few types necessary for our larger `Endpoint` type.
 

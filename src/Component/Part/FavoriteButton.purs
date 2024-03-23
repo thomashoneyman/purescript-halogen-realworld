@@ -20,10 +20,10 @@ import Conduit.Data.Article (ArticleWithMetadata)
 import Data.Foldable (for_)
 import Data.Lens (Traversal', preview, set)
 import Data.Maybe (Maybe)
+import Data.Slug (Slug)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-import Slug (Slug)
 
 -- A simple way to control button sizes
 

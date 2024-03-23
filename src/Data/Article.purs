@@ -24,8 +24,8 @@ import Data.Codec.Argonaut.Migration as CAM
 import Data.Codec.Argonaut.Record as CAR
 import Data.Maybe (Maybe)
 import Data.PreciseDateTime (PreciseDateTime)
-import Slug (Slug)
-import Slug as Slug
+import Data.Slug (Slug)
+import Data.Slug as Slug
 import Type.Row (type (+))
 
 -- | First, we'll describe the core fields that are always present when we have an `Article`. In
