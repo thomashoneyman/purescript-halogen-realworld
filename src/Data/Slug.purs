@@ -8,11 +8,8 @@ module Data.Slug
 
 import Prelude
 
-import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..), decodeJson)
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Array as Array
 import Data.CodePoint.Unicode (isLatin1)
-import Data.Either (note)
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.String.CodePoints (codePointFromChar, fromCodePointArray, toCodePointArray)
@@ -26,21 +23,11 @@ import Data.String.Pattern (Pattern(..), Replacement(..))
 -- |   where the slug cannot begin or end with a dash, and there can
 -- |   never be two dashes in a row.
 -- |
--- | Example: `Slug "this-is-an-article-slug"`
+-- | Example: `Slug "This-is-an-article-slug"`
 newtype Slug = Slug String
 
 derive newtype instance Eq Slug
 derive newtype instance Ord Slug
-derive newtype instance Semigroup Slug
-
-instance Show Slug where
-  show (Slug str) = "(Slug " <> str <> ")"
-
-instance EncodeJson Slug where
-  encodeJson (Slug s) = encodeJson s
-
-instance DecodeJson Slug where
-  decodeJson = note (TypeMismatch "Slug") <<< parse <=< decodeJson
 
 -- | Create a `Slug` from a string. This will transform the input string
 -- | to be a valid slug (if it is possible to do so) by separating words
