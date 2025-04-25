@@ -21,11 +21,11 @@ If you have found this repository and the guide useful, please consider [becomin
 
 # ⚠️ Upstream Maintenance Notice (Spring 2025)
 
-This repository provides a purescript frontend that was intended to point to a spec-compliant, public, RealWorld backend. 
+This repository provides a PureScript frontend that was intended to point to a spec-compliant, public, RealWorld backend. 
 
 However, the upstream RealWorld project is [no longer maintained](https://github.com/gothinkster/realworld/issues/1611) and the public API service implementing the RealWorld spec is no longer operational. The instructions below _will not work_ by default.
 
-If you wish to proceed, you will need to work out another option for accessing a RealWorld API (such as self-hosting locally). There is a list of pre-written backends [here](codebase) (including in Haskell). 
+If you wish to proceed, you will need to work out another option for accessing a RealWorld API (such as self-hosting locally). You can consider using one of the [RealWorld backends](https://codebase.show/projects/realworld?category=backend).
 
 ## Installation
 
